@@ -1,4 +1,10 @@
 {
+  "driverApplicationApproved": "Өтінім мақұлданды. Профиль және таңдалған аймаққа рұқсат дайын.",
+  "driverApplicationNeedsInfo": "Нақтылау қажет. Пікірді оқып, мәліметтерді немесе құжаттарды түзетіңіз.",
+  "driverApplicationRejected": "Өтінім қабылданбады. Себебі төменде; мәліметтерді түзетіп, қайта жіберуге болады.",
+  "driverApplicationReadFailed": "Өтінім күйін алу мүмкін болмады. Жібермес бұрын жаңартыңыз.",
+  "driverApplicationOpenMode": "Жүргізуші режиміне өту",
+  "driverApplicationCorrect": "Түзетіп жіберу",
   "priceOfferChanged": "Ұсыныс өзгерді. Жаңа бағаны тексеріп, бөлек растаңыз.",
   "priceOfferConfirmationRequired": "Қолданбаны жаңартып, көрсетілген бағаны қайта растаңыз.",
   "@@locale": "kk",

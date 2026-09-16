@@ -12,9 +12,8 @@ import '../../models/driver_document_labels.dart';
 import '../../models/driver_document_models.dart';
 
 /// Shown right after a prospective driver submits their application
-/// (`ApiClient.submitDriverApplication`). The application has no user
-/// account yet, so uploads go through the unauthenticated
-/// `uploadDriverApplicationDocument` endpoint, scoped by [applicationId].
+/// (`ApiClient.submitDriverApplication`). Reads and uploads require the
+/// authenticated applicant; an application ID alone never grants access.
 class DriverApplicationDocumentsScreen extends StatefulWidget {
   const DriverApplicationDocumentsScreen({
     super.key,
@@ -35,9 +34,41 @@ class _DriverApplicationDocumentsScreenState
   final Map<String, DriverDocument> _uploaded = {};
   final Set<String> _uploadingTypes = {};
   String? _error;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final documents =
+          await widget.api.getDriverApplicationDocuments(widget.applicationId);
+      if (!mounted) return;
+      setState(() {
+        _uploaded.clear();
+        for (final document in documents) {
+          _uploaded.putIfAbsent(document.type, () => document);
+        }
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() =>
+            _error = AppLocalizations.of(context).driverApplicationReadFailed);
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   Future<void> _uploadFromPath(String type, String? path) async {
-    if (path == null || _uploadingTypes.contains(type)) return;
+    if (path == null || _loading || _uploadingTypes.contains(type)) return;
     setState(() {
       _uploadingTypes.add(type);
       _error = null;
@@ -78,8 +109,8 @@ class _DriverApplicationDocumentsScreenState
     await _uploadFromPath(type, result?.files.single.path);
   }
 
-  bool get _allRequiredUploaded =>
-      DriverDocumentType.required.every(_uploaded.containsKey);
+  bool get _allRequiredUploaded => DriverDocumentType.required.every((type) =>
+      _uploaded.containsKey(type) && _uploaded[type]!.status != 'REJECTED');
 
   @override
   Widget build(BuildContext context) {
@@ -103,20 +134,26 @@ class _DriverApplicationDocumentsScreenState
             const SizedBox(height: 16),
             if (_error != null) ...[
               Text(_error!, style: TextStyle(color: palette.danger)),
+              OutlinedButton(
+                  onPressed: _loading ? null : _load,
+                  child: Text(l10n.refreshButton)),
               const SizedBox(height: 12),
             ],
-            _ApplicationDocumentListCard(
-              rows: [
-                for (final type in DriverDocumentType.required)
-                  _ApplicationDocumentRow(
-                    type: type,
-                    uploaded: _uploaded[type],
-                    uploading: _uploadingTypes.contains(type),
-                    onCamera: () => _pickFromCamera(type),
-                    onFile: () => _pickFromGallery(type),
-                  ),
-              ],
-            ),
+            if (_loading)
+              const Center(child: CircularProgressIndicator())
+            else
+              _ApplicationDocumentListCard(
+                rows: [
+                  for (final type in DriverDocumentType.required)
+                    _ApplicationDocumentRow(
+                      type: type,
+                      uploaded: _uploaded[type],
+                      uploading: _uploadingTypes.contains(type),
+                      onCamera: () => _pickFromCamera(type),
+                      onFile: () => _pickFromGallery(type),
+                    ),
+                ],
+              ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -201,8 +238,14 @@ class _ApplicationDocumentRow extends StatelessWidget {
               ),
               if (uploaded != null)
                 StatusPill(
-                    label: l10n.driverApplicationDocumentUploaded,
-                    tone: StatusTone.success),
+                    label: uploaded!.status == 'REJECTED'
+                        ? l10n.driverDocumentStatusRejected
+                        : uploaded!.status == 'APPROVED'
+                            ? l10n.driverDocumentStatusApproved
+                            : l10n.driverDocumentStatusPending,
+                    tone: uploaded!.status == 'REJECTED'
+                        ? StatusTone.danger
+                        : StatusTone.info),
             ],
           ),
           const SizedBox(height: 10),
@@ -217,7 +260,7 @@ class _ApplicationDocumentRow extends StatelessWidget {
                 ),
               ),
             )
-          else if (uploaded == null)
+          else if (uploaded == null || uploaded!.status == 'REJECTED')
             Row(
               children: [
                 Expanded(

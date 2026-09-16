@@ -9,6 +9,28 @@ class AppLocalizationsUz extends AppLocalizations {
   AppLocalizationsUz([String locale = 'uz']) : super(locale);
 
   @override
+  String get driverApplicationApproved =>
+      'Ariza tasdiqlandi. Profil va tanlangan hududga ruxsat tayyor.';
+
+  @override
+  String get driverApplicationNeedsInfo =>
+      'Aniqlik kerak. Izohni o‘qing va ma’lumot yoki hujjatlarni tuzating.';
+
+  @override
+  String get driverApplicationRejected =>
+      'Ariza rad etildi. Sabab quyida; ma’lumotni tuzatib qayta yuborishingiz mumkin.';
+
+  @override
+  String get driverApplicationReadFailed =>
+      'Ariza holatini olib bo‘lmadi. Yuborishdan oldin yangilang.';
+
+  @override
+  String get driverApplicationOpenMode => 'Haydovchi rejimiga o‘tish';
+
+  @override
+  String get driverApplicationCorrect => 'Tuzatish va yuborish';
+
+  @override
   String get priceOfferChanged =>
       'Taklif o‘zgardi. Yangi narxni tekshiring va alohida tasdiqlang.';
 

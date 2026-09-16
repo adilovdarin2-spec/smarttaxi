@@ -372,6 +372,10 @@ class _PassengerShellState extends State<PassengerShell>
   String _driverComment = '';
   bool _driverTermsAccepted = false;
   String? _driverApplicationMessage;
+  Map<String, dynamic>? _driverApplication;
+  bool _driverApplicationReading = true;
+  bool _driverApplicationReadFailed = false;
+  int _driverApplicationReadRevision = 0;
   // Null until the rider picks one — the rest of the support form (trip
   // picker for "Забыл вещь", message, submit) only reveals once a topic is
   // chosen, so the flow reads as topic -> (trip if lost item) -> message
@@ -417,12 +421,28 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _restoreDriverApplicationStatus() async {
-    final submitted = await widget.authStore.readDriverApplicationSubmitted();
-    if (!submitted || !mounted) return;
-    setState(
-      () => _driverApplicationMessage ??=
-          AppLocalizations.of(context).passengerDriverAppSubmittedMessage,
-    );
+    if (!mounted) return;
+    setState(() => _driverApplicationReading = true);
+    final revision = ++_driverApplicationReadRevision;
+    try {
+      final application = await widget.api.getMyDriverApplication();
+      if (!mounted || revision != _driverApplicationReadRevision) return;
+      final l10n = AppLocalizations.of(context);
+      setState(() {
+        _driverApplication = application;
+        _driverApplicationReadFailed = false;
+        _driverApplicationMessage = application == null ? null : switch (application['status']) {
+          'APPROVED' => l10n.driverApplicationApproved,
+          'NEEDS_INFO' => l10n.driverApplicationNeedsInfo,
+          'REJECTED' => l10n.driverApplicationRejected,
+          _ => l10n.passengerDriverAppSubmittedMessage,
+        };
+      });
+    } catch (_) {
+      if (mounted && revision == _driverApplicationReadRevision) setState(() => _driverApplicationReadFailed = true);
+    } finally {
+      if (mounted && revision == _driverApplicationReadRevision) setState(() => _driverApplicationReading = false);
+    }
   }
 
   @override
@@ -2639,10 +2659,12 @@ class _PassengerShellState extends State<PassengerShell>
     if (!opened && mounted) {
       _driverPhone = widget.accountPhone;
       setState(() => _tab = PassengerTab.driverApplication);
+      await _restoreDriverApplicationStatus();
     }
   }
 
   Future<void> _submitDriverApplication() async {
+    if (_loading || _driverApplicationReading || _driverApplicationReadFailed) return;
     setState(() {
       _loading = true;
       _error = null;
@@ -2673,8 +2695,7 @@ class _PassengerShellState extends State<PassengerShell>
       }
       final applicationId = await widget.api.submitDriverApplication(
         fullName: _driverFullName.trim(),
-        phone:
-            (_driverPhone.isEmpty ? widget.accountPhone : _driverPhone).trim(),
+        phone: widget.accountPhone,
         carModel: _driverCarModel.trim(),
         carColor: _driverCarColor.trim(),
         plateNumber: _driverPlate.trim(),
@@ -2686,7 +2707,8 @@ class _PassengerShellState extends State<PassengerShell>
         () => _driverApplicationMessage =
             AppLocalizations.of(context).passengerDriverAppSubmittedMessage,
       );
-      unawaited(widget.authStore.saveDriverApplicationSubmitted());
+      await _restoreDriverApplicationStatus();
+      if (!mounted) return;
       if (applicationId.isNotEmpty) {
         unawaited(
           Navigator.of(context).push(
@@ -2704,6 +2726,7 @@ class _PassengerShellState extends State<PassengerShell>
         setState(
             () => _error = _readableError(AppLocalizations.of(context), error));
       }
+      await _restoreDriverApplicationStatus();
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -4148,6 +4171,20 @@ class _PassengerShellState extends State<PassengerShell>
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
     final submitted = _driverApplicationMessage != null;
+    final approved = _driverApplication?['status'] == 'APPROVED';
+    final rejected = _driverApplication?['status'] == 'REJECTED';
+    if (_driverApplicationReading || _driverApplicationReadFailed) {
+      return ListView(padding: const EdgeInsets.all(20), children: [
+        Text(l10n.passengerDrawerBecomeDriver, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 16),
+        if (_driverApplicationReading) const Center(child: CircularProgressIndicator())
+        else ...[
+          Text(l10n.driverApplicationReadFailed),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: _restoreDriverApplicationStatus, child: Text(l10n.refreshButton)),
+        ],
+      ]);
+    }
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -4191,15 +4228,15 @@ class _PassengerShellState extends State<PassengerShell>
                   height: 56,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: palette.successSoft,
+                    color: approved ? palette.successSoft : rejected ? palette.dangerSoft : palette.brandSurface,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.check_circle_rounded,
-                      color: palette.success, size: 30),
+                  child: Icon(approved ? Icons.check_circle_rounded : rejected ? Icons.info_outline_rounded : Icons.schedule_rounded,
+                      color: approved ? palette.success : rejected ? palette.danger : palette.brand, size: 30),
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  l10n.passengerDriverAppSubmittedTitle,
+                  l10n.passengerDrawerBecomeDriver,
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.w600),
                 ),
@@ -4212,6 +4249,27 @@ class _PassengerShellState extends State<PassengerShell>
                     height: 1.4,
                   ),
                 ),
+                if ((_driverApplication?['comment'] ?? '').toString().isNotEmpty)
+                  Padding(padding: const EdgeInsets.only(top: 12), child: Text(_driverApplication!['comment'].toString())),
+                const SizedBox(height: 12),
+                OutlinedButton(onPressed: _restoreDriverApplicationStatus, child: Text(l10n.refreshButton)),
+                if (_driverApplication?['status'] == 'APPROVED')
+                  ElevatedButton(onPressed: _openDriverEntry, child: Text(l10n.driverApplicationOpenMode)),
+                if (['PENDING', 'NEEDS_INFO'].contains(_driverApplication?['status']))
+                  OutlinedButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => DriverApplicationDocumentsScreen(api: widget.api, applicationId: _driverApplication!['id'].toString()))),
+                    child: Text(l10n.driverApplicationDocumentsTitle)),
+                if (['NEEDS_INFO', 'REJECTED'].contains(_driverApplication?['status']))
+                  OutlinedButton(onPressed: () => setState(() {
+                    final application = _driverApplication!;
+                    _driverFullName = application['full_name']?.toString() ?? '';
+                    _driverPhone = widget.accountPhone;
+                    _driverCarModel = application['car_model']?.toString() ?? '';
+                    _driverCarColor = application['car_color']?.toString() ?? '';
+                    _driverPlate = application['plate_number']?.toString() ?? '';
+                    _driverYear = application['year']?.toString() ?? '';
+                    _driverApplicationMessage = null;
+                  }), child: Text(l10n.driverApplicationCorrect)),
                 const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -4252,6 +4310,7 @@ class _PassengerShellState extends State<PassengerShell>
                 _ApplicationField(
                   label: l10n.passengerDriverFullNameLabel,
                   icon: Icons.badge_outlined,
+                  initialValue: _driverFullName,
                   onChanged: (value) => _driverFullName = value,
                 ),
                 const SizedBox(height: 12),
@@ -4259,6 +4318,7 @@ class _PassengerShellState extends State<PassengerShell>
                   label: l10n.phoneLabel,
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
+                  readOnly: true,
                   initialValue:
                       _driverPhone.isEmpty ? widget.accountPhone : _driverPhone,
                   onChanged: (value) => _driverPhone = value,
@@ -4275,24 +4335,28 @@ class _PassengerShellState extends State<PassengerShell>
                 _ApplicationField(
                   label: l10n.passengerDriverCarModelLabel,
                   icon: Icons.directions_car_outlined,
+                  initialValue: _driverCarModel,
                   onChanged: (value) => _driverCarModel = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
                   label: l10n.passengerDriverCarColorLabel,
                   icon: Icons.palette_outlined,
+                  initialValue: _driverCarColor,
                   onChanged: (value) => _driverCarColor = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
                   label: l10n.passengerDriverPlateLabel,
                   icon: Icons.pin_outlined,
+                  initialValue: _driverPlate,
                   onChanged: (value) => _driverPlate = value,
                 ),
                 const SizedBox(height: 12),
                 _ApplicationField(
                   label: l10n.passengerDriverYearLabel,
                   icon: Icons.event_outlined,
+                  initialValue: _driverYear,
                   keyboardType: TextInputType.number,
                   onChanged: (value) => _driverYear = value,
                 ),
@@ -4300,6 +4364,7 @@ class _PassengerShellState extends State<PassengerShell>
                 _ApplicationField(
                   label: l10n.passengerDriverCommentLabel,
                   icon: Icons.edit_note_rounded,
+                  initialValue: _driverComment,
                   onChanged: (value) => _driverComment = value,
                 ),
               ],
@@ -19824,18 +19889,21 @@ class _ApplicationField extends StatelessWidget {
     required this.label,
     required this.onChanged,
     this.initialValue = '',
+    this.readOnly = false,
     this.keyboardType,
     this.icon,
   });
 
   final String label;
   final String initialValue;
+  final bool readOnly;
   final TextInputType? keyboardType;
   final ValueChanged<String> onChanged;
   final IconData? icon;
 
   @override
   Widget build(BuildContext context) => TextFormField(
+        readOnly: readOnly,
         initialValue: initialValue,
         decoration: InputDecoration(
           labelText: label,

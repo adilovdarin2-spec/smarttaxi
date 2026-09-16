@@ -61,6 +61,8 @@ import {
   setDriverPreference,
   initiateOrderPayment,
   submitDriverApplication,
+  getMyDriverApplication,
+  getDriverApplicationDocuments,
   subscribeSessionChanges,
   updateRecurringBookingStatus,
   uploadDriverApplicationDocument,
@@ -4993,11 +4995,41 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
   }));
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [application, setApplication] = useState(null);
+  const [editingApplication, setEditingApplication] = useState(false);
+  const [reading, setReading] = useState(true);
+  const [readFailed, setReadFailed] = useState(false);
+  const live = useRef(false);
+  const readRevision = useRef(0);
+  const flight = useRef(false);
   const [documentType, setDocumentType] = useState("ID_CARD_FRONT");
   const [uploading, setUploading] = useState(false);
   const [documents, setDocuments] = useState([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  async function refreshApplication() {
+    const current = sessionGuard(getToken(), getToken, () => live.current);
+    if (!current()) return;
+    const revision = ++readRevision.current;
+    setReading(true);
+    try {
+      const data = await getMyDriverApplication();
+      const rows = data.application ? await getDriverApplicationDocuments(data.application.id) : { documents: [] };
+      if (!current() || revision !== readRevision.current) return;
+      setApplication(data.application);
+      setDocuments(rows.documents || []);
+      setReadFailed(false);
+    } catch {
+      if (current() && revision === readRevision.current) setReadFailed(true);
+    } finally {
+      if (current() && revision === readRevision.current) setReading(false);
+    }
+  }
+  useEffect(() => {
+    live.current = true;
+    if (authenticated) refreshApplication(); else setReading(false);
+    return () => { live.current = false; readRevision.current++; };
+  }, [authenticated, rider?.id]);
 
   useEffect(() => {
     setForm(current => ({
@@ -5011,6 +5043,8 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
 
   async function submit(event) {
     event.preventDefault();
+    if (flight.current || reading || readFailed) return;
+    const current = sessionGuard(getToken(), getToken, () => live.current);
     setError("");
     const phoneDigits = String(form.phone).replace(/\D/g, "");
     if (form.fullName.trim().length < 2) return setError("Укажите имя и фамилию.");
@@ -5019,21 +5053,26 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
     if (form.plateNumber.trim().length < 2) return setError("Укажите госномер автомобиля.");
     if (!termsAccepted) return setError("Подтвердите согласие с правилами BaiSapar.");
     setLoading(true);
+    flight.current = true;
+    readRevision.current++;
     try {
       const result = await submitDriverApplication({
         fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
+        phone: rider.phone,
         carModel: form.carModel.trim(),
         carColor: form.carColor.trim(),
         plateNumber: form.plateNumber.trim(),
         year: form.year.trim() ? Number(form.year) : undefined,
         comment: form.comment.trim()
       });
+      if (!current()) return;
       setApplication(result.application);
+      setEditingApplication(false);
     } catch (requestError) {
-      setError(formatError(requestError));
+      if (current()) { setError(formatError(requestError)); await refreshApplication(); }
     } finally {
-      setLoading(false);
+      flight.current = false;
+      if (current()) setLoading(false);
     }
   }
 
@@ -5041,15 +5080,19 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file || !application?.id) return;
+    if (flight.current) return;
+    const current = sessionGuard(getToken(), getToken, () => live.current);
+    flight.current = true;
     setError("");
     setUploading(true);
     try {
       const result = await uploadDriverApplicationDocument({ applicationId: application.id, file, type: documentType });
-      setDocuments(current => [...current, result.document]);
+      if (current()) setDocuments(rows => [...rows, result.document]);
     } catch (requestError) {
-      setError(formatError(requestError));
+      if (current()) setError(formatError(requestError));
     } finally {
-      setUploading(false);
+      flight.current = false;
+      if (current()) setUploading(false);
     }
   }
 
@@ -5063,13 +5106,25 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
     );
   }
 
-  if (application) {
+  if (reading || readFailed) return <section className="client-simple-section driver-application-section">
+    <h1>Стать водителем</h1><p role="status">{reading ? 'Проверяем статус заявки…' : 'Не удалось получить заявку. Обновите данные перед отправкой.'}</p>
+    <button className="app-button primary-brand" disabled={reading} onClick={refreshApplication}>Обновить статус</button>
+  </section>;
+
+  if (application && !editingApplication) {
+    const status = application.status;
     return (
       <section className="client-simple-section driver-application-section">
-        <span className="driver-application-success" aria-hidden="true">✓</span>
-        <h1>Заявка отправлена</h1>
-        <p>Мы проверим данные и свяжемся с вами. Пока можно приложить документы — JPG, PNG или PDF до 8 МБ.</p>
-        <div className="driver-document-upload">
+        <span className="driver-application-success" data-status={status} aria-hidden="true">{status === 'APPROVED' ? '✓' : status === 'REJECTED' ? '!' : '…'}</span>
+        <h1>{({ PENDING: 'Заявка на проверке', APPROVED: 'Заявка одобрена', NEEDS_INFO: 'Нужны уточнения', REJECTED: 'Заявка отклонена' })[status] || 'Статус заявки'}</h1>
+        {application.comment && <p>{application.comment}</p>}
+        <button className="app-button secondary" disabled={loading || uploading} onClick={refreshApplication}>Обновить статус</button>
+        {status === 'APPROVED' && <><p>Профиль водителя создан. Можно перейти в водительский режим.</p><AppModeButton mode="driver" /></>}
+        {['NEEDS_INFO', 'REJECTED'].includes(status) && <button className="app-button primary-brand" onClick={() => {
+          setForm({ fullName: application.full_name, phone: rider.phone, carModel: application.car_model, carColor: application.car_color || '', plateNumber: application.plate_number, year: String(application.year || ''), comment: '' });
+          setEditingApplication(true);
+        }}>Исправить и отправить</button>}
+        {['PENDING', 'NEEDS_INFO'].includes(status) && <div className="driver-document-upload">
           <select value={documentType} onChange={event => setDocumentType(event.target.value)} aria-label="Тип документа">
             <option value="ID_CARD_FRONT">Удостоверение личности — лицевая сторона</option>
             <option value="ID_CARD_BACK">Удостоверение личности — обратная сторона</option>
@@ -5084,7 +5139,7 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
             {uploading ? "Загружаем…" : "Добавить документ"}
             <input type="file" accept="image/jpeg,image/png,application/pdf" disabled={uploading} onChange={upload} hidden />
           </label>
-        </div>
+        </div>}
         {documents.length > 0 && <ul className="driver-document-list">{documents.map(document => <li key={document.id}>{document.originalFilename || "Документ загружен"}</li>)}</ul>}
         {error && <p className="state-note danger">{error}</p>}
       </section>
@@ -5098,7 +5153,7 @@ function DriverApplicationSection({ authenticated, rider, onLogin }) {
       <ol className="driver-application-steps"><li>Заполните анкету.</li><li>Добавьте документы.</li><li>Пройдите проверку.</li></ol>
       <form className="driver-application-form" onSubmit={submit}>
         <label>ФИО<input value={form.fullName} onChange={event => update("fullName", event.target.value)} autoComplete="name" /></label>
-        <label>Телефон<input value={form.phone} onChange={event => update("phone", event.target.value)} inputMode="tel" autoComplete="tel" /></label>
+        <label>Телефон аккаунта<input value={rider.phone || ''} readOnly autoComplete="tel" /></label>
         <label>Модель автомобиля<input value={form.carModel} onChange={event => update("carModel", event.target.value)} /></label>
         <label>Цвет автомобиля<input value={form.carColor} onChange={event => update("carColor", event.target.value)} /></label>
         <label>Госномер<input value={form.plateNumber} onChange={event => update("plateNumber", event.target.value)} /></label>

@@ -9,6 +9,24 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
+  String get driverApplicationApproved => '申请已批准。司机资料和所选地区的权限已就绪。';
+
+  @override
+  String get driverApplicationNeedsInfo => '需要补充信息。请阅读备注并修改资料或文件。';
+
+  @override
+  String get driverApplicationRejected => '申请被拒绝。原因如下；您可修改资料后重新申请。';
+
+  @override
+  String get driverApplicationReadFailed => '无法获取申请状态。请先刷新再提交。';
+
+  @override
+  String get driverApplicationOpenMode => '进入司机模式';
+
+  @override
+  String get driverApplicationCorrect => '修改并提交';
+
+  @override
   String get priceOfferChanged => '报价已更改。请查看新价格并单独确认。';
 
   @override

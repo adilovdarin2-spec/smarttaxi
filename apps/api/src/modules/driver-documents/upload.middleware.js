@@ -49,14 +49,13 @@ export async function resolveOwnDriver(req, res, next) {
   } catch (error) { next(error); }
 }
 
-// The application-scoped upload route is intentionally unauthenticated (it
-// runs before a real account exists), so ownership is just "this application
-// id exists" rather than tied to a logged-in user.
+// An application ID is not an access credential. Legacy anonymous applications
+// remain staff-readable, but cannot be claimed via a freely entered phone.
 export async function resolveApplicationOwner(req, res, next) {
   try {
     const { query } = await import("../../db/pool.js");
     const applicationId = req.params.applicationId;
-    const application = (await query("SELECT id FROM driver_applications WHERE id=$1", [applicationId])).rows[0];
+    const application = (await query("SELECT id FROM driver_applications WHERE id=$1 AND user_id=$2", [applicationId, req.user.id])).rows[0];
     if (!application) throw new AppError("Driver application not found", 404, "DRIVER_APPLICATION_NOT_FOUND");
     req.documentOwnerId = application.id;
     next();

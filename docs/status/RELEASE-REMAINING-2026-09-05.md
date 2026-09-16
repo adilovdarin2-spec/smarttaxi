@@ -25,15 +25,19 @@ deployment state. Current stages:
   Local HTTP, PostgreSQL and real 320/390px browser conflicts passed, including
   unchanged stand reservations and separate confirmation of the refreshed price.
   Web 186 tests; Flutter 359 tests. Old clients must update for negotiation.
+- [Authenticated driver onboarding](driver-onboarding-2026-09-16.md): applicant
+  ownership, owner-selected region, transactional profile creation and document
+  linking; status restoration/correction in web/Flutter. Real local HTTP,
+  PostgreSQL rollback and 320/390px browser flows passed. Web 186 tests;
+  Flutter 362 tests and fresh signed profile APK. No phone used.
 
 The API now uses a private Railway OSRM service, not the public routing demo.
 Production readiness still reports missing SMS honestly. No unit/browser pass
 proves moving navigation, complete official address coverage or a production
-capacity target. Driver-application approval through creation of a usable
-driver account and region access is a confirmed unfinished internal path:
-local owner approval returns APPROVED, but a fresh applicant login remains CLIENT
-and driver-mode switching returns 403 DRIVER_MODE_UNAVAILABLE (see consent-stage
-report's follow-up audit). The seeded-driver smoke tests do not cover onboarding.
+capacity target. The previously reproduced driver-application gap is now covered
+by authenticated new-account onboarding, not just seeded-driver smoke tests.
+Legacy anonymous applications cannot be claimed by a freely entered phone;
+applicants must resubmit from their own authenticated account.
 Negotiated-price replacement
 during acceptance is covered by the September 16 consent stage; this does not
 prove every unrelated order-edit or direct base-price acceptance race.

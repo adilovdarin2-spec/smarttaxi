@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Icon } from "../../core/icons.jsx";
 import DriversLiveMap from "./DriversLiveMap.jsx";
 import StandsPage from "./StandsPage.jsx";
 import CancellationReviewsPage from "./CancellationReviewsPage.jsx";
@@ -484,7 +485,10 @@ export default function AdminApp() {
     const loaders = {
       regions: getAdminRegions,
       drivers: getAdminDrivers,
-      applications: getAdminDriverApplications,
+      applications: async () => {
+        const [applications, regions] = await Promise.all([getAdminDriverApplications(), getAdminRegions()]);
+        return { ...applications, regions: regions.regions || [] };
+      },
       orders: async () => {
         const status = orderStatus !== "all" ? orderStatus : undefined;
         const [orders, drivers, regions] = await Promise.allSettled([
@@ -771,9 +775,10 @@ export default function AdminApp() {
         regions: payload.regions || []
       };
     }
+    // Applications also carry region options for approval; keep those intact.
+    if (payload.applications) return { ...payload, applications: filter(payload.applications) };
     if (payload.regions) return { ...payload, regions: filter(payload.regions) };
     if (payload.drivers) return { ...payload, drivers: filter(payload.drivers) };
-    if (payload.applications) return { ...payload, applications: filter(payload.applications) };
     if (payload.tariffs) return { ...payload, tariffs: filter(payload.tariffs), regions: payload.regions || [] };
     if (payload.alerts) return { ...payload, alerts: filter(payload.alerts), regions: payload.regions || [] };
     if (payload.reviews || payload.leaderboard) {
@@ -979,9 +984,9 @@ export default function AdminApp() {
     }, "Заказ отменён");
   }
 
-  async function reviewApplication(application, status, comment = "") {
+  async function reviewApplication(application, status, comment = "", regionId) {
     await runAction(async () => {
-      await updateAdminDriverApplication(application.id, { status, comment });
+      await updateAdminDriverApplication(application.id, { status, comment, regionId });
       setModal(null);
       await loadPage("applications");
       await loadDashboard();
@@ -3739,7 +3744,7 @@ function SettingsPage({ settings, regions = [], onSave, canEdit, onSendBroadcast
         defaultCommissionPercent: settings.defaultCommissionPercent ?? 0,
         supportPhone: settings.supportPhone || "",
         sosPhone: settings.sosPhone || "",
-        autoApproveDrivers: !!settings.autoApproveDrivers
+        autoApproveDrivers: false
       });
     }
   }, [settings]);
@@ -3824,17 +3829,7 @@ function SettingsPage({ settings, regions = [], onSave, canEdit, onSendBroadcast
             </label>
             <div />
           </div>
-          <div className="admin-form-row">
-            <label className="admin-toggle-line">
-              <input
-                type="checkbox"
-                checked={form.autoApproveDrivers}
-                onChange={event => setField("autoApproveDrivers", event.target.checked)}
-                disabled={!canEdit}
-              />
-              <span>Автоматически одобрять заявки водителей</span>
-            </label>
-          </div>
+          <p className="admin-settings-note">Заявки водителей одобряет владелец после проверки данных, с явным выбором региона допуска.</p>
           <p className="admin-settings-note">
             Заказы всегда распределяются одинаково: система уведомляет всех
             свободных водителей в регионе, и заказ достаётся первому, кто
@@ -4511,7 +4506,7 @@ function ClientDriverPreferencesPanel({ clientPreferences, driverPreferences }) 
   );
 }
 
-function DriverDocumentCard({ document, mode, onReview, busy }) {
+export function DriverDocumentCard({ document, mode, onReview, busy }) {
   const [rejecting, setRejecting] = useState(false);
   const [reason, setReason] = useState("");
 
@@ -4612,6 +4607,7 @@ function DriverDocumentsPanel({ documents, loading, error, onRetry, mode, onRevi
 
 function ApplicationPanel({ application, regions, busy, onClose, onReview, error }) {
   const [reason, setReason] = useState("");
+  const [regionId, setRegionId] = useState(application.region_id || '');
   const [docs, setDocs] = useState({ loading: true, error: "", items: [] });
   const [busyDocumentId, setBusyDocumentId] = useState("");
   const mountedRef = useRef(true);
@@ -4675,15 +4671,22 @@ function ApplicationPanel({ application, regions, busy, onClose, onReview, error
           <span>Комментарий или причина отказа</span>
           <textarea value={reason} onChange={event => setReason(event.target.value)} rows={4} />
         </label>
-        <InlineMessage text="Региональный доступ назначается в карточке водителя после создания профиля." />
+        {!application.user_id && <InlineMessage text="Старая заявка без привязки к аккаунту. Кандидату нужно войти и подать новую заявку; одобрение по одному номеру недоступно." />}
+        {application.driver_id ? <InlineMessage text="Профиль создан. Дальнейшие изменения допуска и блокировки выполняются в карточке водителя." /> : <label className="admin-textarea-field">
+          <span>Регион допуска</span>
+          <select aria-label="Регион допуска" className="admin-control-select" value={regionId} onChange={event => setRegionId(event.target.value)} disabled={busy}>
+            <option value="">Выберите регион для работы</option>
+            {regions.filter(region => region.isActive !== false && region.is_active !== false).map(region => <option key={region.id} value={region.id}>{region.name}</option>)}
+          </select>
+        </label>}
         <div className="admin-modal-actions">
-          <button type="button" className="admin-danger-button" disabled={busy} onClick={() => onReview(application, "REJECTED", reason)}>
+          <button type="button" className="admin-danger-button" disabled={busy || Boolean(application.driver_id)} onClick={() => onReview(application, "REJECTED", reason)}>
             Отклонить
           </button>
-          <button type="button" className="admin-secondary-button" disabled={busy} onClick={() => onReview(application, "NEEDS_INFO", reason)}>
+          <button type="button" className="admin-secondary-button" disabled={busy || Boolean(application.driver_id)} onClick={() => onReview(application, "NEEDS_INFO", reason)}>
             Запросить данные
           </button>
-          <button type="button" className="admin-primary-button" disabled={busy} onClick={() => onReview(application, "APPROVED", reason)}>
+          <button type="button" className="admin-primary-button" disabled={busy || !regionId || !application.user_id || Boolean(application.driver_id)} onClick={() => onReview(application, "APPROVED", reason, regionId)}>
             Одобрить
           </button>
         </div>

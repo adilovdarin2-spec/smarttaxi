@@ -336,6 +336,9 @@ CREATE TABLE IF NOT EXISTS service_settings (
 
 CREATE TABLE IF NOT EXISTS driver_applications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL,
+  region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
   full_name TEXT NOT NULL,
   phone TEXT NOT NULL,
   car_model TEXT NOT NULL,

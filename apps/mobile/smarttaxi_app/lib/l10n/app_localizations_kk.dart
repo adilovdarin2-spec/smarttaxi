@@ -9,6 +9,28 @@ class AppLocalizationsKk extends AppLocalizations {
   AppLocalizationsKk([String locale = 'kk']) : super(locale);
 
   @override
+  String get driverApplicationApproved =>
+      'Өтінім мақұлданды. Профиль және таңдалған аймаққа рұқсат дайын.';
+
+  @override
+  String get driverApplicationNeedsInfo =>
+      'Нақтылау қажет. Пікірді оқып, мәліметтерді немесе құжаттарды түзетіңіз.';
+
+  @override
+  String get driverApplicationRejected =>
+      'Өтінім қабылданбады. Себебі төменде; мәліметтерді түзетіп, қайта жіберуге болады.';
+
+  @override
+  String get driverApplicationReadFailed =>
+      'Өтінім күйін алу мүмкін болмады. Жібермес бұрын жаңартыңыз.';
+
+  @override
+  String get driverApplicationOpenMode => 'Жүргізуші режиміне өту';
+
+  @override
+  String get driverApplicationCorrect => 'Түзетіп жіберу';
+
+  @override
   String get priceOfferChanged =>
       'Ұсыныс өзгерді. Жаңа бағаны тексеріп, бөлек растаңыз.';
 

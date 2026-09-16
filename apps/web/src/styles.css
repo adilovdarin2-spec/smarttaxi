@@ -23366,6 +23366,9 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 .taxi-client-shell .driver-document-upload .disabled { pointer-events: none; opacity: .65; }
 .taxi-client-shell .driver-document-list { padding: 12px 16px 12px 34px; color: #335273; font-size: 13px; line-height: 1.8; }
 .taxi-client-shell .driver-application-success { width: 54px; height: 54px; display: grid; place-items: center; margin-bottom: 14px; border-radius: 50%; color: #fff; background: #25b872; box-shadow: 0 10px 22px rgba(37, 184, 114, .22); font-size: 28px; font-weight: 900; }
+.taxi-client-shell .driver-application-success[data-status="PENDING"],
+.taxi-client-shell .driver-application-success[data-status="NEEDS_INFO"] { color: #0B4FD1; background: #EAF3FF; box-shadow: none; }
+.taxi-client-shell .driver-application-success[data-status="REJECTED"] { color: #b42318; background: #fff0ee; box-shadow: none; }
 
 /* Map endpoint semantics: a precise live GPS dot, the saved address-picker
    badge, and a readable checkered flag for the finish. These are vectors so

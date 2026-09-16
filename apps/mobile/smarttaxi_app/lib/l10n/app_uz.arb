@@ -1,4 +1,10 @@
 {
+  "driverApplicationApproved": "Ariza tasdiqlandi. Profil va tanlangan hududga ruxsat tayyor.",
+  "driverApplicationNeedsInfo": "Aniqlik kerak. Izohni o‘qing va ma’lumot yoki hujjatlarni tuzating.",
+  "driverApplicationRejected": "Ariza rad etildi. Sabab quyida; ma’lumotni tuzatib qayta yuborishingiz mumkin.",
+  "driverApplicationReadFailed": "Ariza holatini olib bo‘lmadi. Yuborishdan oldin yangilang.",
+  "driverApplicationOpenMode": "Haydovchi rejimiga o‘tish",
+  "driverApplicationCorrect": "Tuzatish va yuborish",
   "priceOfferChanged": "Taklif o‘zgardi. Yangi narxni tekshiring va alohida tasdiqlang.",
   "priceOfferConfirmationRequired": "Ilovani yangilang va ko‘rsatilgan narxni qayta tasdiqlang.",
   "@@locale": "uz",

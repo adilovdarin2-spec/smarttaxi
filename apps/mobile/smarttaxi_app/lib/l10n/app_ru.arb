@@ -1,4 +1,10 @@
 {
+  "driverApplicationApproved": "Заявка одобрена. Профиль и доступ к выбранному региону готовы.",
+  "driverApplicationNeedsInfo": "Нужны уточнения. Прочитайте комментарий и исправьте данные или документы.",
+  "driverApplicationRejected": "Заявка отклонена. Причина указана ниже; можно исправить данные и подать заново.",
+  "driverApplicationReadFailed": "Не удалось получить статус заявки. Обновите данные перед отправкой.",
+  "driverApplicationOpenMode": "Перейти в режим водителя",
+  "driverApplicationCorrect": "Исправить и отправить",
   "priceOfferChanged": "Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.",
   "priceOfferConfirmationRequired": "Обновите приложение и подтвердите показанную цену заново.",
   "@@locale": "ru",

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
-import { query } from "../../db/pool.js";
+import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
@@ -19,7 +19,7 @@ import { UPLOAD_ROOT, createStoredDocumentPath, resolveApplicationOwner, resolve
 
 const TypeField = z.object({ type: z.enum(DOCUMENT_TYPES) });
 
-async function saveUploadedDocument(req, { driverId = null, driverApplicationId = null }) {
+async function saveUploadedDocument(req, { driverId = null, driverApplicationId = null }, executor = query) {
   if (!req.file) throw new AppError("File is required", 400, "FILE_REQUIRED");
   const body = TypeField.parse(req.body);
   return insertDriverDocument({
@@ -31,7 +31,7 @@ async function saveUploadedDocument(req, { driverId = null, driverApplicationId 
     mimeType: req.file.mimetype,
     sizeBytes: req.file.size,
     data: req.file.buffer
-  });
+  }, executor);
 }
 
 const router = Router();
@@ -81,12 +81,18 @@ export const driverApplicationDocumentsRouter = Router();
 
 driverApplicationDocumentsRouter.post(
   "/:applicationId/documents",
+  requireAuth, requireRole("CLIENT", "DRIVER"),
   rateLimit({ prefix: "driver-application-documents", windowMs: 60_000, max: 20 }),
   resolveApplicationOwner,
   uploadDriverDocument,
   async (req, res, next) => {
     try {
-      const document = await saveUploadedDocument(req, { driverApplicationId: req.documentOwnerId });
+      const document = await tx(async executor => {
+        const application = (await executor.query('SELECT * FROM driver_applications WHERE id=$1 AND user_id=$2 FOR UPDATE', [req.documentOwnerId, req.user.id])).rows[0];
+        if (!application) throw new AppError('Application not found', 404, 'DRIVER_APPLICATION_NOT_FOUND');
+        if (!['PENDING', 'NEEDS_INFO'].includes(application.status)) throw new AppError('Application is already reviewed', 409, 'APPLICATION_NOT_EDITABLE');
+        return saveUploadedDocument(req, { driverApplicationId: application.id }, executor);
+      });
       res.status(201).json({ document: publicDriverDocument(document) });
     } catch (error) { next(error); }
   }
@@ -94,6 +100,7 @@ driverApplicationDocumentsRouter.post(
 
 driverApplicationDocumentsRouter.get(
   "/:applicationId/documents",
+  requireAuth, requireRole("CLIENT", "DRIVER"),
   rateLimit({ prefix: "driver-application-documents-list", windowMs: 60_000, max: 30 }),
   resolveApplicationOwner,
   async (req, res, next) => {

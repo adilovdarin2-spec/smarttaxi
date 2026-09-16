@@ -3,6 +3,7 @@ import { z } from "zod";
 import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
+import { rateLimit } from '../../common/rateLimit.js';
 import { writeAudit } from "../../common/audit.js";
 import { loadHarvestedAddresses } from "../../tools/load-addresses.js";
 import { createRegion, listRegions, publicRegion, setRegionActive, updateRegion } from "../regions/regions.service.js";
@@ -55,6 +56,8 @@ import {
 import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
 
+import { submitDriverApplication, reviewDriverApplication } from './driver-application.service.js';
+
 const router = Router();
 
 const DriverApplication = z.object({
@@ -73,7 +76,7 @@ const SettingsUpdate = z.object({
   currency: z.string().trim().min(2).max(8).optional(),
   currencySymbol: z.string().trim().min(1).max(8).optional(),
   defaultCommissionPercent: z.coerce.number().min(0).max(50).optional(),
-  autoApproveDrivers: z.boolean().optional(),
+  autoApproveDrivers: z.literal(false).optional(),
   autoAssignOrders: z.boolean().optional(),
   supportPhone: z.string().trim().min(3).max(32).optional(),
   sosPhone: z.string().trim().min(3).max(32).optional(),
@@ -1568,17 +1571,18 @@ router.patch("/settings", requireAuth, requireRole("OWNER"), async (req, res, ne
   } catch (error) { next(error); }
 });
 
-router.post("/driver-applications", async (req, res, next) => {
+router.post("/driver-applications", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "driver-application-submit", windowMs: 60_000, max: 10 }), async (req, res, next) => {
   try {
     const body = DriverApplication.parse(req.body);
-    const settings = (await query("SELECT auto_approve_drivers FROM service_settings WHERE id=1")).rows[0];
-    const status = settings?.auto_approve_drivers ? "APPROVED" : "PENDING";
-    const result = await query(`
-      INSERT INTO driver_applications(full_name, phone, car_model, car_color, plate_number, year, status, comment)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8)
-      RETURNING *
-    `, [body.fullName, body.phone, body.carModel, body.carColor || null, body.plateNumber, body.year || null, status, body.comment]);
-    res.status(201).json({ application: result.rows[0] });
+    const application = await tx(executor => submitDriverApplication({ userId: req.user.id, body, executor }));
+    res.status(201).json({ application });
+  } catch (error) { next(error); }
+});
+
+router.get("/driver-applications/mine", requireAuth, requireRole("CLIENT", "DRIVER"), async (req, res, next) => {
+  try {
+    const application = (await query("SELECT * FROM driver_applications WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1", [req.user.id])).rows[0] || null;
+    res.json({ application });
   } catch (error) { next(error); }
 });
 
@@ -1598,28 +1602,14 @@ router.get("/driver-applications", requireAuth, requireRole("OWNER"), async (req
 router.patch("/driver-applications/:id", requireAuth, requireRole("OWNER"), async (req, res, next) => {
   try {
     const params = z.object({ id: z.string().uuid() }).parse(req.params);
-    const body = z.object({
-      status: z.enum(["APPROVED", "REJECTED", "NEEDS_INFO"]),
-      comment: z.string().trim().max(500).optional().default("")
-    }).parse(req.body);
-    const application = await tx(async client => {
-      const before = (await client.query("SELECT * FROM driver_applications WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
-      if (!before) throw new AppError("Driver application not found", 404, "DRIVER_APPLICATION_NOT_FOUND");
-      const updated = (await client.query(`
-        UPDATE driver_applications
-        SET status=$1, comment=$2, reviewed_at=NOW()
-        WHERE id=$3
-        RETURNING *
-      `, [body.status, body.comment, params.id])).rows[0];
-      await writeAudit(client, {
-        action: "driver_application_reviewed",
-        actorUserId: req.user.id,
-        entityType: "driver_application",
-        entityId: params.id,
-        metadata: { from: before.status, to: body.status },
-        req
-      });
-      return updated;
+    const body = z.object({ status: z.enum(["APPROVED", "REJECTED", "NEEDS_INFO"]),
+      regionId: z.string().uuid().optional(), comment: z.string().trim().max(500).optional().default("") }).parse(req.body);
+    const application = await tx(async executor => {
+      const result = await reviewDriverApplication({ id: params.id, ...body, actorUserId: req.user.id, executor });
+      await writeAudit(executor, { action: "driver_application_reviewed", actorUserId: req.user.id,
+        entityType: "driver_application", entityId: params.id,
+        metadata: { from: result.before.status, to: result.application.status, driverId: result.application.driver_id, regionId: result.application.region_id }, req });
+      return result.application;
     });
     res.json({ application });
   } catch (error) { next(error); }

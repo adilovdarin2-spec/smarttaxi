@@ -9,6 +9,28 @@ class AppLocalizationsRu extends AppLocalizations {
   AppLocalizationsRu([String locale = 'ru']) : super(locale);
 
   @override
+  String get driverApplicationApproved =>
+      'Заявка одобрена. Профиль и доступ к выбранному региону готовы.';
+
+  @override
+  String get driverApplicationNeedsInfo =>
+      'Нужны уточнения. Прочитайте комментарий и исправьте данные или документы.';
+
+  @override
+  String get driverApplicationRejected =>
+      'Заявка отклонена. Причина указана ниже; можно исправить данные и подать заново.';
+
+  @override
+  String get driverApplicationReadFailed =>
+      'Не удалось получить статус заявки. Обновите данные перед отправкой.';
+
+  @override
+  String get driverApplicationOpenMode => 'Перейти в режим водителя';
+
+  @override
+  String get driverApplicationCorrect => 'Исправить и отправить';
+
+  @override
   String get priceOfferChanged =>
       'Предложение изменилось. Проверьте новую цену и подтвердите её отдельно.';
 

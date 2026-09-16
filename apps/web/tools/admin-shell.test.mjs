@@ -17,10 +17,19 @@ test("admin loading and login use a centered full-viewport access shell", async 
     optimizeDeps: { noDiscovery: true },
   });
   try {
-    const { default: AdminApp } = await server.ssrLoadModule("/src/features/admin/AdminApp.jsx");
+    const { default: AdminApp, DriverDocumentCard } = await server.ssrLoadModule("/src/features/admin/AdminApp.jsx");
     const markup = renderToStaticMarkup(h(AdminApp));
     assert.match(markup, /class="admin-control-shell admin-access-shell"/);
     assert.match(markup, /Проверяем сессию/);
+    for (const status of ['PENDING', 'APPROVED', 'REJECTED']) {
+      const document = renderToStaticMarkup(h(DriverDocumentCard, {
+        document: { id: 'local-test', type: 'OTHER', originalFilename: 'QA-ONLY.pdf', status, rejectionReason: 'Переснимите документ' },
+        mode: 'application', onReview() {}, busy: false,
+      }));
+      assert.match(document, /QA-ONLY.pdf/);
+      assert.match(document, /admin-document-card/);
+      if (status === 'REJECTED') assert.match(document, /Переснимите документ/);
+    }
 
     const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
     assert.match(css, /\.admin-control-shell\.admin-access-shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*place-items:\s*center/s);

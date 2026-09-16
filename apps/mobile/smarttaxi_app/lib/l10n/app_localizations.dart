@@ -102,6 +102,42 @@ abstract class AppLocalizations {
     Locale('zh')
   ];
 
+  /// No description provided for @driverApplicationApproved.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка одобрена. Профиль и доступ к выбранному региону готовы.'**
+  String get driverApplicationApproved;
+
+  /// No description provided for @driverApplicationNeedsInfo.
+  ///
+  /// In ru, this message translates to:
+  /// **'Нужны уточнения. Прочитайте комментарий и исправьте данные или документы.'**
+  String get driverApplicationNeedsInfo;
+
+  /// No description provided for @driverApplicationRejected.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка отклонена. Причина указана ниже; можно исправить данные и подать заново.'**
+  String get driverApplicationRejected;
+
+  /// No description provided for @driverApplicationReadFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось получить статус заявки. Обновите данные перед отправкой.'**
+  String get driverApplicationReadFailed;
+
+  /// No description provided for @driverApplicationOpenMode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Перейти в режим водителя'**
+  String get driverApplicationOpenMode;
+
+  /// No description provided for @driverApplicationCorrect.
+  ///
+  /// In ru, this message translates to:
+  /// **'Исправить и отправить'**
+  String get driverApplicationCorrect;
+
   /// No description provided for @priceOfferChanged.
   ///
   /// In ru, this message translates to:

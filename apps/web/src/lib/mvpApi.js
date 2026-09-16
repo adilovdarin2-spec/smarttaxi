@@ -58,6 +58,14 @@ export function getCurrentUser() {
   return api("/api/auth/me");
 }
 
+export function getMyDriverApplication() {
+  return api('/api/admin/driver-applications/mine');
+}
+
+export function getDriverApplicationDocuments(id) {
+  return api(`/api/driver-applications/${encodeURIComponent(id)}/documents`);
+}
+
 export function submitDriverApplication(payload) {
   return api("/api/admin/driver-applications", {
     method: "POST",

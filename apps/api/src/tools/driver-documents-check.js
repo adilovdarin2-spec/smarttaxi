@@ -30,11 +30,11 @@ assert.match(documentService, /DOCUMENT_METADATA_COLUMNS/, "document lists must 
 
 assert.match(documentRoutes, /router\.get\("\/", requireAuth, requireRole\("DRIVER"\), resolveOwnDriver/, "listing own documents must require an authenticated driver");
 assert.match(documentRoutes, /router\.post\("\/", requireAuth, requireRole\("DRIVER"\), resolveOwnDriver, uploadDriverDocument/, "uploading own documents must require an authenticated driver");
-assert.match(documentRoutes, /driverApplicationDocumentsRouter\.post\(\s*"\/:applicationId\/documents",\s*rateLimit/, "application-scoped upload must be rate-limited since it is unauthenticated");
-assert.doesNotMatch(
+assert.match(documentRoutes, /driverApplicationDocumentsRouter\.post\(\s*"\/:applicationId\/documents",\s*requireAuth/, "application upload requires the applicant session");
+assert.match(
   documentRoutes.match(/driverApplicationDocumentsRouter\.post\([\s\S]*?\);/)?.[0] || "",
   /requireAuth/,
-  "application-scoped document upload must stay unauthenticated (no account exists yet)"
+  "application-scoped documents cannot be accessed with an ID alone"
 );
 assert.match(adminRoutes, /router\.patch\("\/driver-documents\/:id", requireAuth, requireRole\("OWNER"\)/, "document review must be staff only");
 

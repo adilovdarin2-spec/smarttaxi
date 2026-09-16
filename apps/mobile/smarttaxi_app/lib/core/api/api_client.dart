@@ -1502,6 +1502,27 @@ class ApiClient {
         .toList(growable: false);
   }
 
+  Future<Map<String, dynamic>?> getMyDriverApplication() async {
+    await _attachToken();
+    final response = await _dio.get<Map<String, dynamic>>('/api/admin/driver-applications/mine');
+    final data = response.data;
+    if (data == null || !data.containsKey('application')) {
+      throw const FormatException('Invalid application snapshot');
+    }
+    if (data['application'] == null) return null;
+    final application = Map<String, dynamic>.from(data['application']);
+    if (application['id'] is! String || !['PENDING', 'APPROVED', 'NEEDS_INFO', 'REJECTED'].contains(application['status'])) {
+      throw const FormatException('Invalid application snapshot');
+    }
+    return application;
+  }
+
+  Future<List<DriverDocument>> getDriverApplicationDocuments(String id) async {
+    await _attachToken();
+    final response = await _dio.get<dynamic>('/api/driver-applications/$id/documents');
+    return _extractList(response.data, 'documents').map(DriverDocument.fromJson).toList();
+  }
+
   Future<String> submitDriverApplication({
     required String fullName,
     required String phone,
@@ -1511,6 +1532,7 @@ class ApiClient {
     int? year,
     String comment = '',
   }) async {
+    await _attachToken();
     final response = await _dio
         .post<Map<String, dynamic>>('/api/admin/driver-applications', data: {
       'fullName': fullName,
@@ -1531,6 +1553,7 @@ class ApiClient {
     required String type,
     required String filePath,
   }) async {
+    await _attachToken();
     final fileName = filePath.split(RegExp(r'[\\/]')).last;
     final response = await _dio.post<Map<String, dynamic>>(
       '/api/driver-applications/$applicationId/documents',

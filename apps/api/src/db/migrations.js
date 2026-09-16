@@ -9,6 +9,10 @@ import { REGION_SEED } from "../modules/routing/region-geo.js";
 const sqlText = (value) => `'${String(value).replace(/'/g, "''")}'`;
 
 const statements = [
+  "ALTER TABLE driver_applications ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL",
+  "ALTER TABLE driver_applications ADD COLUMN IF NOT EXISTS driver_id UUID REFERENCES drivers(id) ON DELETE SET NULL",
+  "ALTER TABLE driver_applications ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
+  "CREATE UNIQUE INDEX IF NOT EXISTS driver_applications_open_user ON driver_applications(user_id) WHERE user_id IS NOT NULL AND status IN ('PENDING','NEEDS_INFO','APPROVED')",
   `CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`,
   `CREATE TABLE IF NOT EXISTS auth_sms_codes (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
