@@ -1,11 +1,11 @@
 {
-    "name": "SmartTaxi",
-    "short_name": "SmartTaxi",
+    "name": "BaiSapar",
+    "short_name": "BaiSapar",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#080D12",
-    "theme_color": "#D4AF37",
-    "description": "SmartTaxi regional taxi app for passengers and drivers.",
+    "background_color": "#0B4FD1",
+    "theme_color": "#1D6FFF",
+    "description": "BaiSapar — такси для пассажиров и водителей.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

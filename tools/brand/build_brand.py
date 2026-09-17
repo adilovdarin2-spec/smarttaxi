@@ -1,27 +1,25 @@
-"""Builds every BaiSapar asset from Inter Black's outlines.
+"""Build the BaiSapar road monogram and outlined logotype from one master.
 
-One source of truth: the B in the app icon and the B in the logotype are the
-same letterform, so the mark reads as the first letter of the name and not as
-a separate drawing. Everything is emitted as outlines — no shipped asset
-depends on a font being present where it is rendered.
+The custom mark is independent of typography. All launcher masks, notification
+resources, web logos and raster exports share the same road silhouette.
 """
-import json, math, os, pathlib
+import pathlib
 from fontTools.ttLib import TTFont
 from fontTools.varLib.instancer import instantiateVariableFont
 from fontTools.pens.svgPathPen import SVGPathPen
 from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.boundsPen import BoundsPen
+from fontTools.svgLib.path import parse_path
 import pathops
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC = ROOT / "apps/mobile/smarttaxi_app/assets/fonts/InterVariable.ttf"
-inst = instantiateVariableFont(TTFont(SRC), {"wght": 900, "opsz": 32}, inplace=False)
+inst = instantiateVariableFont(TTFont(SRC), {"wght": 750, "opsz": 32}, inplace=False)
 gs, cmap, hmtx = inst.getGlyphSet(), inst.getBestCmap(), inst["hmtx"]
 
-FIELD0, FIELD1 = "#1E4FD0", "#12307A"
-GOLD0, GOLD1 = "#FFD24A", "#FFAE1A"
-INK = "#0C1F52"
-SLICE_ANGLE = -10
+FIELD0, FIELD1 = "#1D6FFF", "#0B4FD1"
+MARK0, MARK1 = "#FFFFFF", "#FFFFFF"
+INK = "#10264B"
 
 def draw(ch, pen): gs[cmap[ord(ch)]].draw(pen)
 def bbox(ch):
@@ -31,26 +29,29 @@ def d_of(path, prec=2):
     path.draw(pen); return pen.getCommands()
 
 def mark(cap, cx, cy, gap):
-    """The B with the road cut through it, as one outline."""
-    x0, y0, x1, y1 = bbox("B")
-    s = cap / (y1 - y0)
-    p = pathops.Path()
-    draw("B", TransformPen(p.getPen(glyphSet=gs),
-         (s, 0, 0, -s, cx - s * (x0 + x1) / 2, cy + s * (y0 + y1) / 2)))
-    if not gap:
-        return d_of(p)
-    band = pathops.Path(); pen = band.getPen(glyphSet=gs)
-    a = math.radians(SLICE_ANGLE); ca, sa = math.cos(a), math.sin(a)
-    corners = [(-1600, -gap/2), (1600, -gap/2), (1600, gap/2), (-1600, gap/2)]
-    pts = [(cx + px*ca - py*sa, cy + px*sa + py*ca) for px, py in corners]
-    pen.moveTo(pts[0])
-    for q in pts[1:]: pen.lineTo(q)
-    pen.closePath()
-    out = pathops.Path()
-    pathops.difference(list(p.contours), list(band.contours), out.getPen(glyphSet=gs))
-    return d_of(out)
+    """Original B/S road silhouette, optically centered, in a 512-unit master.
 
-MARK_ICON = mark(610, 512, 512, 46)          # legacy/square icon
+    Two broad shapes describe the B bowls and a continuous winding road in
+    negative space. There are no hairlines or detached decoration at small sizes.
+    `gap` is retained for compatibility with the existing generator callers.
+    """
+    master = (
+        "M32 0H284C400 0 480 60 480 150 "
+        "C480 218 445 267 398 294 "
+        "C468 322 512 377 512 439C512 469 500 495 480 512 "
+        "C492 449 454 409 378 374L305 340 "
+        "C260 319 250 307 250 289C250 264 280 250 307 235 "
+        "C349 213 369 195 369 174C369 151 348 140 310 140H32Z "
+        "M0 512V356C0 267 109 237 332 214 "
+        "C307 236 261 252 217 277C157 311 154 342 186 377 "
+        "C225 419 261 452 256 512Z"
+    )
+    s = cap / 512
+    p = pathops.Path()
+    parse_path(master, TransformPen(p.getPen(), (s, 0, 0, s, cx-cap/2, cy-cap/2)))
+    return d_of(p)
+
+MARK_ICON = mark(560, 512, 512, 46)          # legacy/square icon
 # Smaller than the square icon's: what a launcher shows of an adaptive icon is
 # the middle 72dp of 108, and at 470 the B pressed against the edge of a round
 # mask. Checked against circle, squircle and rounded-square masks.
@@ -62,29 +63,27 @@ DEFS = f'''  <defs>
     <linearGradient id="fld" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="{FIELD0}"/><stop offset="1" stop-color="{FIELD1}"/>
     </linearGradient>
-    <linearGradient id="gold" x1="0.12" y1="0" x2="0.88" y2="1">
-      <stop offset="0" stop-color="{GOLD0}"/><stop offset="1" stop-color="{GOLD1}"/>
+    <linearGradient id="mark" x1="0.12" y1="0" x2="0.88" y2="1">
+      <stop offset="0" stop-color="{MARK0}"/><stop offset="1" stop-color="{MARK1}"/>
     </linearGradient>
   </defs>
 '''
-NOTE = ('  <!-- BaiSapar. The mark is the name\'s own B (Inter Black, outlined) with\n'
-        '       one slanted gap through it: the road. This file IS the artwork —\n'
-        '       it is not text, and re-typesetting it will not reproduce it. -->\n')
+NOTE = '  <!-- BaiSapar road monogram. Generated from tools/brand/build_brand.py. -->\n'
 
 def icon_svg(round_=False):
     shape = ('<circle cx="512" cy="512" r="512" fill="url(#fld)"/>' if round_ else
              '<rect width="1024" height="1024" rx="232" fill="url(#fld)"/>')
     return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"'
             ' role="img" aria-label="BaiSapar">\n  <title>BaiSapar</title>\n' + NOTE + DEFS
-            + f'  {shape}\n  <path d="{MARK_ICON}" fill="url(#gold)"/>\n</svg>\n')
+            + f'  {shape}\n  <path d="{MARK_ICON}" fill="url(#mark)"/>\n</svg>\n')
 
-def mark_svg(fill="url(#gold)"):
+def mark_svg(fill=FIELD0):
     return ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"'
             ' role="img" aria-label="BaiSapar">\n  <title>BaiSapar</title>\n' + DEFS
             + f'  <path d="{MARK_ALONE}" fill="{fill}"/>\n</svg>\n')
 
 # ------------------------------------------------------------------ logotype
-TRACK = -34
+TRACK = -22
 def typeset(text="BaiSapar"):
     x, out = 0, []
     for ch in text:
@@ -107,7 +106,7 @@ def wordmark_svg(first, second, h=200):
         f'  <path d="{d}" fill="{first if x < S_X else second}"/>' for ch, x, d in GLYPHS)
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{VB[0]} {VB[1]} {VB[2]} {VB[3]}"'
             f' width="{w}" height="{h}" role="img" aria-label="BaiSapar">\n  <title>BaiSapar</title>\n'
-            '  <!-- Inter Black, outlined and tracked by hand. Artwork, not text. -->\n'
+            '  <!-- Inter 750, outlined. No installed font required. -->\n'
             + body + "\n</svg>\n")
 
 def lockup_svg(first, second, h=200):
@@ -126,7 +125,7 @@ def lockup_svg(first, second, h=200):
             + DEFS
             + f'  <g transform="translate(0,{vb[1]:.1f}) scale({scale:.5f})">\n'
               f'    <rect width="1024" height="1024" rx="232" fill="url(#fld)"/>\n'
-              f'    <path d="{MARK_ICON}" fill="url(#gold)"/>\n  </g>\n'
+              f'    <path d="{MARK_ICON}" fill="url(#mark)"/>\n  </g>\n'
             + f'  <g transform="translate({icon + gapx:.1f},0)">\n{words}\n  </g>\n</svg>\n')
 
 def feature_graphic():
@@ -151,7 +150,7 @@ def feature_graphic():
         + f'  <g transform="translate({x:.1f},250) scale({k:.5f})">\n'
         + f'    <g transform="translate(0,{-icon / 2:.1f}) scale({icon / 1024:.5f})">\n'
         + '      <rect width="1024" height="1024" rx="232" fill="#FFFFFF" fill-opacity="0.08"/>\n'
-        + f'      <path d="{MARK_ICON}" fill="url(#gold)"/>\n'
+        + f'      <path d="{MARK_ICON}" fill="url(#mark)"/>\n'
         + '    </g>\n'
         + f'    <g transform="translate({icon + gapx:.1f},{TOP / 2:.1f})">\n'
         + words + '\n    </g>\n  </g>\n</svg>\n')
@@ -203,7 +202,7 @@ BACKGROUND = f"""<?xml version="1.0" encoding="utf-8"?>
 """
 
 FOREGROUND = f"""<?xml version="1.0" encoding="utf-8"?>
-<!-- The name's own B with the road cut through it. Drawn smaller than the
+<!-- BaiSapar road monogram. Drawn smaller than the
      legacy square icon on purpose: only the middle 66% of an adaptive icon is
      guaranteed to survive the launcher's mask. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -218,8 +217,8 @@ FOREGROUND = f"""<?xml version="1.0" encoding="utf-8"?>
           android:type="linear"
           android:startX="300" android:startY="230"
           android:endX="760" android:endY="800">
-        <item android:offset="0" android:color="{GOLD0}"/>
-        <item android:offset="1" android:color="{GOLD1}"/>
+        <item android:offset="0" android:color="{MARK0}"/>
+        <item android:offset="1" android:color="{MARK1}"/>
       </gradient>
     </aapt:attr>
   </path>
