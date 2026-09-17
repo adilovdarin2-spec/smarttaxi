@@ -4410,7 +4410,12 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
         const native_map.FillLayerProperties(
           fillColor: '#9fb8d3',
           fillOpacity: 0.24,
-          fillTranslate: [1.2, 2],
+          // See passenger map: a two-number paint value must cross the Android
+          // MapLibre bridge as a literal rather than an expression.
+          fillTranslate: [
+            'literal',
+            [1.2, 2]
+          ],
           fillTranslateAnchor: 'viewport',
         ),
         sourceLayer: 'building',

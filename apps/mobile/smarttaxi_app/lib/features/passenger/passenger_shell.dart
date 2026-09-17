@@ -6683,7 +6683,13 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         const native_map.FillLayerProperties(
           fillColor: '#9fb8d3',
           fillOpacity: 0.24,
-          fillTranslate: [1.2, 2],
+          // MapLibre's Android bridge parses property arrays as expressions. Wrap the
+          // two-number translate value in `literal`, otherwise `[1.2, 2]` is treated
+          // as an invalid expression and the building-shadow layer fails at runtime.
+          fillTranslate: [
+            'literal',
+            [1.2, 2]
+          ],
           fillTranslateAnchor: 'viewport',
         ),
         sourceLayer: 'building',
