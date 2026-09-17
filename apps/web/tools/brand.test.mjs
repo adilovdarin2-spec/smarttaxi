@@ -35,9 +35,7 @@ test("the old brand name cannot come back split across markup", () => {
 
 test("in-product screens use the name without placing the app icon in content", () => {
   const client = read("../src/features/client/ClientApp.jsx");
-  const landing = read("../src/features/landing/LandingPage.jsx");
   assert.ok(client.includes('<span className="auth-brand-name">BaiSapar</span>'));
-  assert.ok(landing.includes('<span className="landing-brand-name">BaiSapar</span>'));
 
   for (const path of SOURCES) {
     const source = read(path);
@@ -68,6 +66,21 @@ test("in-product screens use the name without placing the app icon in content", 
     "../public/brand/baisapar_lockup.svg",
   ]) {
     assert.ok(!read(file).includes("<text"), `${file} must be outlines, not text`);
+  }
+});
+
+test("public landing uses the new identity and links directly to the taxi app", () => {
+  const landing = read("../src/features/landing/LandingPage.jsx");
+  assert.ok(landing.includes('src="/brand/baisapar_lockup.svg"'));
+  assert.ok(landing.includes('children = "В путь"'));
+  assert.ok(landing.includes('href="/order">{children}'));
+  assert.ok(landing.includes('href="/driver"'));
+  for (const [, asset] of landing.matchAll(/src="([^"]+)"/g)) {
+    assert.ok(exists(`../public${asset}`), `landing asset missing: ${asset}`);
+  }
+  const ids = new Set([...landing.matchAll(/\bid="([^"]+)"/g)].map((match) => match[1]));
+  for (const [, anchor] of landing.matchAll(/href="#([^"]+)"/g)) {
+    assert.ok(ids.has(anchor), `landing anchor missing: ${anchor}`);
   }
 });
 
