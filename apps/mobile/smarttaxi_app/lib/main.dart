@@ -2306,17 +2306,18 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
 
   _AuthMessageKind _photoAuthError(Object error) {
     final message = error.toString();
-    if (message.contains('INVALID_CREDENTIALS') ||
-        message.contains('401') ||
-        message.contains('403')) {
+    // A blocked driver is a valid account with a valid password. Check the
+    // explicit backend code before the generic HTTP status so a 403 never
+    // masquerades as "wrong password".
+    if (message.contains('DRIVER_BLOCKED')) {
+      return _AuthMessageKind.driverAccountBlocked;
+    }
+    if (message.contains('INVALID_CREDENTIALS') || message.contains('401')) {
       return _AuthMessageKind.invalidPhoneOrPassword;
     }
     if (message.contains('PHONE_EXISTS') ||
         message.contains('USER_ALREADY_EXISTS')) {
       return _AuthMessageKind.phoneAlreadyRegistered;
-    }
-    if (message.contains('DRIVER_BLOCKED')) {
-      return _AuthMessageKind.driverAccountBlocked;
     }
     if (message.contains('NAME_REQUIRED')) {
       return _AuthMessageKind.validateEnterName;

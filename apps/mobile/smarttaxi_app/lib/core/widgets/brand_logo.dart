@@ -11,6 +11,8 @@ class BrandLogo extends StatelessWidget {
   });
 
   static const iconAssetPath = 'assets/brand/baisapar_app_icon.png';
+  static const wordmarkLightAssetPath =
+      'assets/brand/baisapar_wordmark_light.png';
 
   final bool large;
 

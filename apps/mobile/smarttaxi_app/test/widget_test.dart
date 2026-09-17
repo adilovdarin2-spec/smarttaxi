@@ -247,6 +247,18 @@ void main() {
     expect(main, isNot(contains('E' 'mail, если вход по ' 'email')));
   });
 
+  test('auth errors do not present every forbidden response as wrong password',
+      () {
+    final main = _read('lib/main.dart');
+    final mapperStart = main.indexOf('_AuthMessageKind _photoAuthError');
+    final mapperEnd = main.indexOf('@override', mapperStart);
+    final mapper = main.substring(mapperStart, mapperEnd);
+
+    expect(mapper.indexOf("message.contains('DRIVER_BLOCKED')"),
+        lessThan(mapper.indexOf("message.contains('401')")));
+    expect(mapper, isNot(contains("message.contains('403')")));
+  });
+
   test(
     'passenger home has map, order sheet, route, tariff, price, and action',
     () {

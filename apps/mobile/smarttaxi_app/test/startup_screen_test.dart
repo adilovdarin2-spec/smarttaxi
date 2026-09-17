@@ -7,7 +7,7 @@ import 'package:smarttaxi_app/l10n/app_localizations.dart';
 void main() {
   for (final language in ['ru', 'kk']) {
     for (final scale in [1.0, 2.0]) {
-      testWidgets('Startup mark and feedback fit 360/$language/$scale',
+      testWidgets('Premium startup content fits 360/$language/$scale',
           (tester) async {
         tester.view.physicalSize = const Size(360, 640);
         tester.view.devicePixelRatio = 1;
@@ -26,9 +26,15 @@ void main() {
           home: const StartupScreen(),
         ));
         await tester.pump();
-        expect(tester.getSize(find.byType(Image)), const Size(96, 96));
-        final loader = tester.getRect(find.byType(CircularProgressIndicator));
-        expect(loader.bottom, lessThan(640));
+        expect(
+          tester.getSize(find.byKey(const ValueKey('startup-brand-icon'))),
+          const Size(148, 148),
+        );
+        expect(find.byKey(const ValueKey('startup-wordmark')), findsOneWidget);
+        final loader = tester.getRect(find.byType(LinearProgressIndicator));
+        expect(loader.bottom, lessThanOrEqualTo(616));
+        expect(loader.left, greaterThanOrEqualTo(28));
+        expect(loader.right, lessThanOrEqualTo(332));
         expect(tester.takeException(), isNull);
       });
     }
