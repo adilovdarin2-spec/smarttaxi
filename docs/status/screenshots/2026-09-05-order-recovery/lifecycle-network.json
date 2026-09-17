@@ -1,0 +1,230 @@
+{
+  "web": "http://127.0.0.1:5175",
+  "api": "http://127.0.0.1:4001",
+  "frontendMode": "built-web",
+  "fixture": "Simulated browser geolocation; real local authenticated APIs and OSRM responses",
+  "locations": [
+    {
+      "status": 200,
+      "at": 1788628610464,
+      "location": {
+        "orderId": null,
+        "driverId": "ef4f5a0a-e7f0-42ed-a0ae-eab0f81e365f",
+        "regionId": "18d8439f-dda1-42a2-9073-0290f4fec109",
+        "lat": 40.8458,
+        "lng": 68.5041,
+        "heading": null,
+        "speed": null,
+        "accuracy": 8,
+        "tripDistanceM": null,
+        "updatedAt": "2026-09-05T17:16:50.451Z"
+      }
+    },
+    {
+      "status": 200,
+      "at": 1788628621137,
+      "location": {
+        "orderId": "4caf7829-9850-4f35-ae93-2b5ac6025449",
+        "driverId": "ef4f5a0a-e7f0-42ed-a0ae-eab0f81e365f",
+        "regionId": "18d8439f-dda1-42a2-9073-0290f4fec109",
+        "lat": 40.8458,
+        "lng": 68.5041,
+        "heading": null,
+        "speed": null,
+        "accuracy": 8,
+        "tripDistanceM": null,
+        "updatedAt": "2026-09-05T17:17:01.072Z"
+      }
+    },
+    {
+      "status": 200,
+      "at": 1788628638182,
+      "location": {
+        "orderId": "4caf7829-9850-4f35-ae93-2b5ac6025449",
+        "driverId": "ef4f5a0a-e7f0-42ed-a0ae-eab0f81e365f",
+        "regionId": "18d8439f-dda1-42a2-9073-0290f4fec109",
+        "lat": 40.8458,
+        "lng": 68.5044,
+        "heading": null,
+        "speed": null,
+        "accuracy": 8,
+        "tripDistanceM": null,
+        "updatedAt": "2026-09-05T17:17:18.165Z"
+      }
+    },
+    {
+      "status": 200,
+      "at": 1788628641311,
+      "location": {
+        "orderId": "4caf7829-9850-4f35-ae93-2b5ac6025449",
+        "driverId": "ef4f5a0a-e7f0-42ed-a0ae-eab0f81e365f",
+        "regionId": "18d8439f-dda1-42a2-9073-0290f4fec109",
+        "lat": 40.8458,
+        "lng": 68.5045,
+        "heading": null,
+        "speed": null,
+        "accuracy": 8,
+        "tripDistanceM": null,
+        "updatedAt": "2026-09-05T17:17:21.208Z"
+      }
+    },
+    {
+      "status": 200,
+      "at": 1788628659621,
+      "location": {
+        "orderId": null,
+        "driverId": "ef4f5a0a-e7f0-42ed-a0ae-eab0f81e365f",
+        "regionId": "18d8439f-dda1-42a2-9073-0290f4fec109",
+        "lat": 40.8458,
+        "lng": 68.5045,
+        "heading": null,
+        "speed": null,
+        "accuracy": 8,
+        "tripDistanceM": null,
+        "updatedAt": "2026-09-05T17:17:39.535Z"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "browser": "driver",
+      "status": 200,
+      "at": 1788628617391,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5041,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 5,
+      "distanceMeters": 169,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "passenger",
+      "status": 200,
+      "at": 1788628617498,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5041,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 5,
+      "distanceMeters": 169,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "driver",
+      "status": 200,
+      "at": 1788628624931,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5041,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 5,
+      "distanceMeters": 169,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "passenger",
+      "status": 200,
+      "at": 1788628624961,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5041,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 5,
+      "distanceMeters": 169,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "passenger",
+      "status": 200,
+      "at": 1788628638829,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5044,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 3,
+      "distanceMeters": 53,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "driver",
+      "status": 200,
+      "at": 1788628638835,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5044,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 3,
+      "distanceMeters": 53,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "passenger",
+      "status": 200,
+      "at": 1788628646726,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5045,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 3,
+      "distanceMeters": 54,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "driver",
+      "status": 200,
+      "at": 1788628646751,
+      "phase": "to_pickup",
+      "driverLat": 40.8458,
+      "driverLng": 68.5045,
+      "targetLat": 40.84621,
+      "targetLng": 68.50486,
+      "points": 3,
+      "distanceMeters": 54,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "passenger",
+      "status": 200,
+      "at": 1788628653341,
+      "phase": "to_dropoff",
+      "driverLat": 40.8458,
+      "driverLng": 68.5045,
+      "targetLat": 40.844435,
+      "targetLng": 68.509021,
+      "points": 13,
+      "distanceMeters": 808,
+      "fallback": false,
+      "providerStatus": "Ok"
+    },
+    {
+      "browser": "driver",
+      "status": 200,
+      "at": 1788628653373,
+      "phase": "to_dropoff",
+      "driverLat": 40.8458,
+      "driverLng": 68.5045,
+      "targetLat": 40.844435,
+      "targetLng": 68.509021,
+      "points": 13,
+      "distanceMeters": 808,
+      "fallback": false,
+      "providerStatus": "Ok"
+    }
+  ]
+}

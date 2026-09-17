@@ -1,0 +1,8 @@
+<svg width="96" height="128" viewBox="0 0 96 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+<filter id="s" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000" flood-opacity=".18"/></filter>
+<g filter="url(#s)">
+<path d="M48 120C48 120 18 80 18 46C18 29 31 16 48 16C65 16 78 29 78 46C78 80 48 120 48 120Z" fill="#1D6FFF"/>
+<circle cx="48" cy="46" r="23" fill="white"/>
+<circle cx="48" cy="46" r="9" fill="#111111"/>
+<circle cx="48" cy="120" r="6" fill="#1D6FFF"/>
+</g></svg>

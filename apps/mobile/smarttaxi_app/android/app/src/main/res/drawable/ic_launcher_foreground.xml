@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- BaiSapar road monogram. Drawn smaller than the
+     legacy square icon on purpose: only the middle 66% of an adaptive icon is
+     guaranteed to survive the launcher's mask. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+  <path android:pathData="M323.88 297H535.52C632.94 297 700.12 347.39 700.12 422.98C700.12 480.09 670.73 521.24 631.26 543.91C690.05 567.43 727 613.62 727 665.69C727 690.89 716.92 712.72 700.12 727C710.2 674.09 678.29 640.5 614.46 611.1L553.15 582.55C515.36 564.91 506.96 554.83 506.96 539.71C506.96 518.72 532.16 506.96 554.83 494.36C590.11 475.89 606.9 460.77 606.9 443.13C606.9 423.82 589.27 414.58 557.35 414.58H323.88V297ZM297 727V595.98C297 521.24 388.54 496.04 575.83 476.73C554.83 495.2 516.2 508.64 479.25 529.64C428.86 558.19 426.34 584.23 453.21 613.62C485.96 648.89 516.2 676.61 512 727H297Z">
+    <aapt:attr name="android:fillColor">
+      <gradient
+          android:type="linear"
+          android:startX="300" android:startY="230"
+          android:endX="760" android:endY="800">
+        <item android:offset="0" android:color="#FFFFFF"/>
+        <item android:offset="1" android:color="#FFFFFF"/>
+      </gradient>
+    </aapt:attr>
+  </path>
+</vector>

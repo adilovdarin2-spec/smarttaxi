@@ -1,0 +1,15 @@
+{
+  "environment": "local development",
+  "apiOrigin": "http://127.0.0.1:4001",
+  "status": "passed",
+  "capabilities": { "cardBinding": false, "topUp": false },
+  "rejectedBeforeValidation": ["cards", "topup-requests"],
+  "cardsUnchanged": true,
+  "topupsUnchanged": true,
+  "cardsCount": 0,
+  "topupsCount": 0,
+  "readinessAt": "2026-09-09T17:02:55.830Z",
+  "readiness": { "db": "ok", "redis": "PONG", "osrm": "ok", "maptiler": "not_configured" },
+  "realFinancialWrites": 0,
+  "phoneInstallAttempted": false
+}

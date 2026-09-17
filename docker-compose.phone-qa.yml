@@ -1,0 +1,15 @@
+services:
+  api:
+    ports:
+      - "${SMARTTAXI_PHONE_QA_BIND_HOST:?Set SMARTTAXI_PHONE_QA_BIND_HOST to the private LAN address}:${SMARTTAXI_PHONE_QA_API_PORT:-4002}:4000"
+    environment:
+      # The native app does not go through CORS, but the web app served on the
+      # same private LAN does — without its origin here, opening the QA web
+      # build from a phone or laptop on this network fails every request with
+      # no visible cause. Loopback origins stay allowed for the local stack.
+      CORS_ORIGINS: >-
+        http://localhost:5173,http://127.0.0.1:5173,http://localhost:5175,http://127.0.0.1:5175,http://${SMARTTAXI_PHONE_QA_BIND_HOST}:${SMARTTAXI_PHONE_QA_WEB_PORT:-5176},${SMARTTAXI_PUBLIC_WEB_ORIGIN:-http://localhost:5176}
+
+  web:
+    ports:
+      - "${SMARTTAXI_PHONE_QA_BIND_HOST:?Set SMARTTAXI_PHONE_QA_BIND_HOST to the private LAN address}:${SMARTTAXI_PHONE_QA_WEB_PORT:-5176}:80"

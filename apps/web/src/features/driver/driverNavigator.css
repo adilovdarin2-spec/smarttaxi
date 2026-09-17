@@ -1,0 +1,58 @@
+.phone-frame.driver-navigation-phone { height: 100svh; min-height: 0; max-height: 100svh; margin: 0 auto; padding: 0; overflow: hidden; background: #f3f7fc; border: 0; border-radius: 0; }
+.driver-navigator { display: grid; grid-template-rows: auto minmax(100px, 1fr) auto; height: 100%; color: #132540; text-align: left; }
+.driver-navigator button { font: inherit; cursor: pointer; }
+.driver-navigator button:focus-visible { outline: 3px solid #1d6fff; outline-offset: 3px; }
+.driver-navigator-top { padding: max(10px, env(safe-area-inset-top)) 14px 12px; max-height: 34svh; overflow-y: auto; background: #f3f7fc; z-index: 2; }
+.driver-navigator-toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.driver-navigator-toolbar > button { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #e1e9f3; border-radius: 15px; background: #fff; color: #132540; }
+.driver-navigator-toolbar > div { flex: 1; min-width: 0; }
+.driver-navigator-toolbar strong { display: block; font-size: 14px; line-height: 1.25; }
+.driver-navigator-toolbar div span { display: block; margin-top: 4px; font-size: 11px; color: #697c96; }
+.driver-navigator-gps { flex-shrink: 0; max-width: 80px; font-size: 10px; line-height: 1.3; font-weight: 700; color: #177659; text-align: right; }
+.driver-navigator-gps.uncertain { color: #946326; }
+.driver-navigator-maneuver { display: flex; align-items: center; gap: 14px; padding: 17px 16px; border-radius: 22px; background: linear-gradient(120deg, #1d6fff, #0b4fd1); color: white; box-shadow: 0 8px 22px #0b4fd117; }
+.driver-navigator-arrow { width: 58px; height: 64px; flex-shrink: 0; display: grid; place-items: center; background: #ffffff24; border-radius: 17px; }
+.driver-navigator-arrow svg { width: 38px; height: 38px; }
+.driver-navigator-maneuver > div { min-width: 0; }
+.driver-navigator-maneuver strong { font-size: clamp(23px, 7vw, 32px); line-height: 1.1; letter-spacing: -.8px; font-weight: 750; }
+.driver-navigator-maneuver h1 { margin: 7px 0 0; color: #fff; font-size: 15px; line-height: 1.3; font-weight: 650; letter-spacing: 0; }
+.driver-navigator-maneuver p { margin: 5px 0 0; font-size: 12px; line-height: 1.4; color: #eaf3ff; overflow-wrap: anywhere; }
+.driver-navigator-maneuver p:empty { display: none; }
+.driver-navigator-notice { padding: 15px; border: 1px solid #eddfc5; background: #fff8e9; color: #705225; border-radius: 19px; }
+.driver-navigator-notice > strong { font-size: 16px; }
+.driver-navigator-notice p { margin: 6px 0 0; font-size: 13px; line-height: 1.45; }
+.driver-navigator-notice button { margin-top: 10px; min-height: 40px; border: 1px solid #dac9a8; border-radius: 12px; background: #fff; color: #705225; padding: 8px 14px; font-weight: 650; }
+.driver-navigator-action-error { margin: 10px 0 0; padding: 10px 13px; border-radius: 12px; color: #9e2338; background: #fff0f2; font-size: 13px; line-height: 1.4; }
+.driver-navigator-map { min-height: 0; position: relative; overflow: hidden; }
+.driver-navigator-map .map-view.live-osm { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; border-radius: 0; margin: 0; }
+.driver-navigator .map-controls, .driver-navigator .map-badge, .driver-navigator .map-vignette { display: none; }
+.driver-navigator-recenter { position: absolute; bottom: 32px; right: 14px; display: flex; align-items: center; gap: 7px; min-height: 46px; padding: 10px 14px; border: 1px solid #dce6f5; background: #fff; border-radius: 16px; color: #165cd0; box-shadow: 0 4px 18px #173d6d17; z-index: 4; font-size: 12px !important; font-weight: 650 !important; }
+.driver-navigator-recenter:disabled { opacity: .55; cursor: default; }
+.driver-navigator-bottom { display: grid; grid-template-rows: minmax(0, 1fr) auto; background: white; z-index: 3; max-height: 38svh; overflow: hidden; padding: 16px 16px max(14px, env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; box-shadow: 0 -4px 20px #1c42780a; }
+.driver-navigator-trip-info { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.driver-navigator-target { display: flex; gap: 10px; align-items: center; padding-bottom: 14px; border-bottom: 1px solid #edf1f7; }
+.driver-navigator-target > svg { color: #1d6fff; flex-shrink: 0; }
+.driver-navigator-target > div { min-width: 0; }
+.driver-navigator-target small { display: block; color: #74849b; font-size: 11px; margin-bottom: 4px; }
+.driver-navigator-target strong { display: block; font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.driver-navigator-metrics { display: grid; grid-template-columns: 64px 1fr 1fr; align-items: center; gap: 13px; padding: 14px 0; }
+.driver-navigator-metrics-empty { margin: 0; padding: 12px 0; font-size: 12px; line-height: 1.4; color: #73859d; }
+.driver-navigator-metrics > div { min-width: 0; }
+.driver-navigator-metrics strong { display: block; font-size: clamp(19px, 5.5vw, 24px); line-height: 1.2; letter-spacing: -.6px; overflow-wrap: anywhere; }
+.driver-navigator-metrics small { display: block; color: #73859d; font-size: 11px; line-height: 1.3; margin-top: 4px; }
+.driver-navigator-speed { text-align: center; border: 2px solid #dbe7fb; border-radius: 19px; padding: 8px 4px; background: #f5f9ff; }
+.driver-navigator-speed strong { font-size: 27px; }
+.driver-navigator .app-button { width: 100%; min-height: 50px; border-radius: 16px; }
+.driver-navigator .native-map-marker.driver-marker { width: 32px !important; height: 32px !important; background: none !important; border: 0 !important; box-shadow: none !important; }
+.driver-navigator .native-map-marker.driver-marker img { width: 100%; height: 100%; object-fit: contain; transform: none !important; }
+.driver-navigator .finish-flag-map-marker { width: 38px; height: 50px; }
+.driver-navigator .finish-flag-marker-badge, .driver-navigator .finish-flag-marker-badge svg { display: block; width: 38px; height: 50px; }
+@media (max-height: 650px) {
+  .driver-navigator.has-navigation-notice .driver-navigator-top { max-height: 44svh; }
+  .driver-navigator-top { padding-top: 8px; padding-bottom: 8px; }
+  .driver-navigator-toolbar { margin-bottom: 8px; }
+  .driver-navigator-maneuver { padding: 12px; }
+  .driver-navigator-bottom { padding-top: 12px; max-height: 45svh; }
+  .driver-navigator-target { padding-bottom: 10px; }
+  .driver-navigator-metrics { padding: 10px 0; }
+}

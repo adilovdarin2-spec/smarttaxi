@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="BaiSapar">
+  <title>BaiSapar</title>
+  <defs>
+    <linearGradient id="fld" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1D6FFF"/><stop offset="1" stop-color="#0B4FD1"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="0.12" y1="0" x2="0.88" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#FFFFFF"/>
+    </linearGradient>
+  </defs>
+  <path d="M127 72H560.12C759.5 72 897 175.12 897 329.81C897 446.69 836.84 530.91 756.06 577.31C876.38 625.44 952 719.97 952 826.53C952 878.09 931.38 922.78 897 952C917.62 843.72 852.31 774.97 721.69 714.81L596.22 656.38C518.88 620.28 501.69 599.66 501.69 568.72C501.69 525.75 553.25 501.69 599.66 475.91C671.84 438.09 706.22 407.16 706.22 371.06C706.22 331.53 670.12 312.62 604.81 312.62H127V72ZM72 952V683.88C72 530.91 259.34 479.34 642.62 439.81C599.66 477.62 520.59 505.12 444.97 548.09C341.84 606.53 336.69 659.81 391.69 719.97C458.72 792.16 520.59 848.88 512 952H72Z" fill="#FFFFFF"/>
+</svg>

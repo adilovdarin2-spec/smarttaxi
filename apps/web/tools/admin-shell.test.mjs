@@ -1,0 +1,45 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import { createElement as h } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { fileURLToPath } from "node:url";
+import { createServer } from "vite";
+
+test("admin loading and login use a centered full-viewport access shell", async () => {
+  const previousWindow = globalThis.window;
+  globalThis.window = { location: { hostname: "127.0.0.1" } };
+  const root = fileURLToPath(new URL("..", import.meta.url));
+  const server = await createServer({
+    root,
+    server: { middlewareMode: true, hmr: false, ws: false },
+    appType: "custom",
+    optimizeDeps: { noDiscovery: true },
+  });
+  try {
+    const { default: AdminApp, DriverDocumentCard } = await server.ssrLoadModule("/src/features/admin/AdminApp.jsx");
+    const markup = renderToStaticMarkup(h(AdminApp));
+    assert.match(markup, /class="admin-control-shell admin-access-shell"/);
+    assert.match(markup, /Проверяем сессию/);
+    for (const status of ['PENDING', 'APPROVED', 'REJECTED']) {
+      const document = renderToStaticMarkup(h(DriverDocumentCard, {
+        document: { id: 'local-test', type: 'OTHER', originalFilename: 'QA-ONLY.pdf', status, rejectionReason: 'Переснимите документ' },
+        mode: 'application', onReview() {}, busy: false,
+      }));
+      assert.match(document, /QA-ONLY.pdf/);
+      assert.match(document, /admin-document-card/);
+      if (status === 'REJECTED') assert.match(document, /Переснимите документ/);
+    }
+
+    const css = await readFile(new URL("../src/styles.css", import.meta.url), "utf8");
+    assert.match(css, /\.admin-control-shell\.admin-access-shell\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*place-items:\s*center/s);
+    assert.match(css, /\.admin-login-form\s*\{[^}]*width:\s*min\(100%, 360px\)/s);
+    assert.match(css, /\.admin-road-alert-card header,\s*\.admin-detail-hero\s*\{[^}]*display:\s*flex/s);
+    assert.match(css, /\.admin-road-alert-card header strong,\s*\.admin-detail-hero h2\s*\{[^}]*display:\s*block/s);
+    assert.match(css, /\.admin-road-alert-card header span,\s*\.admin-detail-hero p\s*\{[^}]*display:\s*block/s);
+  } finally {
+    await server.close();
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+  }
+});
