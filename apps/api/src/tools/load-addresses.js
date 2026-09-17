@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import readline from "node:readline";
 import zlib from "node:zlib";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { query } from "../db/pool.js";
@@ -47,7 +48,7 @@ function searchTextFor(row) {
   return unique.join(" · ");
 }
 
-async function flush(regionId, batch) {
+async function flush(regionId, batch, executor = query) {
   if (!batch.length) return 0;
   // One statement per batch rather than per row: at ~27k rows a region, a
   // round trip each would dominate the load time.
@@ -81,11 +82,11 @@ async function flush(regionId, batch) {
       search_text=EXCLUDED.search_text, street=EXCLUDED.street,
       housenumber=EXCLUDED.housenumber, name=EXCLUDED.name,
       lat=EXCLUDED.lat, lng=EXCLUDED.lng, updated_at=NOW()`;
-  await query(sql, params);
+  await executor(sql, params);
   return batch.length;
 }
 
-async function flushOfficial(regionId, batch) {
+async function flushOfficial(regionId, batch, executor = query) {
   if (!batch.length) return 0;
   const columns = 11;
   const tuples = [];
@@ -98,7 +99,7 @@ async function flushOfficial(regionId, batch) {
       row.name, row.lat, row.lng, OFFICIAL_ADDRESS_TYPE, row.rka
     );
   }
-  await query(`
+  await executor(`
     INSERT INTO addresses(region_id, kind, label, search_text, street, housenumber, name, lat, lng, osm_type, osm_id)
     VALUES ${tuples.join(",")}
     ON CONFLICT (osm_type, osm_id) DO UPDATE SET
@@ -109,16 +110,16 @@ async function flushOfficial(regionId, batch) {
   return batch.length;
 }
 
-async function loadOfficialAddresses(regionId, regionCode, log) {
+async function loadOfficialAddresses(regionId, regionCode, log, executor = query) {
   const snapshot = readOfficialAddressSnapshot(regionCode);
   if (snapshot === null) return 0;
   const { rows, metadata } = snapshot;
   const startedAt = new Date().toISOString();
   let written = 0;
   for (let start = 0; start < rows.length; start += BATCH_SIZE) {
-    written += await flushOfficial(regionId, rows.slice(start, start + BATCH_SIZE));
+    written += await flushOfficial(regionId, rows.slice(start, start + BATCH_SIZE), executor);
   }
-  const removed = await query(
+  const removed = await executor(
     "DELETE FROM addresses WHERE region_id=$1 AND osm_type=$2 AND updated_at < $3",
     [regionId, OFFICIAL_ADDRESS_TYPE, startedAt]
   );
@@ -127,7 +128,7 @@ async function loadOfficialAddresses(regionId, regionCode, log) {
   return written;
 }
 
-async function loadFile(file, regionId, regionCode) {
+async function loadFile(file, regionId, regionCode, executor = query) {
   // Harvest files are gzipped (see harvest-addresses.js); a plain .jsonl is
   // still accepted so a file dropped in by hand also loads.
   const raw = fs.createReadStream(file);
@@ -155,11 +156,11 @@ async function loadFile(file, regionId, regionCode) {
     if (serviceRegionCode(row.lat, row.lng) !== regionCode) continue;
     batch.push(row);
     if (batch.length >= BATCH_SIZE) {
-      written += await flush(regionId, batch);
+      written += await flush(regionId, batch, executor);
       batch = [];
     }
   }
-  written += await flush(regionId, batch);
+  written += await flush(regionId, batch, executor);
   return written;
 }
 
@@ -168,19 +169,28 @@ async function loadFile(file, regionId, regionCode) {
 // instead of synchronously gunzipping 1.9 MB inside a process that is
 // already serving requests. Counting the file is the fallback for a file
 // dropped in by hand with no manifest entry.
-let manifestCounts = null;
+let manifestData = null;
+
+function addressManifest() {
+  if (manifestData !== null) return manifestData;
+  try {
+    manifestData = JSON.parse(fs.readFileSync(path.join(DATA_DIR, "manifest.json"), "utf8"));
+  } catch {
+    manifestData = {};
+  }
+  return manifestData;
+}
 
 function manifestCountFor(name) {
-  if (manifestCounts === null) {
-    try {
-      manifestCounts = JSON.parse(
-        fs.readFileSync(path.join(DATA_DIR, "manifest.json"), "utf8")
-      ).counts || {};
-    } catch {
-      manifestCounts = {};
-    }
-  }
-  return manifestCounts[name];
+  return addressManifest().counts?.[name];
+}
+
+function manifestChecksumFor(name) {
+  return addressManifest().sha256?.[name];
+}
+
+function checksumFor(file) {
+  return createHash("sha256").update(fs.readFileSync(file)).digest("hex");
 }
 
 function countLines(file) {
@@ -193,11 +203,15 @@ function countLines(file) {
   return count;
 }
 
-/// Loads every harvested region whose file holds more rows than the database
-/// currently has for it. Returns the number of rows written.
+/// Loads every harvested region whose count or snapshot checksum differs from
+/// the database. Returns the number of rows written.
 ///
 /// `wantedCode` restricts the pass to one region.
-export async function loadHarvestedAddresses({ wantedCode = null, log = console.log } = {}) {
+export async function loadHarvestedAddresses({
+  wantedCode = null,
+  log = console.log,
+  executor = query
+} = {}) {
   if (!fs.existsSync(DATA_DIR)) {
     log(`[addresses] no data directory at ${DATA_DIR}, nothing to load`);
     return 0;
@@ -215,7 +229,7 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
   for (const name of files) {
     const code = name.replace(/\.jsonl(\.gz)?$/, "");
     const file = path.join(DATA_DIR, name);
-    const regions = await query("SELECT id, name FROM regions WHERE code=$1", [code]);
+    const regions = await executor("SELECT id, name FROM regions WHERE code=$1", [code]);
     const region = regions.rows[0];
     if (!region) {
       // A harvested region that does not exist in this environment is not an
@@ -224,27 +238,39 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
       continue;
     }
     const fileRows = manifestCountFor(name) ?? countLines(file);
-    const existing = await query(
+    const checksum = manifestChecksumFor(name) ?? checksumFor(file);
+    const existing = await executor(
       "SELECT COUNT(*)::int AS count FROM addresses WHERE region_id=$1 AND osm_type<>$2",
       [region.id, OFFICIAL_ADDRESS_TYPE]
     );
     const have = existing.rows[0]?.count || 0;
+    const applied = await executor(
+      "SELECT checksum, row_count FROM address_catalog_snapshots WHERE region_id=$1 AND source=$2",
+      [region.id, "osm"]
+    );
+    const snapshot = applied.rows[0];
+    const sameSnapshot = snapshot?.checksum === checksum
+      && Number(snapshot?.row_count) === fileRows;
     // Exact equality, not `have >= fileRows`. The count changes whenever the
     // nearest-centre rule reassigns rows between neighbouring regions, and
     // with `>=` a region that had *too many* rows (because it stole its
     // neighbour's overlap) would look satisfied and never be corrected. Any
     // mismatch in either direction means reload; the upsert then rewrites
-    // region_id and the two regions converge.
-    if (have === fileRows) {
+    // region_id and the two regions converge. Equal counts still reload when
+    // the checksum differs, because labels and search aliases may have changed.
+    if (have === fileRows && sameSnapshot) {
       log(`[addresses] ${region.name}: ${have} OSM rows already loaded, skipping`);
-      total += await loadOfficialAddresses(region.id, code, log);
+      total += await loadOfficialAddresses(region.id, code, log, executor);
       continue;
     }
-    log(`[addresses] ${region.name}: loading ${fileRows} rows (had ${have})`);
+    const reason = have !== fileRows
+      ? `row count changed (had ${have})`
+      : "snapshot checksum changed";
+    log(`[addresses] ${region.name}: loading ${fileRows} rows; ${reason}`);
     // Everything the file still contains is upserted with updated_at=NOW(),
     // so anything left with an older stamp is a row the file has dropped.
     const startedAt = new Date().toISOString();
-    const written = await loadFile(file, region.id, code);
+    const written = await loadFile(file, region.id, code, executor);
     // Without this the load is insert-only and the table can never shrink.
     // That is not theoretical: cutting the service area at the Uzbek border
     // removed ~7 000 rows from the files, and production went on serving
@@ -252,15 +278,24 @@ export async function loadHarvestedAddresses({ wantedCode = null, log = console.
     // nothing ever deleted them. Rows reassigned to a neighbouring region
     // are not caught here — they carry a fresh stamp under their new
     // region_id, which is exactly right.
-    const removed = await query(
+    const removed = await executor(
       "DELETE FROM addresses WHERE region_id=$1 AND osm_type<>$3 AND updated_at < $2",
       [region.id, startedAt, OFFICIAL_ADDRESS_TYPE]
     );
     if (removed.rowCount) {
       log(`[addresses] ${region.name}: ${removed.rowCount} stale rows removed`);
     }
+    await executor(
+      `INSERT INTO address_catalog_snapshots(region_id, source, checksum, row_count, applied_at)
+       VALUES ($1,$2,$3,$4,NOW())
+       ON CONFLICT (region_id, source) DO UPDATE SET
+         checksum=EXCLUDED.checksum,
+         row_count=EXCLUDED.row_count,
+         applied_at=NOW()`,
+      [region.id, "osm", checksum, fileRows]
+    );
     log(`[addresses] ${region.name}: ${written} rows written`);
-    total += written + await loadOfficialAddresses(region.id, code, log);
+    total += written + await loadOfficialAddresses(region.id, code, log, executor);
   }
   return total;
 }

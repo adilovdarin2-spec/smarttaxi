@@ -10,6 +10,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { REGION_GEO, serviceBoundaryForCode, serviceRegionCode } from "../modules/routing/region-geo.js";
@@ -68,9 +69,16 @@ const allRows = [];
 
 for (const name of files) {
   const file = path.join(DATA_DIR, name);
+  const compressed = fs.readFileSync(file);
+  const expectedChecksum = manifest.sha256?.[name];
+  if (!expectedChecksum) fail(`${name} has no SHA-256 manifest entry`);
+  const actualChecksum = createHash("sha256").update(compressed).digest("hex");
+  if (actualChecksum !== expectedChecksum) {
+    fail(`${name}: SHA-256 mismatch (manifest ${expectedChecksum}, actual ${actualChecksum})`);
+  }
   let text;
   try {
-    text = zlib.gunzipSync(fs.readFileSync(file)).toString("utf8");
+    text = zlib.gunzipSync(compressed).toString("utf8");
   } catch (error) {
     fail(`${name} does not decompress: ${error.message}`);
   }
@@ -130,6 +138,9 @@ for (const name of files) {
 
 for (const name of Object.keys(manifest.counts || {})) {
   if (!files.includes(name)) fail(`manifest lists ${name}, which is not on disk`);
+}
+for (const name of Object.keys(manifest.sha256 || {})) {
+  if (!files.includes(name)) fail(`checksum manifest lists ${name}, which is not on disk`);
 }
 
 // No service area may reach across the state border.

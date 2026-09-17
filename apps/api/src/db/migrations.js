@@ -910,6 +910,18 @@ const statements = [
   "ALTER TABLE addresses ADD COLUMN IF NOT EXISTS search_text TEXT",
   "UPDATE addresses SET search_text = label WHERE search_text IS NULL",
   "CREATE INDEX IF NOT EXISTS idx_addresses_search_trgm ON addresses USING gin(search_text gin_trgm_ops)",
+  // The row count alone cannot identify an address snapshot: names, kinds and
+  // search aliases can change while the number of OSM objects stays exactly
+  // the same. Store the applied file digest per region so a new catalogue is
+  // never skipped merely because its cardinality matches the old one.
+  `CREATE TABLE IF NOT EXISTS address_catalog_snapshots (
+    region_id UUID NOT NULL REFERENCES regions(id) ON DELETE CASCADE,
+    source TEXT NOT NULL,
+    checksum TEXT NOT NULL CHECK (checksum ~ '^[0-9a-f]{64}$'),
+    row_count INTEGER NOT NULL CHECK (row_count >= 0),
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY(region_id, source)
+  )`,
 
   // --- Intercity routes ---
   // Explicit, directional route configuration makes a cross-region booking

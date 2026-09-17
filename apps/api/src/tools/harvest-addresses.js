@@ -28,6 +28,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 import { serviceBoundaryForCode, serviceRegionCode } from "../modules/routing/region-geo.js";
@@ -119,12 +120,8 @@ function bboxOf(region) {
 }
 
 // `out center` gives ways a representative point without pulling geometry.
-function queriesFor(bbox) {
+export function queriesFor(bbox) {
   return [
-    {
-      kind: "housenumber",
-      body: `[out:json][timeout:180];(node["addr:housenumber"](${bbox});way["addr:housenumber"](${bbox}););out center tags;`
-    },
     {
       kind: "poi",
       // No ["name"] filter, and nwr rather than node+way.
@@ -136,11 +133,39 @@ function queriesFor(bbox) {
       // category word ("Аптека") instead of a name, and drops anything whose
       // category says nothing ("shop=yes"). nwr also catches the ones mapped
       // as multipolygon relations, which node+way missed entirely.
-      body: `[out:json][timeout:180];(nwr["amenity"](${bbox});nwr["shop"](${bbox}););out center tags;`
+      // Keep this class before housenumbers. The same OSM feature is often a
+      // shop/school/clinic *and* carries addr:housenumber. If the address class
+      // wins the identity de-duplication first, reverse geocoding can only say
+      // "street, house" and silently loses the building name the rider sees.
+      //
+      // Kazakhstan's rural POIs are not limited to amenity/shop. Offices,
+      // clinics, hotels, stations, sports facilities and public-service
+      // buildings use the other standard OSM keys below. Named man_made
+      // objects are included, while unnamed ones are intentionally skipped by
+      // labelFor() because "man_made=tower" is not a useful taxi destination.
+      body: `[out:json][timeout:180];(`
+        + `nwr["amenity"](${bbox});nwr["shop"](${bbox});`
+        + `nwr["tourism"](${bbox});nwr["office"](${bbox});`
+        + `nwr["leisure"](${bbox});nwr["healthcare"](${bbox});`
+        + `nwr["craft"](${bbox});nwr["public_transport"](${bbox});`
+        + `nwr["railway"~"^(station|halt|tram_stop)$"](${bbox});`
+        + `nwr["aeroway"~"^(aerodrome|terminal)$"](${bbox});`
+        + `nwr["historic"](${bbox});nwr["emergency"](${bbox});`
+        + `nwr["government"](${bbox});nwr["man_made"]["name"](${bbox});`
+        + `);out center tags;`
     },
     {
       kind: "building",
-      body: `[out:json][timeout:180];way["building"]["name"](${bbox});out center tags;`
+      // Multipolygon schools, markets and residential complexes are commonly
+      // relations rather than ways. `nwr` keeps all three geometry types.
+      body: `[out:json][timeout:180];nwr["building"]["name"](${bbox});out center tags;`
+    },
+    {
+      kind: "housenumber",
+      // Relations are uncommon but valid address carriers (for example a
+      // multipolygon complex). They used to be the only address geometry the
+      // harvester could never see.
+      body: `[out:json][timeout:180];nwr["addr:housenumber"](${bbox});out center tags;`
     },
     {
       kind: "street",
@@ -154,13 +179,19 @@ function queriesFor(bbox) {
 // usually carries one of them in `name` and sometimes the other in
 // `name:ru`/`name:kk`. Keeping every variant we are given means the search
 // index can match whichever form the rider happens to use.
-function nameVariants(tags) {
+export function nameVariants(tags) {
   const variants = [
     tags.name,
     tags["name:ru"],
     tags["name:kk"],
     tags["name:en"],
     tags.alt_name,
+    tags.official_name,
+    tags.short_name,
+    tags.loc_name,
+    tags.old_name,
+    tags.brand,
+    tags.operator,
     ...categoryWords(tags)
   ];
   const seen = new Set();
@@ -212,11 +243,43 @@ const CATEGORY_WORDS = {
   clothes: ["одежда", "киім"],
   hairdresser: ["парикмахерская", "шаштараз"],
   car_repair: ["автосервис", "СТО"],
-  car_wash: ["автомойка", "жуу"]
+  car_wash: ["автомойка", "жуу"],
+  hotel: ["гостиница", "қонақ үй"],
+  guest_house: ["гостевой дом", "қонақ үй"],
+  museum: ["музей", "мұражай"],
+  attraction: ["достопримечательность", "көрікті жер"],
+  information: ["информация", "ақпарат"],
+  park: ["парк", "саябақ"],
+  sports_centre: ["спортивный центр", "спорт орталығы"],
+  stadium: ["стадион"],
+  playground: ["детская площадка", "балалар алаңы"],
+  dentist: ["стоматология", "тіс емханасы"],
+  station: ["станция", "бекет"],
+  halt: ["остановка", "аялдама"],
+  platform: ["остановка", "аялдама"],
+  stop_position: ["остановка", "аялдама"],
+  aerodrome: ["аэродром", "әуеайлақ"],
+  terminal: ["терминал"],
+  fire_station: ["пожарная часть", "өрт сөндіру бөлімі"],
+  ambulance_station: ["станция скорой помощи", "жедел жәрдем станциясы"],
+  community_centre: ["общественный центр", "қоғамдық орталық"],
+  government: ["государственное учреждение", "мемлекеттік мекеме"]
 };
 
 function categoryWords(tags) {
-  const key = tags.amenity || tags.shop;
+  const key = tags.amenity
+    || tags.shop
+    || tags.tourism
+    || tags.office
+    || tags.leisure
+    || tags.healthcare
+    || tags.craft
+    || tags.public_transport
+    || tags.railway
+    || tags.aeroway
+    || tags.historic
+    || tags.emergency
+    || tags.government;
   if (!key) return [];
   // `shop=yes` and friends carry no information — a bare "магазин" alias on
   // every unnamed shop would flood a search for the word with noise.
@@ -224,7 +287,7 @@ function categoryWords(tags) {
   return CATEGORY_WORDS[key] || [];
 }
 
-function labelFor(kind, tags) {
+export function labelFor(kind, tags) {
   const street = tags["addr:street"];
   const housenumber = tags["addr:housenumber"];
   if (kind === "housenumber") {
@@ -245,7 +308,18 @@ function labelFor(kind, tags) {
   // deliberately mixes category words in with the real names so that a search
   // for "аптека" also finds one called "Дару". Taking the label off that list
   // titled every unnamed row in lower case.
-  const realName = [tags.name, tags["name:ru"], tags["name:kk"], tags["name:en"], tags.alt_name]
+  const realName = [
+    tags.name,
+    tags["name:ru"],
+    tags["name:kk"],
+    tags["name:en"],
+    tags.alt_name,
+    tags.official_name,
+    tags.short_name,
+    tags.loc_name,
+    tags.brand,
+    tags.operator
+  ]
     .map((value) => String(value || "").replace(/\s+/g, " ").trim())
     .find(Boolean);
   // shop=yes says nothing; a row called "Магазин" for every one of them would
@@ -455,10 +529,12 @@ function redistributeOwnedRows() {
 // describes the whole directory.
 function writeManifest() {
   const counts = {};
+  const sha256 = {};
   for (const name of fs.readdirSync(OUT_DIR)) {
     if (!name.endsWith(".jsonl.gz")) continue;
     const code = name.replace(/\.jsonl\.gz$/, "");
-    const text = zlib.gunzipSync(fs.readFileSync(path.join(OUT_DIR, name))).toString("utf8");
+    const compressed = fs.readFileSync(path.join(OUT_DIR, name));
+    const text = zlib.gunzipSync(compressed).toString("utf8");
     let rows = 0;
     for (const line of text.split("\n")) {
       if (!line.trim()) continue;
@@ -477,10 +553,16 @@ function writeManifest() {
       rows += 1;
     }
     counts[name] = rows;
+    sha256[name] = createHash("sha256").update(compressed).digest("hex");
   }
   fs.writeFileSync(
     path.join(OUT_DIR, "manifest.json"),
-    JSON.stringify({ counts }, null, 2) + "\n",
+    JSON.stringify({
+      source: "OpenStreetMap via public Overpass API",
+      license: "ODbL-1.0",
+      counts,
+      sha256
+    }, null, 2) + "\n",
     "utf8"
   );
 }
@@ -583,7 +665,9 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });
+}
