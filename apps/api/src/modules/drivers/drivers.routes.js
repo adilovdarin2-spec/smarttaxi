@@ -22,6 +22,23 @@ function nearbyPublicId(driverId) {
   return createHash("sha256").update(`smarttaxi-nearby:${driverId}`).digest("hex").slice(0, 16);
 }
 
+// How old a driver's last GPS fix may be and still be drawn as a car the
+// rider could call.
+//
+// An online driver pings every few seconds (driver_shell.dart's location
+// stream runs with distanceFilter: 0), so silence means the app is gone, not
+// that the car is parked. This window used to be two hours, and nothing on
+// the server ever puts a driver back to OFFLINE: a driver who finished for
+// the day without tapping the toggle stayed a FREE row forever, so the rider
+// map kept showing their car — with an ETA computed from where it had been
+// two hours earlier — long after it was in their yard. Riders decide whether
+// to order at all from that map.
+//
+// Fifteen minutes is the same silence the stands queue already treats as
+// "this driver has gone" (STALE_PRESENCE_MINUTES), and it is long enough to
+// survive a tunnel, a dead spot or a minute of backgrounding.
+const NEARBY_FRESH_MINUTES = 15;
+
 router.get("/nearby", requireAuth, async (req, res, next) => {
   try {
     const input = z.object({
@@ -55,7 +72,7 @@ router.get("/nearby", requireAuth, async (req, res, next) => {
       JOIN latest_locations l ON l.driver_id = d.id
       WHERE d.status = 'FREE'
         AND d.is_blocked = false
-        AND l.updated_at >= NOW() - INTERVAL '2 hours'
+        AND l.updated_at >= NOW() - INTERVAL '${NEARBY_FRESH_MINUTES} minutes'
       ORDER BY distance_km ASC NULLS LAST
       LIMIT $3
     `, [input.lat, input.lng, input.limit]);

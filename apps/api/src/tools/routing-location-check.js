@@ -40,6 +40,14 @@ assert.match(driversRoutes, /router\.get\("\/nearby"/, "anonymous nearby drivers
 assert.match(driversRoutes, /anonymous:\s*true/, "nearby drivers must be explicitly anonymous");
 assert.doesNotMatch(driversRoutes, /phone:\s*row\.phone|plate:\s*row\.plate|name:\s*row\.name/, "nearby drivers must not expose private driver data");
 assert.match(driversRoutes, /router\.patch\("\/me\/location"/, "driver location endpoint must exist");
+// A car is only drawn for the rider while its GPS is still speaking. Nothing
+// on the server ever returns a driver to OFFLINE, so without this the map
+// keeps showing whoever forgot to tap the toggle, at wherever they were when
+// they stopped — with a made-up ETA to match.
+assert.match(driversRoutes, /const NEARBY_FRESH_MINUTES = (\d+);/, "nearby drivers must declare how fresh a GPS fix has to be");
+const nearbyFreshMinutes = Number(driversRoutes.match(/const NEARBY_FRESH_MINUTES = (\d+);/)[1]);
+assert.ok(nearbyFreshMinutes <= 15, `a ${nearbyFreshMinutes}-minute-old position is not a car anyone can call`);
+assert.match(driversRoutes, /l\.updated_at >= NOW\(\) - INTERVAL '\$\{NEARBY_FRESH_MINUTES\} minutes'/, "the nearby query must actually apply that window");
 assert.match(server, /assertCanAccessOrderLocation/, "join_order must validate order room access");
 assert.match(server, /updateDriverLocation/, "socket driver location updates must use backend location service");
 assert.match(routingServiceText, /ROUTE_UNAVAILABLE/, "routing provider failure must return ROUTE_UNAVAILABLE");
