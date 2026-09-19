@@ -136,3 +136,23 @@
 база, Redis и маршрутизатор в порядке. Это тот же намеренный запрет: продакшен
 без SMS считается неготовым. Пока так — любой внешний монитор будет считать
 сервис упавшим.
+
+## Выложено
+
+- APK: `https://smarttaxi-web-production.up.railway.app/dl/BaiSapar.apk`,
+  пакет `kz.baisapar.app`, SHA-256
+  `2d5b9fb06709fc5f48488c5a8803055f3dd1fc1280417c7e4a741833e935c106`;
+  скачанный файл сверен с собранным побайтно.
+- Сайт: развёрнут с исправлением зависания выбора адреса. Тот же сценарий,
+  который висел вечно, проверен на живом сайте после выката — адрес
+  определяется, хотя флаги MapLibre по-прежнему залипшие.
+
+## Как прогнать всё это заново
+
+```bash
+cd apps/api && npm test                       # 50 проверок исходников
+cd apps/api && STAND_QA_DATABASE_URL=postgres://smarttaxi:smarttaxi@127.0.0.1:5435/smarttaxi npm run check:stands-db
+cd apps/api && API_URL=http://127.0.0.1:4001 node src/tools/smoke-full.js
+cd apps/web && node --test tools/*.test.mjs   # 196 тестов
+cd apps/mobile/smarttaxi_app && flutter test  # 388 тестов
+```
