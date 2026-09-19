@@ -33,6 +33,7 @@ import {
   TRANSITION_RULES
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { isOverDebtCeiling } from "../drivers/driver-debt.js";
 import { buildActiveLegRoute, requestRoute } from "../routing/routing.service.js";
 import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleConfirmedOrderEarnings } from "../finance/finance.service.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
@@ -1194,7 +1195,7 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req,
       const driver = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [body.driverId])).rows[0];
       if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
       await assertDriverDispatchReady(driver, client);
-      if (Number(driver.debt) > 15000) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
+      if (isOverDebtCeiling(driver.debt)) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
       await assertDriverHasNoActiveOrder(driver, client);
       if (driver.status === "OFFLINE" || driver.status === "BREAK") throw new AppError("Driver is offline", 409, "DRIVER_OFFLINE");
       if (driver.status !== "FREE") throw new AppError("Driver already has an active order", 409, "DRIVER_HAS_ACTIVE_ORDER");

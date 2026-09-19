@@ -1,4 +1,5 @@
 import { AppError } from "../../common/errors.js";
+import { isOverDebtCeiling } from "../drivers/driver-debt.js";
 import { query as defaultQuery, tx } from '../../db/pool.js';
 import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
@@ -394,7 +395,7 @@ export async function assertDriverCanServeOrder(driver, order, executor) {
 // Recheck after locking the current driver and order: a pending price is not
 // permission to bypass a later block, region change or cancellation.
 async function assertAssignmentPolicy(driver, order, executor) {
-  if (Number(driver.debt) > 15000) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
+  if (isOverDebtCeiling(driver.debt)) throw new AppError("Debt limit exceeded", 403, "DRIVER_DEBT_LIMIT");
   if (order.region_id !== driver.current_region_id) {
     throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
   }

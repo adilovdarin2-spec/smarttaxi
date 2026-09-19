@@ -57,6 +57,7 @@ import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { submitDriverApplication, reviewDriverApplication } from './driver-application.service.js';
+import { DRIVER_DEBT_WARNING_KZT } from "../drivers/driver-debt.js";
 
 const router = Router();
 
@@ -427,10 +428,11 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
       `, [OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, SETTLED_ORDER_STATUSES]),
       query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='PENDING')::int pending FROM driver_applications"),
       query("SELECT * FROM service_settings WHERE id=1"),
-      // 15000 is the hard debt ceiling that blocks a driver from accepting
-      // new orders (order-dispatch.service.js) — this is an early warning
-      // well before that, not a duplicate of it.
-      query("SELECT COUNT(*)::int total FROM drivers WHERE debt > 10000 AND NOT is_blocked"),
+      // An early warning well before the ceiling that stops a driver being
+      // given work at all — both numbers live in driver-debt.js, so raising
+      // the limit cannot leave the dashboard warning about the old one.
+      query("SELECT COUNT(*)::int total FROM drivers WHERE debt > $1 AND NOT is_blocked",
+        [DRIVER_DEBT_WARNING_KZT]),
       // A real, grounded abuse signal from data that already exists (no
       // fraud-score fabrication) — a client cancelling repeatedly in a
       // short window is worth a human look, win or lose either way.
