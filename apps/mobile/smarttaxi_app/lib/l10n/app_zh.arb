@@ -1881,5 +1881,17 @@
   "assignmentDriverCancelled": "您已取消过此订单。请选择其他订单。",
   "assignmentDriverUnavailable": "您无法接受此订单。请选择其他订单。",
   "assignmentDriverBlockedRider": "您已屏蔽此乘客。请选择其他订单。",
-  "assignmentRiderUnavailable": "司机已无法接受此订单。请选择其他司机或拒绝报价。"
+  "assignmentRiderUnavailable": "司机已无法接受此订单。请选择其他司机或拒绝报价。",
+  "mapStyleTitle": "地图样式",
+  "mapStyleButtonTooltip": "地图样式",
+  "mapStyle3d": "3D",
+  "mapStyle3dDescription": "立体建筑，便于分辨具体房屋",
+  "mapStyle2d": "2D",
+  "mapStyle2dDescription": "平面图，更简洁、更流畅",
+  "mapStyleSatellite": "卫星",
+  "mapStyleSatelliteDescription": "卫星影像，带街道名称",
+  "passengerNamePointTitle": "这个地点叫什么？",
+  "passengerNamePointSubtitle": "该位置在地图上没有地址。请写明如何找到它——司机会在订单中看到。",
+  "passengerNamePointHint": "例如：清真寺后面的蓝色大门",
+  "passengerNamePointConfirm": "完成"
 }

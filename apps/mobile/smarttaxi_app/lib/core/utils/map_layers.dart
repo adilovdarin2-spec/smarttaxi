@@ -87,7 +87,19 @@ Future<void> applyLibertyPresentation(
   }
 }
 
-/// Call only AFTER our label-safe extrusion was successfully added. Liberty
+/// Every layer of ours that stands in for Liberty's own `building-3d`.
+///
+/// The flat ones count too: in the plan style we draw the town's footprints
+/// ourselves and want no extrusion left standing, or a "2D" map comes up with
+/// the provider's grey blocks still rising out of it.
+const Set<String> ownBuildingLayerIds = <String>{
+  'smarttaxi-3d-buildings',
+  'smarttaxi-driver-3d-buildings',
+  'smarttaxi-low-buildings',
+  'smarttaxi-driver-low-buildings',
+};
+
+/// Call only AFTER our own building layer was successfully added. Liberty
 /// already includes a grey building-3d layer: keeping both causes doubled,
 /// dark buildings, even when our own extrusion has the correct blue tint.
 Future<void> hideDuplicateLibertyBuildings(
@@ -95,9 +107,7 @@ Future<void> hideDuplicateLibertyBuildings(
   try {
     final ids =
         (await controller.getLayerIds()).map((id) => id.toString()).toSet();
-    if (ids.contains('building-3d') &&
-        (ids.contains('smarttaxi-3d-buildings') ||
-            ids.contains('smarttaxi-driver-3d-buildings'))) {
+    if (ids.contains('building-3d') && ids.any(ownBuildingLayerIds.contains)) {
       // The pinned Android plugin's setLayerProperties does NOT dispatch
       // fill-extrusion layers. The dedicated visibility API supports them.
       await controller.setLayerVisibility('building-3d', false);
@@ -167,7 +177,15 @@ const List<Object> measuredBuildingHeight = <Object>[
 ];
 
 /// Buildings drawn flat: their height is below a storey, or unknown.
-const List<Object> flatBuildingFilter = <Object>['<', measuredBuildingHeight, extrudedFromMetres];
+const List<Object> flatBuildingFilter = <Object>[
+  '<',
+  measuredBuildingHeight,
+  extrudedFromMetres
+];
 
 /// Buildings given volume: a storey tall or more, by a height somebody recorded.
-const List<Object> extrudedBuildingFilter = <Object>['>=', measuredBuildingHeight, extrudedFromMetres];
+const List<Object> extrudedBuildingFilter = <Object>[
+  '>=',
+  measuredBuildingHeight,
+  extrudedFromMetres
+];

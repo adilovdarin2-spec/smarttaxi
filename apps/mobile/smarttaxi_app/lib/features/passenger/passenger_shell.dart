@@ -22,6 +22,9 @@ import '../../core/api/api_client.dart';
 import '../../core/auth/auth_store.dart';
 import '../../core/config/app_config.dart';
 import '../../core/legal/legal_content.dart';
+import '../../core/map/map_style.dart';
+import '../../core/widgets/map_point_name_sheet.dart';
+import '../../core/widgets/map_style_picker.dart';
 import '../../core/sockets/socket_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/active_locale.dart';
@@ -207,6 +210,8 @@ class PassengerShell extends StatefulWidget {
     required this.onChangeLocale,
     this.themeMode = ThemeMode.light,
     this.onChangeThemeMode,
+    this.mapStyle = MapStyleChoice.fallback,
+    this.onChangeMapStyle,
   });
 
   final ApiClient api;
@@ -224,6 +229,8 @@ class PassengerShell extends StatefulWidget {
   final ValueChanged<Locale> onChangeLocale;
   final ThemeMode themeMode;
   final ValueChanged<ThemeMode>? onChangeThemeMode;
+  final MapStyleChoice mapStyle;
+  final ValueChanged<MapStyleChoice>? onChangeMapStyle;
 
   @override
   State<PassengerShell> createState() => _PassengerShellState();
@@ -431,17 +438,23 @@ class _PassengerShellState extends State<PassengerShell>
       setState(() {
         _driverApplication = application;
         _driverApplicationReadFailed = false;
-        _driverApplicationMessage = application == null ? null : switch (application['status']) {
-          'APPROVED' => l10n.driverApplicationApproved,
-          'NEEDS_INFO' => l10n.driverApplicationNeedsInfo,
-          'REJECTED' => l10n.driverApplicationRejected,
-          _ => l10n.passengerDriverAppSubmittedMessage,
-        };
+        _driverApplicationMessage = application == null
+            ? null
+            : switch (application['status']) {
+                'APPROVED' => l10n.driverApplicationApproved,
+                'NEEDS_INFO' => l10n.driverApplicationNeedsInfo,
+                'REJECTED' => l10n.driverApplicationRejected,
+                _ => l10n.passengerDriverAppSubmittedMessage,
+              };
       });
     } catch (_) {
-      if (mounted && revision == _driverApplicationReadRevision) setState(() => _driverApplicationReadFailed = true);
+      if (mounted && revision == _driverApplicationReadRevision) {
+        setState(() => _driverApplicationReadFailed = true);
+      }
     } finally {
-      if (mounted && revision == _driverApplicationReadRevision) setState(() => _driverApplicationReading = false);
+      if (mounted && revision == _driverApplicationReadRevision) {
+        setState(() => _driverApplicationReading = false);
+      }
     }
   }
 
@@ -1939,14 +1952,28 @@ class _PassengerShellState extends State<PassengerShell>
             : _mapPickerAddressLabel.trim();
     // No named building under the marker is not a reason to refuse the point —
     // in most of these villages OSM has the street but no house numbers, and
-    // there is no nearer house to move the map to. Hand the coordinate on
-    // without a preferred label and let it be taken as "Точка на карте".
+    // there is no nearer house to move the map to. The rider names it instead,
+    // just below.
     final usableLabel =
         knownLabel != null && _isUsablePassengerAddressLabel(knownLabel)
             ? knownLabel
             : null;
     _mapPickerReverseDebounce?.cancel();
-    await _applyMapTap(point, preferredLabel: usableLabel);
+    var label = usableLabel;
+    if (label == null) {
+      // The rider is the only person who knows what this place is called. Ask
+      // them, rather than sending the driver the words "Точка на карте" — which
+      // say nothing the pin does not already say, and are what a driver has to
+      // phone the rider about on arrival.
+      if (!mounted) return;
+      final named = await showMapPointNameSheet(context);
+      // Backing out of the naming sheet leaves the picker open on the same
+      // point, so the rider can move it or try again. Applying a nameless
+      // point instead would quietly undo the thing they were asked for.
+      if (named == null || !mounted) return;
+      label = named;
+    }
+    await _applyMapTap(point, preferredLabel: label);
   }
 
   void _cancelMapPointSelection() {
@@ -2441,7 +2468,8 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
-  Future<void> _respondToDriverPriceOffer(OrderSummary order, bool accept) async {
+  Future<void> _respondToDriverPriceOffer(
+      OrderSummary order, bool accept) async {
     if (_order?.id != order.id || _respondingToPriceOffer) return;
     setState(() => _respondingToPriceOffer = true);
     try {
@@ -2474,7 +2502,8 @@ class _PassengerShellState extends State<PassengerShell>
     }
   }
 
-  Future<void> _submitClientCounterOffer(OrderSummary order, int priceKzt) async {
+  Future<void> _submitClientCounterOffer(
+      OrderSummary order, int priceKzt) async {
     if (_order?.id != order.id || _respondingToPriceOffer) return;
     setState(() => _respondingToPriceOffer = true);
     try {
@@ -2544,7 +2573,8 @@ class _PassengerShellState extends State<PassengerShell>
 
   Future<void> _promoteQueuedPriceOffer(QueuedPriceOffer offer) async {
     final order = _order;
-    if (order == null || order.id != offer.orderId ||
+    if (order == null ||
+        order.id != offer.orderId ||
         _promotingQueuedOfferId != null) {
       return;
     }
@@ -2689,7 +2719,9 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _submitDriverApplication() async {
-    if (_loading || _driverApplicationReading || _driverApplicationReadFailed) return;
+    if (_loading || _driverApplicationReading || _driverApplicationReadFailed) {
+      return;
+    }
     setState(() {
       _loading = true;
       _error = null;
@@ -3011,6 +3043,8 @@ class _PassengerShellState extends State<PassengerShell>
             showLocationButton: !routeComplete,
             showCenterMarker: pickingMapPoint,
             activeTarget: _target,
+            mapStyle: widget.mapStyle,
+            onChangeMapStyle: widget.onChangeMapStyle,
           ),
         ),
         // Home always renders the address/tariff picker regardless of
@@ -3477,6 +3511,8 @@ class _PassengerShellState extends State<PassengerShell>
             showLocationButton: false,
             showCenterMarker: false,
             activeTarget: PointTarget.dropoff,
+            mapStyle: widget.mapStyle,
+            onChangeMapStyle: widget.onChangeMapStyle,
             searching: const {'SEARCHING_DRIVER', 'NEW'}.contains(order.status),
           ),
         ),
@@ -4200,13 +4236,17 @@ class _PassengerShellState extends State<PassengerShell>
     final rejected = _driverApplication?['status'] == 'REJECTED';
     if (_driverApplicationReading || _driverApplicationReadFailed) {
       return ListView(padding: const EdgeInsets.all(20), children: [
-        Text(l10n.passengerDrawerBecomeDriver, style: Theme.of(context).textTheme.headlineSmall),
+        Text(l10n.passengerDrawerBecomeDriver,
+            style: Theme.of(context).textTheme.headlineSmall),
         const SizedBox(height: 16),
-        if (_driverApplicationReading) const Center(child: CircularProgressIndicator())
+        if (_driverApplicationReading)
+          const Center(child: CircularProgressIndicator())
         else ...[
           Text(l10n.driverApplicationReadFailed),
           const SizedBox(height: 12),
-          OutlinedButton(onPressed: _restoreDriverApplicationStatus, child: Text(l10n.refreshButton)),
+          OutlinedButton(
+              onPressed: _restoreDriverApplicationStatus,
+              child: Text(l10n.refreshButton)),
         ],
       ]);
     }
@@ -4253,11 +4293,25 @@ class _PassengerShellState extends State<PassengerShell>
                   height: 56,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: approved ? palette.successSoft : rejected ? palette.dangerSoft : palette.brandSurface,
+                    color: approved
+                        ? palette.successSoft
+                        : rejected
+                            ? palette.dangerSoft
+                            : palette.brandSurface,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(approved ? Icons.check_circle_rounded : rejected ? Icons.info_outline_rounded : Icons.schedule_rounded,
-                      color: approved ? palette.success : rejected ? palette.danger : palette.brand, size: 30),
+                  child: Icon(
+                      approved
+                          ? Icons.check_circle_rounded
+                          : rejected
+                              ? Icons.info_outline_rounded
+                              : Icons.schedule_rounded,
+                      color: approved
+                          ? palette.success
+                          : rejected
+                              ? palette.danger
+                              : palette.brand,
+                      size: 30),
                 ),
                 const SizedBox(height: 14),
                 Text(
@@ -4274,27 +4328,48 @@ class _PassengerShellState extends State<PassengerShell>
                     height: 1.4,
                   ),
                 ),
-                if ((_driverApplication?['comment'] ?? '').toString().isNotEmpty)
-                  Padding(padding: const EdgeInsets.only(top: 12), child: Text(_driverApplication!['comment'].toString())),
+                if ((_driverApplication?['comment'] ?? '')
+                    .toString()
+                    .isNotEmpty)
+                  Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Text(_driverApplication!['comment'].toString())),
                 const SizedBox(height: 12),
-                OutlinedButton(onPressed: _restoreDriverApplicationStatus, child: Text(l10n.refreshButton)),
+                OutlinedButton(
+                    onPressed: _restoreDriverApplicationStatus,
+                    child: Text(l10n.refreshButton)),
                 if (_driverApplication?['status'] == 'APPROVED')
-                  ElevatedButton(onPressed: _openDriverEntry, child: Text(l10n.driverApplicationOpenMode)),
-                if (['PENDING', 'NEEDS_INFO'].contains(_driverApplication?['status']))
-                  OutlinedButton(onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => DriverApplicationDocumentsScreen(api: widget.api, applicationId: _driverApplication!['id'].toString()))),
-                    child: Text(l10n.driverApplicationDocumentsTitle)),
-                if (['NEEDS_INFO', 'REJECTED'].contains(_driverApplication?['status']))
-                  OutlinedButton(onPressed: () => setState(() {
-                    final application = _driverApplication!;
-                    _driverFullName = application['full_name']?.toString() ?? '';
-                    _driverPhone = widget.accountPhone;
-                    _driverCarModel = application['car_model']?.toString() ?? '';
-                    _driverCarColor = application['car_color']?.toString() ?? '';
-                    _driverPlate = application['plate_number']?.toString() ?? '';
-                    _driverYear = application['year']?.toString() ?? '';
-                    _driverApplicationMessage = null;
-                  }), child: Text(l10n.driverApplicationCorrect)),
+                  ElevatedButton(
+                      onPressed: _openDriverEntry,
+                      child: Text(l10n.driverApplicationOpenMode)),
+                if (['PENDING', 'NEEDS_INFO']
+                    .contains(_driverApplication?['status']))
+                  OutlinedButton(
+                      onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                              builder: (_) => DriverApplicationDocumentsScreen(
+                                  api: widget.api,
+                                  applicationId:
+                                      _driverApplication!['id'].toString()))),
+                      child: Text(l10n.driverApplicationDocumentsTitle)),
+                if (['NEEDS_INFO', 'REJECTED']
+                    .contains(_driverApplication?['status']))
+                  OutlinedButton(
+                      onPressed: () => setState(() {
+                            final application = _driverApplication!;
+                            _driverFullName =
+                                application['full_name']?.toString() ?? '';
+                            _driverPhone = widget.accountPhone;
+                            _driverCarModel =
+                                application['car_model']?.toString() ?? '';
+                            _driverCarColor =
+                                application['car_color']?.toString() ?? '';
+                            _driverPlate =
+                                application['plate_number']?.toString() ?? '';
+                            _driverYear = application['year']?.toString() ?? '';
+                            _driverApplicationMessage = null;
+                          }),
+                      child: Text(l10n.driverApplicationCorrect)),
                 const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -5881,6 +5956,8 @@ class _MapCanvas extends StatefulWidget {
     required this.showLocationButton,
     required this.showCenterMarker,
     required this.activeTarget,
+    required this.mapStyle,
+    required this.onChangeMapStyle,
     this.searching = false,
   });
 
@@ -5915,6 +5992,8 @@ class _MapCanvas extends StatefulWidget {
   final bool showLocationButton;
   final bool showCenterMarker;
   final PointTarget activeTarget;
+  final MapStyleChoice mapStyle;
+  final ValueChanged<MapStyleChoice>? onChangeMapStyle;
   // No driver assigned yet and an order is actively searching — shows an
   // expanding radar pulse behind the pickup pin so this doesn't read as a
   // static, stuck screen while the rider waits.
@@ -5973,6 +6052,12 @@ class _MapCanvasState extends State<_MapCanvas> {
       _refitPoints(w).map(_pointKey).join('|');
 
   static const _refitPadding = EdgeInsets.fromLTRB(50, 108, 50, 306);
+
+  Future<void> _pickMapStyle() async {
+    final chosen = await showMapStylePicker(context, current: widget.mapStyle);
+    if (chosen == null || chosen == widget.mapStyle) return;
+    widget.onChangeMapStyle?.call(chosen);
+  }
 
   void _refitCamera() {
     final points = _refitPoints(widget);
@@ -6095,6 +6180,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                       nearbyDrivers: nearbyDrivers,
                       route: route,
                       pickingPoint: showCenterMarker,
+                      style: widget.mapStyle,
                       panelHeight: widget.controlsBottom,
                       onTap: onTap,
                       onCenterChanged: onCenterChanged,
@@ -6125,14 +6211,26 @@ class _MapCanvasState extends State<_MapCanvas> {
                         backgroundColor: context.palette.appBackground,
                       ),
                       children: [
+                        // This compatibility surface is flat by construction,
+                        // so it can only answer the imagery choice — and a
+                        // photograph must not go through the light/dark tile
+                        // filter, which exists to match a drawn map to the
+                        // app's theme.
                         ColorFiltered(
                           colorFilter: ColorFilter.matrix(
-                            isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                            widget.mapStyle.allowsTileTinting
+                                ? (isDark
+                                    ? _darkMapTileMatrix
+                                    : _lightMapTileMatrix)
+                                : identityTileMatrix,
                           ),
                           child: TileLayer(
-                            urlTemplate: AppConfig.osmTileUrl,
+                            urlTemplate: widget.mapStyle.rasterTileUrl,
                             subdomains: const ['a', 'b', 'c', 'd'],
                             retinaMode: true,
+                            maxNativeZoom: widget.mapStyle.allowsTileTinting
+                                ? 19
+                                : AppConfig.satelliteMaxZoom,
                             userAgentPackageName: 'kz.baisapar.app',
                             errorTileCallback: (_, __, ___) => onTileError(),
                           ),
@@ -6266,6 +6364,19 @@ class _MapCanvasState extends State<_MapCanvas> {
               top: 84,
               child: _NearbyDriversPill(count: nearbyDrivers.length),
             ),
+          // Under the header's own row rather than in it: this is the one
+          // control on this screen that changes what the rider is looking at
+          // rather than where they are going.
+          if (widget.onChangeMapStyle != null)
+            Positioned(
+              right: 22,
+              top: 84,
+              child: _MapRoundButton(
+                icon: mapStyleIcon(widget.mapStyle),
+                label: l10n.mapStyleButtonTooltip,
+                onTap: _pickMapStyle,
+              ),
+            ),
           if (mapUnavailable)
             Positioned(
               left: 22,
@@ -6322,6 +6433,7 @@ class _NativeMapLibreSurface extends StatefulWidget {
     required this.nearbyDrivers,
     required this.route,
     required this.pickingPoint,
+    required this.style,
     required this.panelHeight,
     required this.onTap,
     required this.onCenterChanged,
@@ -6337,6 +6449,7 @@ class _NativeMapLibreSurface extends StatefulWidget {
   final List<NearbyDriver> nearbyDrivers;
   final List<LatLng> route;
   final bool pickingPoint;
+  final MapStyleChoice style;
   final double panelHeight;
   final ValueChanged<LatLng> onTap;
   final void Function(LatLng center, double zoom,
@@ -6374,6 +6487,19 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
   @override
   void didUpdateWidget(covariant _NativeMapLibreSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.style != widget.style) {
+      // MapLibre reloads the whole style, which drops every runtime layer and
+      // every symbol with it. Go back behind the loading veil and let
+      // onStyleLoadedCallback rebuild the scene, exactly as on a cold start —
+      // otherwise the rider watches the route and the pins blink out of a map
+      // that looks finished.
+      _styleReady = false;
+      _lastSceneSignature = '';
+      _lastRouteFitSignature = '';
+      _lastHomeFitSignature = '';
+      _imagesInstalled = false;
+      _routeLayersInstalled = false;
+    }
     if (oldWidget.pickingPoint != widget.pickingPoint) {
       _lastPickerPointKey = '';
       if (!widget.pickingPoint) _queueBuildingHighlight(null);
@@ -6570,7 +6696,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
               native_map.CameraPosition(
                   target: _nativePoint(widget.center),
                   zoom: widget.zoom,
-                  tilt: 56),
+                  tilt: _tilt),
           points: points,
           viewport: _viewportSize,
           panelHeight: widget.panelHeight,
@@ -6666,13 +6792,20 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
     }
   }
 
-  Future<void> _enable3dBuildings(
+  Future<void> _installBuildings(
       native_map.MapLibreMapController controller) async {
+    // Imagery already shows the roofs. Drawing our footprints over the
+    // photograph would cover the one thing the rider switched to it for.
+    if (!widget.style.drawsBuildings) return;
     // OpenFreeMap's Liberty style is built from OpenMapTiles. If a style does
     // not expose that source/layer, MapLibre rejects this optional layer; the
     // base vector map remains completely usable, so this is intentionally a
     // best-effort enhancement rather than a hard dependency.
     final anchorLayerId = await resolveLabelAnchorLayerId(controller);
+    // In the plan style nothing is extruded, so the flat layers take every
+    // building rather than only the ones too low to stand up.
+    final extrude = widget.style.extrudesBuildings;
+    final flatFilter = extrude ? flatBuildingFilter : null;
     try {
       // Keep low, real residential footprints flat. Their source height is
       // too small for a believable volume, and extruding every one made the
@@ -6695,7 +6828,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: flatBuildingFilter,
+        filter: flatFilter,
         enableInteraction: false,
       );
       await controller.addFillLayer(
@@ -6709,51 +6842,60 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: flatBuildingFilter,
+        filter: flatFilter,
         enableInteraction: false,
       );
-      await controller.addFillExtrusionLayer(
-        'openmaptiles',
-        'smarttaxi-3d-buildings',
-        const native_map.FillExtrusionLayerProperties(
-          // Buildings should add quiet depth to the map, not compete with
-          // the selected route or the blue SmartTaxi marker.
-          // Keep real OSM roof outlines and light-driven facades visible
-          // against Liberty's pale roads; near-white buildings looked flat.
-          fillExtrusionColor: '#c6d8ef',
-          fillExtrusionHeight: [
-            'coalesce',
-            ['get', 'render_height'],
-            ['get', 'height'],
-            0,
-          ],
-          fillExtrusionBase: [
-            'coalesce',
-            ['get', 'render_min_height'],
-            ['get', 'min_height'],
-            0,
-          ],
-          // A transparent, unshaded extrusion made every footprint look like
-          // the same pale box. Keep the source's real height and let the
-          // renderer separate the roof from the facade with map lighting.
-          fillExtrusionOpacity: 0.9,
-          fillExtrusionVerticalGradient: true,
-        ),
-        sourceLayer: 'building',
-        // MapLibre adds a runtime layer above every existing style layer by
-        // default. Put buildings below the lowest label layer so street, POI
-        // and city labels remain readable above the 3D geometry. Symbols and
-        // map annotations (our pickup/dropoff/driver markers) then always
-        // stay on top of houses as they do in the reference.
-        belowLayerId: anchorLayerId,
-        minzoom: 13,
-        filter: extrudedBuildingFilter,
-        enableInteraction: false,
-      );
+      if (extrude) {
+        await _addExtrudedBuildings(controller, anchorLayerId);
+      }
       await hideDuplicateLibertyBuildings(controller);
     } catch (_) {
       // See the note above: source/layer names are style-specific.
     }
+  }
+
+  Future<void> _addExtrudedBuildings(
+    native_map.MapLibreMapController controller,
+    String? anchorLayerId,
+  ) async {
+    await controller.addFillExtrusionLayer(
+      'openmaptiles',
+      'smarttaxi-3d-buildings',
+      const native_map.FillExtrusionLayerProperties(
+        // Buildings should add quiet depth to the map, not compete with
+        // the selected route or the blue SmartTaxi marker.
+        // Keep real OSM roof outlines and light-driven facades visible
+        // against Liberty's pale roads; near-white buildings looked flat.
+        fillExtrusionColor: '#c6d8ef',
+        fillExtrusionHeight: [
+          'coalesce',
+          ['get', 'render_height'],
+          ['get', 'height'],
+          0,
+        ],
+        fillExtrusionBase: [
+          'coalesce',
+          ['get', 'render_min_height'],
+          ['get', 'min_height'],
+          0,
+        ],
+        // A transparent, unshaded extrusion made every footprint look like
+        // the same pale box. Keep the source's real height and let the
+        // renderer separate the roof from the facade with map lighting.
+        fillExtrusionOpacity: 0.9,
+        fillExtrusionVerticalGradient: true,
+      ),
+      sourceLayer: 'building',
+      // MapLibre adds a runtime layer above every existing style layer by
+      // default. Put buildings below the lowest label layer so street, POI
+      // and city labels remain readable above the 3D geometry. Symbols and
+      // map annotations (our pickup/dropoff/driver markers) then always
+      // stay on top of houses as they do in the reference.
+      belowLayerId: anchorLayerId,
+      minzoom: 13,
+      filter: extrudedBuildingFilter,
+      enableInteraction: false,
+    );
   }
 
   Map<String, dynamic> _routeGeoJson() {
@@ -6930,7 +7072,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         await Future<void>.delayed(const Duration(milliseconds: 280));
         if (mounted && identical(controller, _controller)) {
           await applyLibertyPresentation(controller);
-          await _enable3dBuildings(controller);
+          await _installBuildings(controller);
           // Android applies the style's own initial camera after its first
           // frame. Re-apply the intended pitch only after that point; without
           // this, the vector map was live but visibly flat on a fresh launch.
@@ -6938,6 +7080,14 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         }
       }));
     }
+  }
+
+  /// The pitch this map opens and settles at. Picking a point is already a
+  /// shallower view because a tilted map makes the centre marker lie about
+  /// which building it is over; a plan and a photograph are flat outright.
+  double get _tilt {
+    if (!widget.style.isTilted) return 0;
+    return widget.pickingPoint ? 32 : 56;
   }
 
   Future<void> _settle3dCamera(
@@ -6958,7 +7108,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
           native_map.CameraPosition(
             target: _nativePoint(widget.center),
             zoom: widget.zoom,
-            tilt: widget.pickingPoint ? 32 : 56,
+            tilt: _tilt,
           ),
         ),
         duration: const Duration(milliseconds: 320),
@@ -7069,7 +7219,7 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
         fit: StackFit.expand,
         children: [
           native_map.MapLibreMap(
-            styleString: AppConfig.mapLibreStyleUrl,
+            styleString: widget.style.styleString,
             // Route and buildings are native style layers. Keeping only the
             // symbol annotation manager avoids the Android cost of creating
             // unused line, circle and fill managers for this platform view.
@@ -7080,12 +7230,15 @@ class _NativeMapLibreSurfaceState extends State<_NativeMapLibreSurface> {
             initialCameraPosition: native_map.CameraPosition(
               target: _nativePoint(widget.center),
               zoom: widget.zoom,
-              tilt: widget.pickingPoint ? 32 : 56,
+              tilt: _tilt,
             ),
             compassEnabled: false,
             trackCameraPosition: true,
             rotateGesturesEnabled: !widget.pickingPoint,
-            tiltGesturesEnabled: !widget.pickingPoint,
+            // A plan and a photograph have nothing to show at an angle, and
+            // letting a pinch tilt them just leaves the rider looking at a
+            // smeared map with no way back short of guessing.
+            tiltGesturesEnabled: !widget.pickingPoint && widget.style.isTilted,
             onMapCreated: (controller) {
               _controller = controller;
               controller.addListener(_onCameraChanged);

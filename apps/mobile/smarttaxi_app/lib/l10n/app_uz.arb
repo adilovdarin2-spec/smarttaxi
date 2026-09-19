@@ -1881,5 +1881,17 @@
   "assignmentDriverCancelled": "Siz bu buyurtmani avval bekor qilgansiz. Boshqasini tanlang.",
   "assignmentDriverUnavailable": "Bu buyurtma siz uchun mavjud emas. Boshqasini tanlang.",
   "assignmentDriverBlockedRider": "Siz bu yo‘lovchini bloklagansiz. Boshqa buyurtmani tanlang.",
-  "assignmentRiderUnavailable": "Haydovchi endi bu buyurtmani qabul qila olmaydi. Boshqa haydovchini tanlang yoki taklifni rad eting."
+  "assignmentRiderUnavailable": "Haydovchi endi bu buyurtmani qabul qila olmaydi. Boshqa haydovchini tanlang yoki taklifni rad eting.",
+  "mapStyleTitle": "Xarita ko‘rinishi",
+  "mapStyleButtonTooltip": "Xarita ko‘rinishi",
+  "mapStyle3d": "3D",
+  "mapStyle3dDescription": "Hajmli uylar — qaysi uy ekani ko‘rinadi",
+  "mapStyle2d": "2D",
+  "mapStyle2dDescription": "Yassi sxema — soddaroq va tezroq",
+  "mapStyleSatellite": "Sun’iy yo‘ldosh",
+  "mapStyleSatelliteDescription": "Sun’iy yo‘ldosh surati, ko‘cha nomlari bilan",
+  "passengerNamePointTitle": "Bu joy qanday ataladi?",
+  "passengerNamePointSubtitle": "Bu nuqtaning xaritada manzili yo‘q. Uni qanday topish mumkinligini yozing — haydovchi buyurtmada ko‘radi.",
+  "passengerNamePointHint": "Masalan: masjid orqasidagi ko‘k darvoza",
+  "passengerNamePointConfirm": "Tayyor"
 }

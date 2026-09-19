@@ -8052,6 +8052,78 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Водитель больше не может принять этот заказ. Выберите другого водителя или отклоните предложение.'**
   String get assignmentRiderUnavailable;
+
+  /// Heading of the sheet that picks how the map is drawn.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вид карты'**
+  String get mapStyleTitle;
+
+  /// Tooltip of the button on the map that opens the style picker.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вид карты'**
+  String get mapStyleButtonTooltip;
+
+  /// Map style: buildings with volume.
+  ///
+  /// In ru, this message translates to:
+  /// **'3D'**
+  String get mapStyle3d;
+
+  /// One line under the 3D option.
+  ///
+  /// In ru, this message translates to:
+  /// **'Объёмные дома — видно, где какой дом'**
+  String get mapStyle3dDescription;
+
+  /// Map style: a flat plan.
+  ///
+  /// In ru, this message translates to:
+  /// **'2D'**
+  String get mapStyle2d;
+
+  /// One line under the 2D option.
+  ///
+  /// In ru, this message translates to:
+  /// **'Плоская схема — проще и быстрее'**
+  String get mapStyle2dDescription;
+
+  /// Map style: satellite imagery.
+  ///
+  /// In ru, this message translates to:
+  /// **'Спутник'**
+  String get mapStyleSatellite;
+
+  /// One line under the satellite option.
+  ///
+  /// In ru, this message translates to:
+  /// **'Снимок со спутника с названиями улиц'**
+  String get mapStyleSatelliteDescription;
+
+  /// Heading of the sheet asking the rider to name a point the map has no address for.
+  ///
+  /// In ru, this message translates to:
+  /// **'Как называется это место?'**
+  String get passengerNamePointTitle;
+
+  /// Explains that the driver will see this name in the order.
+  ///
+  /// In ru, this message translates to:
+  /// **'У этой точки нет адреса на карте. Напишите, как её найти, — водитель увидит это в заказе.'**
+  String get passengerNamePointSubtitle;
+
+  /// Placeholder example of a landmark description.
+  ///
+  /// In ru, this message translates to:
+  /// **'Например: синие ворота за мечетью'**
+  String get passengerNamePointHint;
+
+  /// Confirms the typed name for the picked point.
+  ///
+  /// In ru, this message translates to:
+  /// **'Готово'**
+  String get passengerNamePointConfirm;
 }
 
 class _AppLocalizationsDelegate

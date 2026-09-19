@@ -15,6 +15,7 @@ import 'core/auth/auth_store.dart';
 import 'core/auth/session_navigation.dart';
 import 'core/config/app_config.dart';
 import 'core/legal/legal_content.dart';
+import 'core/map/map_style.dart';
 import 'core/push/push_service.dart';
 import 'core/sockets/socket_service.dart';
 import 'core/theme/app_theme.dart';
@@ -129,6 +130,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   bool _updateNudgeShown = false;
   Locale? _locale;
   ThemeMode _themeMode = ThemeMode.light;
+  MapStyleChoice _mapStyle = MapStyleChoice.fallback;
   _AuthMessageKind? _authInitialError;
   bool _forcedLogoutInProgress = false;
 
@@ -140,6 +142,17 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   void setThemeMode(ThemeMode mode) {
     setState(() => _themeMode = mode);
     unawaited(widget.authStore.saveThemeMode(mode.name));
+  }
+
+  void setMapStyle(MapStyleChoice style) {
+    setState(() => _mapStyle = style);
+    unawaited(widget.authStore.saveMapStyle(style.storageValue));
+  }
+
+  Future<void> _loadMapStyle() async {
+    final saved = await widget.authStore.readMapStyle();
+    final style = MapStyleChoice.fromStorage(saved);
+    if (mounted) setState(() => _mapStyle = style);
   }
 
   Future<void> _loadThemeMode() async {
@@ -161,6 +174,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     super.initState();
     unawaited(_loadLocale());
     unawaited(_loadThemeMode());
+    unawaited(_loadMapStyle());
     widget.api.onSessionExpired = _handleSessionExpired;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -458,6 +472,8 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           onChangeLocale: setLocale,
           themeMode: _themeMode,
           onChangeThemeMode: setThemeMode,
+          mapStyle: _mapStyle,
+          onChangeMapStyle: setMapStyle,
         ),
       AppSession.driver => DriverShell(
           api: widget.api,
@@ -472,6 +488,8 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
           onChangeLocale: setLocale,
           themeMode: _themeMode,
           onChangeThemeMode: setThemeMode,
+          mapStyle: _mapStyle,
+          onChangeMapStyle: setMapStyle,
         ),
     };
     if (_session != AppSession.splash) _maybeShowUpdateNudge();

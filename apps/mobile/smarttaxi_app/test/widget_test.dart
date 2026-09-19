@@ -863,12 +863,23 @@ void main() {
         reason: 'the old three-storey cut-off must not come back');
 
     // Both shells and the web map share one threshold, so a building cannot be
-    // flat on the phone and solid in the browser.
+    // flat on the phone and solid in the browser. The shells read it through a
+    // local because the plan style drops the filter altogether — see below —
+    // but the threshold itself still has exactly one definition.
     for (final source in [passenger, driver]) {
-      expect(source, contains('filter: flatBuildingFilter'));
+      expect(source,
+          contains('final flatFilter = extrude ? flatBuildingFilter : null;'));
+      expect(source, contains('filter: flatFilter'));
       expect(source, contains('filter: extrudedBuildingFilter'));
       expect(source, contains('fillExtrusionHeight:'),
           reason: 'a building is drawn at the height somebody recorded');
+      // Volume belongs to the 3D style alone: asking for the plan and getting
+      // extruded houses anyway is the whole complaint the choice answers.
+      expect(
+          source, contains('final extrude = widget.style.extrudesBuildings;'));
+      expect(source, contains('if (extrude) {'));
+      // And imagery draws no footprints at all — the roofs are in the picture.
+      expect(source, contains('if (!widget.style.drawsBuildings) return;'));
     }
 
     // A footprint with no recorded height still stays flat: drawing it would

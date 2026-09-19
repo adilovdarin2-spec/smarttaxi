@@ -13,6 +13,8 @@ import 'package:maplibre_gl/maplibre_gl.dart' as native_map;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/api/api_client.dart';
+import '../../core/map/map_style.dart';
+import '../../core/widgets/map_style_picker.dart';
 import '../../core/auth/auth_store.dart';
 import '../../core/config/app_config.dart';
 import '../../core/legal/legal_content.dart';
@@ -135,6 +137,8 @@ class DriverShell extends StatefulWidget {
     this.onChangeLocale,
     this.themeMode,
     this.onChangeThemeMode,
+    this.mapStyle = MapStyleChoice.fallback,
+    this.onChangeMapStyle,
   });
 
   final ApiClient api;
@@ -153,6 +157,8 @@ class DriverShell extends StatefulWidget {
   final ValueChanged<Locale>? onChangeLocale;
   final ThemeMode? themeMode;
   final ValueChanged<ThemeMode>? onChangeThemeMode;
+  final MapStyleChoice mapStyle;
+  final ValueChanged<MapStyleChoice>? onChangeMapStyle;
 
   @override
   State<DriverShell> createState() => _DriverShellState();
@@ -2030,6 +2036,12 @@ class _DriverShellState extends State<DriverShell> {
     );
   }
 
+  Future<void> _pickMapStyle() async {
+    final chosen = await showMapStylePicker(context, current: widget.mapStyle);
+    if (chosen == null || chosen == widget.mapStyle) return;
+    widget.onChangeMapStyle?.call(chosen);
+  }
+
   Future<void> _openRoadAlerts() async {
     final scaffold = _scaffoldKey.currentState;
     if (scaffold?.isDrawerOpen ?? false) {
@@ -2040,6 +2052,7 @@ class _DriverShellState extends State<DriverShell> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => _RoadAlertsSheet(
+        mapStyle: widget.mapStyle,
         api: widget.api,
         regionId: _regionId,
         initialCenter: _lastPosition != null
@@ -2790,6 +2803,8 @@ class _DriverShellState extends State<DriverShell> {
                 mapUnavailable: _navigatorMapUnavailable,
                 onTileError: _handleNavigatorTileError,
                 fallbackCenter: _selectedRegion?.center,
+                mapStyle: widget.mapStyle,
+                onChangeMapStyle: widget.onChangeMapStyle,
                 height: (MediaQuery.sizeOf(context).height * 0.34)
                     .clamp(180.0, 300.0),
               ),
@@ -2801,6 +2816,15 @@ class _DriverShellState extends State<DriverShell> {
                   semanticLabel: l10n.driverDrawerRoadAlerts,
                   badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
                   onTap: () => unawaited(_openRoadAlerts()),
+                ),
+              ),
+              Positioned(
+                top: 68,
+                right: 14,
+                child: _MapChipButton(
+                  icon: mapStyleIcon(widget.mapStyle),
+                  semanticLabel: l10n.mapStyleButtonTooltip,
+                  onTap: () => unawaited(_pickMapStyle()),
                 ),
               ),
             ],
@@ -2887,6 +2911,8 @@ class _DriverShellState extends State<DriverShell> {
             mapUnavailable: _navigatorMapUnavailable,
             onTileError: _handleNavigatorTileError,
             fallbackCenter: _selectedRegion?.center,
+            mapStyle: widget.mapStyle,
+            onChangeMapStyle: widget.onChangeMapStyle,
             height: screen.height,
             badgeTop: 60,
           ),
@@ -2899,6 +2925,15 @@ class _DriverShellState extends State<DriverShell> {
             semanticLabel: l10n.driverDrawerRoadAlerts,
             badge: _roadAlerts.isEmpty ? null : _roadAlerts.length,
             onTap: () => unawaited(_openRoadAlerts()),
+          ),
+        ),
+        Positioned(
+          top: 124,
+          right: 16,
+          child: _MapChipButton(
+            icon: mapStyleIcon(widget.mapStyle),
+            semanticLabel: l10n.mapStyleButtonTooltip,
+            onTap: () => unawaited(_pickMapStyle()),
           ),
         ),
         Positioned(
@@ -3146,6 +3181,7 @@ class _DriverShellState extends State<DriverShell> {
         else ...[
           if (!_isTripFinished(_activeOrder!.status)) ...[
             _TripMap(
+                mapStyle: widget.mapStyle,
                 order: _activeOrder!,
                 route: _driverRoute?.geometry ?? const [],
                 current: _currentCoordinate,
@@ -3955,6 +3991,8 @@ class _SmartNavigatorMap extends StatefulWidget {
     this.fallbackCenter,
     this.height,
     this.badgeTop = 14,
+    required this.mapStyle,
+    required this.onChangeMapStyle,
   });
 
   final Coordinate? current;
@@ -3968,6 +4006,8 @@ class _SmartNavigatorMap extends StatefulWidget {
   final Coordinate? fallbackCenter;
   final double? height;
   final double badgeTop;
+  final MapStyleChoice mapStyle;
+  final ValueChanged<MapStyleChoice>? onChangeMapStyle;
 
   @override
   State<_SmartNavigatorMap> createState() => _SmartNavigatorMapState();
@@ -4090,6 +4130,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                       route: widget.route,
                       alerts: widget.alerts,
                       signs: widget.signs,
+                      style: widget.mapStyle,
                     )
                   : FlutterMap(
                       mapController: _mapController,
@@ -4103,14 +4144,25 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                         backgroundColor: context.palette.appBackground,
                       ),
                       children: [
+                        // Flat by construction, so this surface can only
+                        // answer the imagery choice — and a photograph must
+                        // not go through the tile filter that matches a drawn
+                        // map to the app's theme.
                         ColorFiltered(
                           colorFilter: ColorFilter.matrix(
-                            isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                            widget.mapStyle.allowsTileTinting
+                                ? (isDark
+                                    ? _darkMapTileMatrix
+                                    : _lightMapTileMatrix)
+                                : identityTileMatrix,
                           ),
                           child: TileLayer(
-                            urlTemplate: AppConfig.osmTileUrl,
+                            urlTemplate: widget.mapStyle.rasterTileUrl,
                             subdomains: const ['a', 'b', 'c', 'd'],
                             retinaMode: true,
+                            maxNativeZoom: widget.mapStyle.allowsTileTinting
+                                ? 19
+                                : AppConfig.satelliteMaxZoom,
                             userAgentPackageName: 'kz.baisapar.app',
                             errorTileCallback: (_, __, ___) =>
                                 widget.onTileError(),
@@ -4244,6 +4296,7 @@ class _NativeDriverNavigatorMap extends StatefulWidget {
     required this.route,
     required this.alerts,
     required this.signs,
+    required this.style,
   });
 
   final LatLng center;
@@ -4253,6 +4306,7 @@ class _NativeDriverNavigatorMap extends StatefulWidget {
   final List<LatLng> route;
   final List<RoadAlert> alerts;
   final List<OsmSign> signs;
+  final MapStyleChoice style;
 
   @override
   State<_NativeDriverNavigatorMap> createState() =>
@@ -4316,6 +4370,16 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
   @override
   void didUpdateWidget(covariant _NativeDriverNavigatorMap oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.style != widget.style) {
+      // A style reload drops every runtime layer and symbol with it. Go back
+      // behind the veil and let onStyleLoadedCallback rebuild the route, the
+      // alerts and the vehicle, rather than leaving a finished-looking map
+      // with the navigation stripped out of it.
+      _styleReady = false;
+      _lastSceneSignature = '';
+      _imagesInstalled = false;
+      _routeLayersInstalled = false;
+    }
     unawaited(_followDriverIfNeeded());
     _scheduleSceneSync();
   }
@@ -4394,12 +4458,19 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
     }
   }
 
-  Future<void> _enable3dBuildings(
+  Future<void> _installBuildings(
       native_map.MapLibreMapController controller) async {
+    // Imagery already shows the roofs; drawing footprints over the photograph
+    // would cover the one thing the driver switched to it for.
+    if (!widget.style.drawsBuildings) return;
     // Without this the extrusion went on top of the whole style, so the
     // navigation map drew houses over the street names — the one screen where
     // the name has to stay readable. See resolveLabelAnchorLayerId.
     final anchorLayerId = await resolveLabelAnchorLayerId(controller);
+    // In the plan style nothing is extruded, so the flat layers take every
+    // building rather than only the ones too low to stand up.
+    final extrude = widget.style.extrudesBuildings;
+    final flatFilter = extrude ? flatBuildingFilter : null;
     try {
       // Keep low, real residential footprints flat. Their source height is
       // too small for a believable volume, and extruding every one made the
@@ -4421,7 +4492,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: flatBuildingFilter,
+        filter: flatFilter,
         enableInteraction: false,
       );
       await controller.addFillLayer(
@@ -4435,45 +4506,54 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
         sourceLayer: 'building',
         belowLayerId: anchorLayerId,
         minzoom: 13,
-        filter: flatBuildingFilter,
+        filter: flatFilter,
         enableInteraction: false,
       );
-      await controller.addFillExtrusionLayer(
-        'openmaptiles',
-        'smarttaxi-driver-3d-buildings',
-        const native_map.FillExtrusionLayerProperties(
-          // Keep real OSM roof outlines and light-driven facades visible
-          // against Liberty's pale roads; near-white buildings looked flat.
-          fillExtrusionColor: '#c6d8ef',
-          fillExtrusionHeight: [
-            'coalesce',
-            ['get', 'render_height'],
-            ['get', 'height'],
-            0,
-          ],
-          fillExtrusionBase: [
-            'coalesce',
-            ['get', 'render_min_height'],
-            ['get', 'min_height'],
-            0,
-          ],
-          // The driver map uses the same measured source heights as the
-          // rider map. Lighting gives roofs and facades distinct depth while
-          // labels, route and vehicle continue to render above this layer.
-          fillExtrusionOpacity: 0.9,
-          fillExtrusionVerticalGradient: true,
-        ),
-        sourceLayer: 'building',
-        belowLayerId: anchorLayerId,
-        minzoom: 13,
-        filter: extrudedBuildingFilter,
-        enableInteraction: false,
-      );
+      if (extrude) {
+        await _addExtrudedBuildings(controller, anchorLayerId);
+      }
       await hideDuplicateLibertyBuildings(controller);
     } catch (_) {
       // The style's building source is optional. The operational map and all
       // safety annotations remain available without it.
     }
+  }
+
+  Future<void> _addExtrudedBuildings(
+    native_map.MapLibreMapController controller,
+    String? anchorLayerId,
+  ) async {
+    await controller.addFillExtrusionLayer(
+      'openmaptiles',
+      'smarttaxi-driver-3d-buildings',
+      const native_map.FillExtrusionLayerProperties(
+        // Keep real OSM roof outlines and light-driven facades visible
+        // against Liberty's pale roads; near-white buildings looked flat.
+        fillExtrusionColor: '#c6d8ef',
+        fillExtrusionHeight: [
+          'coalesce',
+          ['get', 'render_height'],
+          ['get', 'height'],
+          0,
+        ],
+        fillExtrusionBase: [
+          'coalesce',
+          ['get', 'render_min_height'],
+          ['get', 'min_height'],
+          0,
+        ],
+        // The driver map uses the same measured source heights as the
+        // rider map. Lighting gives roofs and facades distinct depth while
+        // labels, route and vehicle continue to render above this layer.
+        fillExtrusionOpacity: 0.9,
+        fillExtrusionVerticalGradient: true,
+      ),
+      sourceLayer: 'building',
+      belowLayerId: anchorLayerId,
+      minzoom: 13,
+      filter: extrudedBuildingFilter,
+      enableInteraction: false,
+    );
   }
 
   Future<void> _followDriverIfNeeded() async {
@@ -4494,7 +4574,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
           native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 14.2 : 15.4,
-            tilt: 58,
+            tilt: widget.style.isTilted ? 58 : 0,
           ),
         ),
         duration: const Duration(milliseconds: 420),
@@ -4721,7 +4801,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
         await Future<void>.delayed(const Duration(milliseconds: 280));
         if (mounted && identical(controller, _controller)) {
           await applyLibertyPresentation(controller);
-          await _enable3dBuildings(controller);
+          await _installBuildings(controller);
           await _settle3dCamera(controller);
         }
       }));
@@ -4739,7 +4819,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
           native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 15.0 : 15.4,
-            tilt: 58,
+            tilt: widget.style.isTilted ? 58 : 0,
           ),
         ),
         duration: const Duration(milliseconds: 320),
@@ -4765,7 +4845,7 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
       fit: StackFit.expand,
       children: [
         native_map.MapLibreMap(
-          styleString: AppConfig.mapLibreStyleUrl,
+          styleString: widget.style.styleString,
           // Navigation uses style layers for its route/buildings and only
           // symbols/circles for live objects. Do not initialize the unused
           // line and fill annotation managers on every Android map view.
@@ -4780,12 +4860,13 @@ class _NativeDriverNavigatorMapState extends State<_NativeDriverNavigatorMap> {
           initialCameraPosition: native_map.CameraPosition(
             target: target,
             zoom: widget.current == null ? 14.2 : 15.4,
-            tilt: 58,
+            tilt: widget.style.isTilted ? 58 : 0,
           ),
           compassEnabled: false,
           trackCameraPosition: true,
           rotateGesturesEnabled: true,
-          tiltGesturesEnabled: true,
+          // A plan and a photograph have nothing to show at an angle.
+          tiltGesturesEnabled: widget.style.isTilted,
           onMapCreated: (controller) => _controller = controller,
           onStyleLoadedCallback: _onStyleLoaded,
         ),
@@ -5391,6 +5472,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final mapStyle = shell.widget.mapStyle;
     return Scaffold(
       backgroundColor: context.palette.appBackground,
       body: Stack(
@@ -5414,12 +5496,19 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                       // here even though the rest of the app was light.
                       ColorFiltered(
                         colorFilter: ColorFilter.matrix(
-                          isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                          mapStyle.allowsTileTinting
+                              ? (isDark
+                                  ? _darkMapTileMatrix
+                                  : _lightMapTileMatrix)
+                              : identityTileMatrix,
                         ),
                         child: TileLayer(
-                          urlTemplate: AppConfig.osmTileUrl,
+                          urlTemplate: mapStyle.rasterTileUrl,
                           subdomains: const ['a', 'b', 'c', 'd'],
                           retinaMode: true,
+                          maxNativeZoom: mapStyle.allowsTileTinting
+                              ? 19
+                              : AppConfig.satelliteMaxZoom,
                           userAgentPackageName: 'kz.baisapar.app',
                           errorTileCallback: (_, __, ___) {
                             if (_mapUnavailable) return;
@@ -5788,6 +5877,7 @@ class _TripMap extends StatefulWidget {
   const _TripMap({
     required this.order,
     required this.route,
+    required this.mapStyle,
     this.current,
     this.heading,
     this.edgeToEdge = false,
@@ -5795,6 +5885,7 @@ class _TripMap extends StatefulWidget {
 
   final OrderSummary order;
   final List<LatLng> route;
+  final MapStyleChoice mapStyle;
   final Coordinate? current;
   final double? heading;
   final bool edgeToEdge;
@@ -5910,12 +6001,17 @@ class _TripMapState extends State<_TripMap> {
               children: [
                 ColorFiltered(
                   colorFilter: ColorFilter.matrix(
-                    isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                    widget.mapStyle.allowsTileTinting
+                        ? (isDark ? _darkMapTileMatrix : _lightMapTileMatrix)
+                        : identityTileMatrix,
                   ),
                   child: TileLayer(
-                      urlTemplate: AppConfig.osmTileUrl,
+                      urlTemplate: widget.mapStyle.rasterTileUrl,
                       subdomains: const ['a', 'b', 'c', 'd'],
                       retinaMode: true,
+                      maxNativeZoom: widget.mapStyle.allowsTileTinting
+                          ? 19
+                          : AppConfig.satelliteMaxZoom,
                       userAgentPackageName: 'kz.baisapar.app'),
                 ),
                 if (widget.route.isNotEmpty)
@@ -6692,11 +6788,13 @@ class _RoadAlertsSheet extends StatefulWidget {
   const _RoadAlertsSheet({
     required this.api,
     required this.regionId,
+    required this.mapStyle,
     this.initialCenter,
   });
 
   final ApiClient api;
   final String? regionId;
+  final MapStyleChoice mapStyle;
   final Coordinate? initialCenter;
 
   @override
@@ -6925,6 +7023,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
             ),
             const SizedBox(height: 14),
             _RoadAlertMap(
+              mapStyle: widget.mapStyle,
               alerts: _alerts,
               selectedPoint: _selectedPoint,
               initialCenter: widget.initialCenter,
@@ -7081,6 +7180,7 @@ class _RoadAlertsSheetState extends State<_RoadAlertsSheet> {
 
 class _RoadAlertMap extends StatelessWidget {
   const _RoadAlertMap({
+    required this.mapStyle,
     required this.alerts,
     required this.selectedPoint,
     required this.mapUnavailable,
@@ -7089,6 +7189,7 @@ class _RoadAlertMap extends StatelessWidget {
     this.initialCenter,
   });
 
+  final MapStyleChoice mapStyle;
   final List<RoadAlert> alerts;
   final Coordinate? selectedPoint;
   final Coordinate? initialCenter;
@@ -7126,12 +7227,17 @@ class _RoadAlertMap extends StatelessWidget {
                 children: [
                   ColorFiltered(
                     colorFilter: ColorFilter.matrix(
-                      isDark ? _darkMapTileMatrix : _lightMapTileMatrix,
+                      mapStyle.allowsTileTinting
+                          ? (isDark ? _darkMapTileMatrix : _lightMapTileMatrix)
+                          : identityTileMatrix,
                     ),
                     child: TileLayer(
-                      urlTemplate: AppConfig.osmTileUrl,
+                      urlTemplate: mapStyle.rasterTileUrl,
                       subdomains: const ['a', 'b', 'c', 'd'],
                       retinaMode: true,
+                      maxNativeZoom: mapStyle.allowsTileTinting
+                          ? 19
+                          : AppConfig.satelliteMaxZoom,
                       userAgentPackageName: 'kz.baisapar.app',
                       errorTileCallback: (_, __, ___) => onTileError(),
                     ),

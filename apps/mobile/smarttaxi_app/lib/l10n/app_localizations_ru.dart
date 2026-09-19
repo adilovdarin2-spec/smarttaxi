@@ -4519,4 +4519,42 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get assignmentRiderUnavailable =>
       'Водитель больше не может принять этот заказ. Выберите другого водителя или отклоните предложение.';
+
+  @override
+  String get mapStyleTitle => 'Вид карты';
+
+  @override
+  String get mapStyleButtonTooltip => 'Вид карты';
+
+  @override
+  String get mapStyle3d => '3D';
+
+  @override
+  String get mapStyle3dDescription => 'Объёмные дома — видно, где какой дом';
+
+  @override
+  String get mapStyle2d => '2D';
+
+  @override
+  String get mapStyle2dDescription => 'Плоская схема — проще и быстрее';
+
+  @override
+  String get mapStyleSatellite => 'Спутник';
+
+  @override
+  String get mapStyleSatelliteDescription =>
+      'Снимок со спутника с названиями улиц';
+
+  @override
+  String get passengerNamePointTitle => 'Как называется это место?';
+
+  @override
+  String get passengerNamePointSubtitle =>
+      'У этой точки нет адреса на карте. Напишите, как её найти, — водитель увидит это в заказе.';
+
+  @override
+  String get passengerNamePointHint => 'Например: синие ворота за мечетью';
+
+  @override
+  String get passengerNamePointConfirm => 'Готово';
 }

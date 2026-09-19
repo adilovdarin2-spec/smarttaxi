@@ -4543,4 +4543,43 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get assignmentRiderUnavailable =>
       'Haydovchi endi bu buyurtmani qabul qila olmaydi. Boshqa haydovchini tanlang yoki taklifni rad eting.';
+
+  @override
+  String get mapStyleTitle => 'Xarita ko‘rinishi';
+
+  @override
+  String get mapStyleButtonTooltip => 'Xarita ko‘rinishi';
+
+  @override
+  String get mapStyle3d => '3D';
+
+  @override
+  String get mapStyle3dDescription => 'Hajmli uylar — qaysi uy ekani ko‘rinadi';
+
+  @override
+  String get mapStyle2d => '2D';
+
+  @override
+  String get mapStyle2dDescription => 'Yassi sxema — soddaroq va tezroq';
+
+  @override
+  String get mapStyleSatellite => 'Sun’iy yo‘ldosh';
+
+  @override
+  String get mapStyleSatelliteDescription =>
+      'Sun’iy yo‘ldosh surati, ko‘cha nomlari bilan';
+
+  @override
+  String get passengerNamePointTitle => 'Bu joy qanday ataladi?';
+
+  @override
+  String get passengerNamePointSubtitle =>
+      'Bu nuqtaning xaritada manzili yo‘q. Uni qanday topish mumkinligini yozing — haydovchi buyurtmada ko‘radi.';
+
+  @override
+  String get passengerNamePointHint =>
+      'Masalan: masjid orqasidagi ko‘k darvoza';
+
+  @override
+  String get passengerNamePointConfirm => 'Tayyor';
 }

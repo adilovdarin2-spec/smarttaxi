@@ -4215,4 +4215,40 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get assignmentRiderUnavailable => '司机已无法接受此订单。请选择其他司机或拒绝报价。';
+
+  @override
+  String get mapStyleTitle => '地图样式';
+
+  @override
+  String get mapStyleButtonTooltip => '地图样式';
+
+  @override
+  String get mapStyle3d => '3D';
+
+  @override
+  String get mapStyle3dDescription => '立体建筑，便于分辨具体房屋';
+
+  @override
+  String get mapStyle2d => '2D';
+
+  @override
+  String get mapStyle2dDescription => '平面图，更简洁、更流畅';
+
+  @override
+  String get mapStyleSatellite => '卫星';
+
+  @override
+  String get mapStyleSatelliteDescription => '卫星影像，带街道名称';
+
+  @override
+  String get passengerNamePointTitle => '这个地点叫什么？';
+
+  @override
+  String get passengerNamePointSubtitle => '该位置在地图上没有地址。请写明如何找到它——司机会在订单中看到。';
+
+  @override
+  String get passengerNamePointHint => '例如：清真寺后面的蓝色大门';
+
+  @override
+  String get passengerNamePointConfirm => '完成';
 }

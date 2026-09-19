@@ -4498,4 +4498,42 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get assignmentRiderUnavailable =>
       'Жүргізуші енді бұл тапсырысты қабылдай алмайды. Басқа жүргізушіні таңдаңыз немесе ұсыныстан бас тартыңыз.';
+
+  @override
+  String get mapStyleTitle => 'Карта түрі';
+
+  @override
+  String get mapStyleButtonTooltip => 'Карта түрі';
+
+  @override
+  String get mapStyle3d => '3D';
+
+  @override
+  String get mapStyle3dDescription => 'Көлемді үйлер — қай үй екені көрінеді';
+
+  @override
+  String get mapStyle2d => '2D';
+
+  @override
+  String get mapStyle2dDescription => 'Жазық схема — қарапайым әрі жылдам';
+
+  @override
+  String get mapStyleSatellite => 'Спутник';
+
+  @override
+  String get mapStyleSatelliteDescription =>
+      'Спутник суреті, көше атаулары қоса';
+
+  @override
+  String get passengerNamePointTitle => 'Бұл жердің аты қалай?';
+
+  @override
+  String get passengerNamePointSubtitle =>
+      'Бұл нүктенің картада мекенжайы жоқ. Оны қалай табуға болатынын жазыңыз — жүргізуші тапсырыста көреді.';
+
+  @override
+  String get passengerNamePointHint => 'Мысалы: мешіттің артындағы көк қақпа';
+
+  @override
+  String get passengerNamePointConfirm => 'Дайын';
 }

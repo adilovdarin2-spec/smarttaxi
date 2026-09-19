@@ -15,6 +15,7 @@ class AuthStore {
   static const _localeKey = 'smarttaxi.app.locale';
   static const _themeModeKey = 'smarttaxi.app.themeMode';
   static const _voiceEnabledKey = 'smarttaxi.app.voiceEnabled';
+  static const _mapStyleKey = 'smarttaxi.app.mapStyle';
   static const _confirmedRegionIdKey =
       'smarttaxi.app.confirmedPassengerRegionId';
   static const _driverApplicationSubmittedKey =
@@ -34,6 +35,14 @@ class AuthStore {
 
   Future<void> saveThemeMode(String mode) =>
       _storage.write(key: _themeModeKey, value: mode);
+
+  // How the map is drawn: volume, plan or imagery. A device preference like
+  // theme and locale — it describes this phone and this screen, not the
+  // account, so it survives logout and a switch between rider and driver.
+  Future<String?> readMapStyle() => _storage.read(key: _mapStyleKey);
+
+  Future<void> saveMapStyle(String value) =>
+      _storage.write(key: _mapStyleKey, value: value);
 
   // Driver navigator voice call-outs (camera/sign/speeding) — on by default,
   // a device preference like theme/locale so it isn't cleared on logout.
