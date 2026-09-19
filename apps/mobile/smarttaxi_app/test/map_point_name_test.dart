@@ -53,6 +53,20 @@ void main() {
         reason: 'do not ask for a name for a point that will then be refused');
   });
 
+  test('the rider is not kept waiting for a lookup that has an answer', () {
+    final api = _read('lib/core/api/api_client.dart');
+    // The picker has an instant answer for a failed lookup — the rider names
+    // the place — so the client's default 30s receive timeout would buy
+    // nothing and cost them the screen while it ran out.
+    expect(api, contains('static const reverseAddressTimeout = Duration(seconds: 6);'));
+    final reverse = api.substring(
+      api.indexOf('Future<AddressSuggestion?> reverseAddress('),
+      api.indexOf('Future<RoutePreview> previewRoute('),
+    );
+    expect(reverse, contains('receiveTimeout: reverseAddressTimeout'));
+    expect(reverse, contains('sendTimeout: reverseAddressTimeout'));
+  });
+
   test('the typed name is one the server will accept', () {
     // orders.routes.js validates pickupText/dropoffText as
     // z.string().trim().min(2).max(180). A name rejected after the rider has

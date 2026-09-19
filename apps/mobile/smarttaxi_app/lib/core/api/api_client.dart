@@ -255,6 +255,14 @@ class ApiClient {
         .toList(growable: false);
   }
 
+  /// Naming the point under the map picker.
+  ///
+  /// Deliberately much shorter than the client's default 30s: the picker has
+  /// an instant answer for a lookup that fails — the rider names the place
+  /// themselves — so half a minute of "Определяем адрес…" buys nothing and
+  /// costs the rider the whole screen while they wait for it.
+  static const reverseAddressTimeout = Duration(seconds: 6);
+
   Future<AddressSuggestion?> reverseAddress(Coordinate coordinate,
       {Map<String, dynamic>? building}) async {
     final response = await _dio.get<Map<String, dynamic>>(
@@ -264,6 +272,10 @@ class ApiClient {
         'lng': coordinate.lng,
         if (building != null) 'building': jsonEncode(building),
       },
+      options: Options(
+        receiveTimeout: reverseAddressTimeout,
+        sendTimeout: reverseAddressTimeout,
+      ),
     );
     final data = response.data ?? {};
     final address = data['address'];
