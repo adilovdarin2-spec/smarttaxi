@@ -4549,7 +4549,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerPriceRecommended => 'Ұсынылған баға';
 
   @override
-  String get passengerPriceYourBid => 'Сіздің бағаңыз';
+  String get passengerPriceYourBid => 'Өз ұсынысыңыз';
 
   @override
   String get tariffPriceCalculating => 'Есептелуде';

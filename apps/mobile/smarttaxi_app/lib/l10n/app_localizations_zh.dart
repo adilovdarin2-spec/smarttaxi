@@ -4264,7 +4264,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerPriceRecommended => '推荐价格';
 
   @override
-  String get passengerPriceYourBid => '您的出价';
+  String get passengerPriceYourBid => '您设定的价格';
 
   @override
   String get tariffPriceCalculating => '计算中';

@@ -1894,6 +1894,6 @@
   "driverUnsettledTripTitle": "Сапар жабылмаған",
   "driverUnsettledTripMessage": "{amount} сапары үшін төлем әлі расталмаған. Сіз растағанша жолаушы жаңа сапарға тапсырыс бере алмайды.",
   "passengerPriceRecommended": "Ұсынылған баға",
-  "passengerPriceYourBid": "Сіздің бағаңыз",
+  "passengerPriceYourBid": "Өз ұсынысыңыз",
   "tariffPriceCalculating": "Есептелуде"
 }
