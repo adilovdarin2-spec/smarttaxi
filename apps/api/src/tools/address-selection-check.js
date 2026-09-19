@@ -243,9 +243,18 @@ const overNothing = await reverseAddress(
 );
 assert.equal(overNothing.title, "Адрес не определён", "an unresolvable pin says so");
 assert.equal(overNothing.source, "point_on_map", "and is marked as a point, not an address");
-assert.equal(overNothing.fallback, true, "and carries fallback:true so the client can block confirmation");
+assert.equal(overNothing.fallback, true, "and carries fallback:true so the client does not present it as an address");
 assert.equal(overNothing.confidence, 0, "with no confidence");
-assert.match(overNothing.subtitle, /передвин|Передвин/, "and tells the rider what to do about it");
+// The guidance has to name the way out that actually exists. It used to say
+// "move the pin to the nearest building" — advice about a building that is
+// not there: four of the twelve regions have no named streets in OSM at all.
+// Both clients now let the rider name the point instead.
+assert.match(overNothing.subtitle, /назван/i, "and tells the rider what to do about it");
+assert.doesNotMatch(
+  overNothing.subtitle,
+  /передвин/i,
+  "and never sends them looking for a nearer building that may not exist"
+);
 
 // 3. A bare street over a house. Same rule as the road code: the house wins.
 const bareStreetOverHouse = await reverseAddress(

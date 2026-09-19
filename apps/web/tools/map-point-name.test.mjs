@@ -18,8 +18,10 @@ test("a point with no address asks the rider to name it", () => {
   assert.ok(client.includes("Как называется это место?"));
   assert.ok(client.includes('placeholder="Например: синие ворота за мечетью"'));
 
-  // A resolved or cached answer must take the question back down again.
-  assert.equal(client.match(/setNeedsPointName\(false\)/g).length, 3);
+  // A resolved address, a cached one, a point outside the zone and moving the
+  // map must each take the question back down again. Leaving it up would keep
+  // asking for a name the next point does not need.
+  assert.equal(client.match(/setNeedsPointName\(false\)/g).length, 4);
 });
 
 test("the typed name is what the order carries", () => {
@@ -47,4 +49,16 @@ test("the home map points at the picker rather than a house that is not there", 
   // Жана Жол, Фирдоуси and Ынтымак OSM has no named streets at all.
   assert.ok(!client.includes("Передвиньте карту к ближайшему дому или объекту"));
   assert.ok(client.includes("Откройте «Откуда» и выберите точку на карте — там можно дать ей название"));
+});
+
+test("a point outside the zone is refused, not offered for naming", () => {
+  // Outside the region is not the rider's to solve by typing: chooseAddress
+  // refuses it a moment later, so asking for a name wastes the one thing this
+  // screen asks them for. Checked on the coordinate, before any geocoding.
+  const picker = client.slice(client.indexOf("async function updateMapCandidate("));
+  const guard = picker.indexOf("if (!pointInRegion(point, searchRegion))");
+  const naming = picker.indexOf("setNeedsPointName(true)");
+  assert.ok(guard > 0, "the picker must check the region on the coordinate");
+  assert.ok(guard < naming, "the zone check has to come before the naming offer");
+  assert.ok(picker.includes('title: "Точка вне зоны обслуживания"'));
 });

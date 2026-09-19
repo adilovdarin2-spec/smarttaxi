@@ -3232,6 +3232,22 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
       setError("");
       return;
     }
+    // Outside the region is a different answer from "no address here", and
+    // only the second one is the rider's to solve. Asking them to name a point
+    // that chooseAddress will refuse a moment later wastes the one thing this
+    // screen is asking them for. Checked on the coordinate, so it does not
+    // wait for — or depend on — the geocoder.
+    if (!pointInRegion(point, searchRegion)) {
+      setMapCandidate({
+        ...fallback,
+        title: "Точка вне зоны обслуживания",
+        subtitle: searchRegion?.name ? `Выберите точку в зоне «${searchRegion.name}»` : "Выберите точку в рабочей зоне"
+      });
+      setMapCandidateReady(false);
+      setNeedsPointName(false);
+      setMapPickLoading(false);
+      return;
+    }
     setMapCandidate(fallback);
     setMapCandidateReady(false);
     setMapPickLoading(true);
@@ -3254,7 +3270,8 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
       if (mountedRef.current && seq === reverseSeqRef.current) {
         // Not a dead end any more. Telling a rider in Бирлик to move the map
         // to the nearest house is advice about a house that does not exist:
-        // OSM has no named streets there at all.
+        // OSM has no named streets there at all. The point is already known to
+        // be inside the region, so a name is all that is missing.
         setMapCandidate({ ...fallback, title: "", subtitle: "" });
         setMapCandidateReady(false);
         setNeedsPointName(true);

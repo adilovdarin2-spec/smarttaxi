@@ -28,6 +28,31 @@ void main() {
     expect(passenger, contains('_dropoffLabel = label;'));
   });
 
+  test('confirming a point the map cannot name is not a no-op', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final confirm = passenger.substring(
+      passenger.indexOf('Future<void> _confirmMapPointSelection()'),
+      passenger.indexOf('void _cancelMapPointSelection()'),
+    );
+
+    // The confirm button is enabled the moment the lookup settles, but the
+    // handler used to return early unless the geocoder had resolved a
+    // coordinate — so in the four regions with no named streets at all,
+    // tapping "Подтвердить" did nothing whatsoever. The fallback chain right
+    // below that guard was written for this case and could never run.
+    expect(confirm.contains('_mapPickerResolvedCoordinate == null'), isFalse,
+        reason: 'a point with no address must still be confirmable');
+    expect(confirm, contains('_mapPickerResolvedCoordinate?.toLatLng() ??'));
+    expect(confirm, contains('_mapCenter ??'));
+
+    // Outside the region is not something a name can fix, and the message for
+    // it belongs to _applyMapTap.
+    expect(confirm, contains('_shouldBlockPointByRegion('));
+    expect(confirm.indexOf('_shouldBlockPointByRegion('),
+        lessThan(confirm.indexOf('showMapPointNameSheet(')),
+        reason: 'do not ask for a name for a point that will then be refused');
+  });
+
   test('the typed name is one the server will accept', () {
     // orders.routes.js validates pickupText/dropoffText as
     // z.string().trim().min(2).max(180). A name rejected after the rider has

@@ -1936,15 +1936,25 @@ class _PassengerShellState extends State<PassengerShell>
   }
 
   Future<void> _confirmMapPointSelection() async {
-    if (!_mapPointPickerActive ||
-        _mapPickerAddressLoading ||
-        _mapPickerResolvedCoordinate == null) {
-      return;
-    }
+    // Deliberately NOT gated on a resolved coordinate. The rider put the
+    // marker somewhere; whether the geocoder could name it is a separate
+    // question, and it has no answer at all in four of the regions. That
+    // guard made the confirm button — which is enabled the moment the lookup
+    // settles — silently do nothing there, and the fallback chain below,
+    // written for exactly this case, was dead code.
+    if (!_mapPointPickerActive || _mapPickerAddressLoading) return;
     final point = _mapPickerResolvedCoordinate?.toLatLng() ??
         _mapCenter ??
         _selectedRegion?.center?.toLatLng() ??
         _atakentFallbackCenter;
+    // Outside the working region is not something the rider can fix by naming
+    // the place. _applyMapTap owns that message; let it refuse the point
+    // rather than asking a question whose answer is thrown away.
+    if (_shouldBlockPointByRegion(
+        _selectedRegion, Coordinate(lat: point.latitude, lng: point.longitude))) {
+      await _applyMapTap(point);
+      return;
+    }
     final knownLabel = _mapPickerAddressLoading
         ? null
         : _mapPickerAddressLabel.trim().isEmpty

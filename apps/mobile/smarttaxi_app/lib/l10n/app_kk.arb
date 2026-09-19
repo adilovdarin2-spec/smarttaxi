@@ -1758,7 +1758,7 @@
   "driverRegionsLoadFailedMessage": "Байланысты тексеріп, жаңарту үшін экранды төмен қарай тартыңыз. Аймақтарға қолжетімдігіңіз сақталған.",
   "driverRegionsRetryAction": "Жаңарту",
   "authTagline": "ҚАЛАЛЫҚ ТАКСИ",
-  "passengerMapPointNoAddressHint": "Нүктені жақын үйге немесе нысанға жылжытыңыз",
+  "passengerMapPointNoAddressHint": "Нүктені растаңыз да, бұл жердің аты қалай екенін жазыңыз",
   "standScreenTitle": "Тұрақ",
   "standNearbyTitle": "Жақын тұрақтар",
   "standNoneTitle": "Тұрақтар жоқ",

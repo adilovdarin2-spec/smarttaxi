@@ -1890,8 +1890,15 @@ export async function reverseAddress({ lat, lng, building: buildingInput }, fetc
       ...suggestion,
       label: "Адрес не определён",
       title: "Адрес не определён",
-      subtitle: building ? 'У этого здания нет точного адреса в доступных данных. Найдите его по названию или выберите другое здание.'
-        : place ? `Попробуйте передвинуть точку в пределах ${place}` : "Передвиньте точку к ближайшему зданию",
+      // Both clients now let the rider name a point the data cannot name, so
+      // the guidance says what actually happens next. "Move the pin to the
+      // nearest building" was advice about a building that does not exist:
+      // four of the twelve regions have no named streets in OSM at all.
+      subtitle: building
+        ? 'У этого здания нет точного адреса в данных. Подтвердите точку и дайте ей название — водитель увидит его в заказе.'
+        : place
+          ? `Подтвердите точку и дайте ей название — например, ориентир в ${place}`
+          : 'Подтвердите точку и дайте ей название — водитель увидит его в заказе.',
       source: "point_on_map",
       fallback: true,
       confidence: 0,

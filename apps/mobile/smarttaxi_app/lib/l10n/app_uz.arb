@@ -1761,7 +1761,7 @@
   "driverRegionsLoadFailedMessage": "Aloqani tekshiring va yangilash uchun ekranni pastga torting. Hududlarga ruxsatingiz saqlanib qolgan.",
   "driverRegionsRetryAction": "Yangilash",
   "authTagline": "SHAHAR TAKSISI",
-  "passengerMapPointNoAddressHint": "Nuqtani eng yaqin uy yoki obyektga suring",
+  "passengerMapPointNoAddressHint": "Nuqtani tasdiqlang va bu joy qanday atalishini yozing",
   "standScreenTitle": "To‘xtash joyi",
   "standNearbyTitle": "Yaqindagi to‘xtash joylari",
   "standNoneTitle": "To‘xtash joylari yo‘q",

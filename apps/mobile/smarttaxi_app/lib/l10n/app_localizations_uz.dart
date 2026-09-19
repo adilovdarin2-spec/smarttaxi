@@ -4125,7 +4125,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerMapPointNoAddressHint =>
-      'Nuqtani eng yaqin uy yoki obyektga suring';
+      'Nuqtani tasdiqlang va bu joy qanday atalishini yozing';
 
   @override
   String get standScreenTitle => 'To‘xtash joyi';

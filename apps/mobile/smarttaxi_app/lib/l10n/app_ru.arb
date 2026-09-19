@@ -1761,7 +1761,7 @@
   "driverRegionsLoadFailedMessage": "Проверьте связь и потяните экран вниз, чтобы обновить. Ваш доступ к регионам никуда не делся.",
   "driverRegionsRetryAction": "Обновить",
   "authTagline": "ГОРОДСКОЕ ТАКСИ",
-  "passengerMapPointNoAddressHint": "Передвиньте точку к ближайшему дому или объекту",
+  "passengerMapPointNoAddressHint": "Подтвердите точку — и напишите, как называется это место",
   "standScreenTitle": "Стоянка",
   "standNearbyTitle": "Стоянки рядом",
   "standNoneTitle": "Стоянок нет",

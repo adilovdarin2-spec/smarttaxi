@@ -3826,7 +3826,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get authTagline => '城市出租车';
 
   @override
-  String get passengerMapPointNoAddressHint => '请将标记移到最近的建筑或地点';
+  String get passengerMapPointNoAddressHint => '确认该点，然后写明这个地点叫什么';
 
   @override
   String get standScreenTitle => '候客点';

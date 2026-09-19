@@ -4088,7 +4088,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerMapPointNoAddressHint =>
-      'Нүктені жақын үйге немесе нысанға жылжытыңыз';
+      'Нүктені растаңыз да, бұл жердің аты қалай екенін жазыңыз';
 
   @override
   String get standScreenTitle => 'Тұрақ';

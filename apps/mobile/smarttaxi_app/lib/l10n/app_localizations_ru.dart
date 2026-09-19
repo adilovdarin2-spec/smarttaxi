@@ -4084,7 +4084,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerMapPointNoAddressHint =>
-      'Передвиньте точку к ближайшему дому или объекту';
+      'Подтвердите точку — и напишите, как называется это место';
 
   @override
   String get standScreenTitle => 'Стоянка';

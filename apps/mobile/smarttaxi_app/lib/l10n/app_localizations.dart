@@ -7372,7 +7372,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerMapPointNoAddressHint.
   ///
   /// In ru, this message translates to:
-  /// **'Передвиньте точку к ближайшему дому или объекту'**
+  /// **'Подтвердите точку — и напишите, как называется это место'**
   String get passengerMapPointNoAddressHint;
 
   /// No description provided for @standScreenTitle.
