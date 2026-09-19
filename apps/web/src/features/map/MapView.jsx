@@ -585,15 +585,34 @@ export default function MapView({
     let timer = 0;
     let fallbackTimer = 0;
     let lastPublishedCenter = "";
+    // How long a gesture is given to settle before its centre is published
+    // anyway. Generous next to anything MapLibre actually animates: inertia
+    // after a flick runs well under a second, easeTo a few hundred ms, flyTo
+    // a couple of seconds.
+    const SETTLE_DEADLINE_MS = 4000;
+    // Zero means "no gesture is running", so a stuck flag cannot hold the
+    // very first publish either.
+    let settleDeadline = 0;
     const emitCenter = () => {
       const onChange = onCenterChangeRef.current;
       if (!onChange) return;
       window.clearTimeout(fallbackTimer);
       window.clearTimeout(timer);
       timer = window.setTimeout(() => {
-        if (map.isMoving()) {
+        if (map.isMoving() && Date.now() < settleDeadline) {
           // The recovery timer must not enable confirmation during a long
-          // drag, kinetic pan or zoom animation. Wait for the camera to settle.
+          // drag, kinetic pan or zoom animation. Wait for the camera to
+          // settle — but only until the deadline.
+          //
+          // Not forever, which is what this used to do. MapLibre can be left
+          // believing a zoom is still in progress after two camera animations
+          // overlap: isMoving() and isZooming() stay true with no animation
+          // frame scheduled and the camera standing still. This retry then
+          // looped every 180ms, no centre was ever published, no address was
+          // ever looked up, and the picker sat on "Определяем адрес…" with
+          // the confirm button disabled until the rider gave up — reproduced
+          // on the live site by pressing the zoom buttons. The camera
+          // position is readable whatever MapLibre believes about itself.
           fallbackTimer = window.setTimeout(emitCenter, 180);
           return;
         }
@@ -610,6 +629,7 @@ export default function MapView({
       // A new gesture must settle even when zooming leaves the centre
       // unchanged. Deduplication only applies to its paired end events.
       lastPublishedCenter = "";
+      settleDeadline = Date.now() + SETTLE_DEADLINE_MS;
       window.clearTimeout(timer);
       onCenterChangingRef.current?.();
       window.clearTimeout(fallbackTimer);
