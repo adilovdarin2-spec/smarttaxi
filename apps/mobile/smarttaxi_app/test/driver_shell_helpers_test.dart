@@ -135,6 +135,92 @@ void main() {
           isFalse);
     });
 
+    test('a killed app rejoins the shift the server still has open', () {
+      // The defect this exists to stop: drivers.status stays FREE across an
+      // app restart, so the driver was still a dispatchable car on the
+      // server while their own dashboard read "offline" and they sat there
+      // waiting for orders that were being offered to them.
+      expect(
+        driverShouldResumeShift(
+          serverStatus: 'FREE',
+          activeOrder: null,
+          hasSubscription: false,
+          isStarting: false,
+          blockedFromGoingOnline: false,
+        ),
+        isTrue,
+      );
+
+      // A shift the driver actually ended must stay ended — putting them
+      // back on the line because they opened the app is worse than the bug.
+      for (final status in [null, 'OFFLINE', '', 'BUSY']) {
+        expect(
+          driverShouldResumeShift(
+            serverStatus: status,
+            activeOrder: null,
+            hasSubscription: false,
+            isStarting: false,
+            blockedFromGoingOnline: false,
+          ),
+          isFalse,
+          reason: 'serverStatus=$status',
+        );
+      }
+
+      // An assignment in progress is driverShouldRestoreLocation's job: that
+      // path deliberately does not re-announce the driver as FREE, and both
+      // running would start two GPS watchers on one phone.
+      for (final status in ['DRIVER_GOING_TO_CLIENT', 'TRIP_STARTED']) {
+        expect(
+          driverShouldResumeShift(
+            serverStatus: 'FREE',
+            activeOrder: _driverOrder(status),
+            hasSubscription: false,
+            isStarting: false,
+            blockedFromGoingOnline: false,
+          ),
+          isFalse,
+          reason: status,
+        );
+      }
+
+      // Blocked, unapproved region, region switched off: the toggle itself
+      // is disabled for these, so resuming would put the driver in a state
+      // they cannot reach by hand and the server would refuse anyway.
+      expect(
+        driverShouldResumeShift(
+          serverStatus: 'FREE',
+          activeOrder: null,
+          hasSubscription: false,
+          isStarting: false,
+          blockedFromGoingOnline: true,
+        ),
+        isFalse,
+      );
+
+      // Never a second watcher over a live one.
+      expect(
+        driverShouldResumeShift(
+          serverStatus: 'FREE',
+          activeOrder: null,
+          hasSubscription: true,
+          isStarting: false,
+          blockedFromGoingOnline: false,
+        ),
+        isFalse,
+      );
+      expect(
+        driverShouldResumeShift(
+          serverStatus: 'FREE',
+          activeOrder: null,
+          hasSubscription: false,
+          isStarting: true,
+          blockedFromGoingOnline: false,
+        ),
+        isFalse,
+      );
+    });
+
     test('a successful cancellation releases the reopened order', () {
       // This is POST /orders/:id/cancel's real response contract: dispatch
       // continues for the rider, but the cancelling driver has no assignment.

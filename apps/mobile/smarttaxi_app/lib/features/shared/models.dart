@@ -92,15 +92,15 @@ class RecurringBooking {
       driverName: (json['driver_name'] ?? json['driverName'])?.toString(),
       clientName: (json['client_name'] ?? json['clientName'])?.toString(),
       pickupText: _sanitizeAddressText(
-          '${json['pickup_text'] ?? json['pickupText'] ?? 'Точка посадки'}',
-          'Точка посадки'),
+          '${json['pickup_text'] ?? json['pickupText'] ?? kPickupPlaceholder}',
+          kPickupPlaceholder),
       pickupCoordinate: Coordinate(
         lat: _toDouble(json['pickup_lat'] ?? json['pickupLat']),
         lng: _toDouble(json['pickup_lng'] ?? json['pickupLng']),
       ),
       dropoffText: _sanitizeAddressText(
-          '${json['dropoff_text'] ?? json['dropoffText'] ?? 'Точка назначения'}',
-          'Точка назначения'),
+          '${json['dropoff_text'] ?? json['dropoffText'] ?? kDropoffPlaceholder}',
+          kDropoffPlaceholder),
       dropoffCoordinate: Coordinate(
         lat: _toDouble(json['dropoff_lat'] ?? json['dropoffLat']),
         lng: _toDouble(json['dropoff_lng'] ?? json['dropoffLng']),
@@ -909,11 +909,11 @@ class OrderSummary {
       id: '${json['id']}',
       status: '${json['status'] ?? json['public_status'] ?? 'NEW'}',
       pickup: _sanitizeAddressText(
-          '${json['pickup_text'] ?? json['pickupText'] ?? json['pickup'] ?? 'Точка посадки'}',
-          'Точка посадки'),
+          '${json['pickup_text'] ?? json['pickupText'] ?? json['pickup'] ?? kPickupPlaceholder}',
+          kPickupPlaceholder),
       dropoff: _sanitizeAddressText(
-          '${json['dropoff_text'] ?? json['dropoffText'] ?? json['dropoff'] ?? 'Точка назначения'}',
-          'Точка назначения'),
+          '${json['dropoff_text'] ?? json['dropoffText'] ?? json['dropoff'] ?? kDropoffPlaceholder}',
+          kDropoffPlaceholder),
       // orders.price (or a "своя цена" bid) is the actual/final amount —
       // prefer it over the frozen pricing_snapshot.estimatedPrice, which
       // stays fixed at whatever was calculated when the order was created
@@ -1486,6 +1486,18 @@ double _toDouble(dynamic value) {
 // not just misencoded, so there's nothing to recover). Showing a row of
 // "�" boxes in trip history reads as broken; a plain, honest label reads
 // as intentional.
+/// What an order's addresses read as when the server sent none.
+///
+/// These are not translated on purpose: they are also the sentinel the order
+/// merge compares against (`_mergeOrderDetails`), so that a socket update
+/// carrying only a status does not overwrite a real address with a
+/// placeholder. A translated sentinel would stop matching itself the moment
+/// the driver's phone was in Kazakh — which is exactly how the map-point
+/// naming sheet was broken until a device found it. Naming them here keeps
+/// the six copies of each string from drifting apart.
+const String kPickupPlaceholder = 'Точка посадки';
+const String kDropoffPlaceholder = 'Точка назначения';
+
 String _sanitizeAddressText(String value, String fallback) {
   return value.contains('�') ? fallback : value;
 }

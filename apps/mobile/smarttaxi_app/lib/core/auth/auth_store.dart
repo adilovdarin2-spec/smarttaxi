@@ -21,7 +21,41 @@ class AuthStore {
   static const _driverApplicationSubmittedKey =
       'smarttaxi.user.driverApplicationSubmitted';
 
-  Future<String?> readToken() => _storage.read(key: _tokenKey);
+  // The session token, kept in memory after the first read.
+  //
+  // Every authenticated request calls this (ApiClient._attachToken), and on
+  // Android each call went all the way to the Keystore: measured at 113ms
+  // and 233ms for two consecutive reads on an emulator, and the phones our
+  // drivers use are slower than an emulator. That is a fixed tax on every
+  // screen in both apps, and it is paid for a value the app already has in
+  // memory the moment it builds the request.
+  //
+  // Only saveToken() and clear() ever change it, and both keep this in step,
+  // so a cached read cannot outlive the token it describes. A token that the
+  // server rejects is handled where it already was — the transport guard's
+  // SESSION_SUPERSEDED/TOKEN_EXPIRED path calls clear().
+  String? _cachedToken;
+  bool _tokenIsCached = false;
+  Future<String?>? _tokenRead;
+
+  Future<String?> readToken() async {
+    if (_tokenIsCached) return _cachedToken;
+    // A screen opening fires several requests at once; without this they each
+    // start their own keystore read and queue behind one another.
+    final pending = _tokenRead ??= _storage.read(key: _tokenKey);
+    try {
+      final token = await pending;
+      // A login or a logout that landed while this read was in flight owns
+      // the answer — it wrote the newer value.
+      if (!_tokenIsCached) {
+        _cachedToken = token;
+        _tokenIsCached = true;
+      }
+      return _cachedToken;
+    } finally {
+      if (identical(_tokenRead, pending)) _tokenRead = null;
+    }
+  }
 
   // Device-level display preferences, not account data — deliberately not
   // cleared by clear() on logout.
@@ -64,8 +98,12 @@ class AuthStore {
   Future<void> saveConfirmedPassengerRegionId(String regionId) =>
       _storage.write(key: _confirmedRegionIdKey, value: regionId);
 
-  Future<void> saveToken(String token) =>
-      _storage.write(key: _tokenKey, value: token);
+  Future<void> saveToken(String token) {
+    _cachedToken = token;
+    _tokenIsCached = true;
+    _tokenRead = null;
+    return _storage.write(key: _tokenKey, value: token);
+  }
 
   Future<String?> readMode() => _storage.read(key: _modeKey);
 
@@ -109,6 +147,9 @@ class AuthStore {
       _storage.write(key: _driverApplicationSubmittedKey, value: '1');
 
   Future<void> clear() async {
+    _cachedToken = null;
+    _tokenIsCached = true;
+    _tokenRead = null;
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _modeKey);
     await _storage.delete(key: _phoneKey);

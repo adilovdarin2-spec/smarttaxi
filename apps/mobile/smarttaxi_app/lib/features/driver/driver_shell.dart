@@ -180,6 +180,10 @@ class _DriverShellState extends State<DriverShell> {
   bool _ordersLoading = false;
   bool _locationLoading = false;
   bool _online = false;
+  // drivers.status as the server last reported it, so a launching app can
+  // tell "this driver ended their shift" from "this driver's phone killed
+  // the app while they were still working". See driverShouldResumeShift.
+  String? _serverDriverStatus;
   String? _error;
   String? _locationMessage;
   String? _acceptingOrderId;
@@ -385,6 +389,17 @@ class _DriverShellState extends State<DriverShell> {
 
   Future<void> _bootstrap() async {
     _pushMessageSub = widget.pushMessages.listen(_handlePushMessage);
+    // Everything below used to run in a single queue, so the driver's first
+    // screen waited on each step in turn before anything appeared. Measured
+    // on a Pixel emulator against a local server: 2.0s opening the socket,
+    // then 3.3s reading the account out of secure storage, then 0.5s reading
+    // the voice flag — 5.7 seconds of a blank dashboard before the app so
+    // much as asked the server which regions this driver works in, and that
+    // is a keystore on an emulator, not the cheap phones our drivers use.
+    // None of those three steps feeds the others, so they are started
+    // together and only the ones a later step actually needs are waited on.
+    final regions = _loadRegions();
+    final preferences = _loadAccountPreferences();
     try {
       await widget.sockets.connect();
       widget.sockets.joinDrivers();
@@ -397,24 +412,41 @@ class _DriverShellState extends State<DriverShell> {
             AppLocalizations.of(context).driverUpdatesUnavailableNote);
       }
     }
-    final account = await widget.authStore.readUser();
-    if (mounted) {
-      setState(() {
-        _accountPhone = account['phone'] ?? '';
-      });
-    }
-    final voiceEnabled = await widget.authStore.readVoiceEnabled();
-    _voice.enabled = voiceEnabled;
-    if (mounted) setState(() => _voiceEnabled = voiceEnabled);
-    await _loadRegions();
+    // Orders are still loaded after the socket is listening, so an update
+    // that lands between the two is not lost, and after the regions so the
+    // list is filtered by the region the driver actually works in.
+    await regions;
     await _loadOrders();
     if (!mounted) return;
     unawaited(_restoreLocationForActiveOrder());
+    unawaited(_resumeShiftFromServer());
     await _loadDriverStats();
     await _loadRoadAlerts();
     unawaited(_loadTripHistory());
     unawaited(_loadServiceContacts());
     unawaited(_loadAvatar());
+    await preferences;
+  }
+
+  // The driver's own phone number and whether they want spoken prompts: both
+  // live in secure storage, neither is needed to put orders on the screen.
+  Future<void> _loadAccountPreferences() async {
+    try {
+      final account = await widget.authStore.readUser();
+      if (mounted) {
+        setState(() {
+          _accountPhone = account['phone'] ?? '';
+        });
+      }
+      final voiceEnabled = await widget.authStore.readVoiceEnabled();
+      _voice.enabled = voiceEnabled;
+      if (mounted) setState(() => _voiceEnabled = voiceEnabled);
+    } catch (_) {
+      // Now that this runs beside the dashboard load rather than in front of
+      // it, an unreadable keystore must not become an unhandled error that
+      // takes the whole bootstrap down with it. The profile screen shows the
+      // phone number as missing and voice stays off — both recoverable.
+    }
   }
 
   Future<void> _loadServiceContacts() async {
@@ -636,6 +668,7 @@ class _DriverShellState extends State<DriverShell> {
       String? regionToSync;
       setState(() {
         _regions = regions;
+        _serverDriverStatus = result.status;
         if (_regionId == null) {
           if (nearestId != null) {
             // A real GPS fix beats the server's remembered region: nothing
@@ -892,6 +925,65 @@ class _DriverShellState extends State<DriverShell> {
         });
       }
     }
+  }
+
+  // The server, not the app, owns whether this driver is working. If it says
+  // FREE and this launch has no active order to restore, the driver is
+  // mid-shift and simply lost their app — put them back on the line with a
+  // live GPS stream. If the stream cannot start (permission revoked while
+  // the app was gone, GPS switched off, driver moved out of the region),
+  // end the shift on the server instead of leaving a car on the rider's map
+  // that nobody is sitting in.
+  Future<void> _resumeShiftFromServer() async {
+    if (!mounted ||
+        !driverShouldResumeShift(
+          serverStatus: _serverDriverStatus,
+          activeOrder: _activeOrder,
+          hasSubscription: _positionSub != null,
+          isStarting: _locationLoading,
+          blockedFromGoingOnline: _disabledReason() != null,
+        )) {
+      return;
+    }
+    setState(() {
+      _online = true;
+      _locationLoading = true;
+      _locationMessage = AppLocalizations.of(context).driverLocationChecking;
+    });
+    var started = false;
+    try {
+      started = await _startLocationFlow();
+    } catch (_) {
+      started = false;
+    }
+    if (!mounted) return;
+    if (started) {
+      widget.sockets.joinDrivers();
+      setState(() => _locationLoading = false);
+      unawaited(_loadOrders());
+      return;
+    }
+    _disposeLocationSync();
+    await _positionSub?.cancel();
+    _positionSub = null;
+    try {
+      await widget.api.setDriverStatus('OFFLINE');
+      _serverDriverStatus = 'OFFLINE';
+    } catch (_) {
+      // Nothing more to do from here — the toggle is offline either way and
+      // the driver can retry it by hand.
+    }
+    if (!mounted) return;
+    setState(() {
+      _online = false;
+      _locationLoading = false;
+      _locationMessage = null;
+    });
+    // Same reasoning as the revert inside _setOnline: the inline banner sits
+    // below the map and a driver who just opened the app is looking at the
+    // toggle, not at it. Being dropped off the line silently is exactly the
+    // thing this whole path exists to stop.
+    if (_error != null) AppToast.showError(context, _error!);
   }
 
   Future<void> _restoreLocationForActiveOrder() async {

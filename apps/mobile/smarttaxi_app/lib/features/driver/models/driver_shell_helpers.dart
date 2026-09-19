@@ -78,6 +78,38 @@ bool driverShouldRestoreLocation({
 }) =>
     order?.isActive == true && !hasSubscription && !isStarting;
 
+/// Whether a launching app should pick a shift back up where the server left
+/// it.
+///
+/// Going online is server state, not app state: `PATCH /drivers/me/status`
+/// sets drivers.status=FREE and it stays FREE until something sets it back.
+/// The app, however, started every launch with `_online = false` and only
+/// ever corrected itself when an active order was restored. So a driver whose
+/// app was killed — which on the cheap Androids most of them use is a daily
+/// event, not an edge case — reopened it to a dashboard reading "не в сети"
+/// while dispatch still counted them as a free car, still drew them on the
+/// rider's map from their last GPS ping, and still offered them orders the
+/// app was no longer listening for.
+///
+/// Resuming means restarting the GPS stream too. An app that claims to be
+/// online without one is the same lie in the other direction, so the caller
+/// must put this driver back offline on the server when the location flow
+/// refuses to start.
+bool driverShouldResumeShift({
+  required String? serverStatus,
+  required OrderSummary? activeOrder,
+  required bool hasSubscription,
+  required bool isStarting,
+  required bool blockedFromGoingOnline,
+}) {
+  // BUSY belongs to driverShouldRestoreLocation: it has an assignment to
+  // restore and must not be re-announced as FREE.
+  if (serverStatus != 'FREE') return false;
+  if (blockedFromGoingOnline) return false;
+  if (activeOrder?.isActive == true) return false;
+  return !hasSubscription && !isStarting;
+}
+
 /// A sequence number alone cannot reject a response after cancellation or a
 /// leg change when no replacement request has been issued yet.
 bool driverRouteRequestMatches({
@@ -205,9 +237,9 @@ OrderSummary _mergeOrderDetails(OrderSummary previous, OrderSummary next) {
   return OrderSummary(
     id: next.id,
     status: next.status,
-    pickup: next.pickup == 'Точка посадки' ? previous.pickup : next.pickup,
+    pickup: next.pickup == kPickupPlaceholder ? previous.pickup : next.pickup,
     dropoff:
-        next.dropoff == 'Точка назначения' ? previous.dropoff : next.dropoff,
+        next.dropoff == kDropoffPlaceholder ? previous.dropoff : next.dropoff,
     price: next.price ?? previous.price,
     distanceKm: next.distanceKm ?? previous.distanceKm,
     durationMin: next.durationMin ?? previous.durationMin,

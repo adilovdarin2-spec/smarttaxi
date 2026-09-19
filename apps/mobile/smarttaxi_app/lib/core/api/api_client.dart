@@ -652,7 +652,7 @@ class ApiClient {
     }
   }
 
-  Future<({List<DriverRegion> regions, String? currentRegionId})>
+  Future<({List<DriverRegion> regions, String? currentRegionId, String? status})>
       getDriverRegions() async {
     await _attachToken();
     final response = await _dio.get<dynamic>('/api/drivers/me/regions');
@@ -668,7 +668,18 @@ class ApiClient {
         response.data is Map ? (response.data as Map)['driver'] : null;
     final currentRegionId =
         driverJson is Map ? driverJson['current_region_id']?.toString() : null;
-    return (regions: regions, currentRegionId: currentRegionId);
+    // The same row carries drivers.status (FREE/BUSY/OFFLINE). The app used
+    // to throw it away and assume every launch started offline, which meant
+    // a driver whose phone killed the app mid-shift came back to a dashboard
+    // saying "offline" while the server still had them FREE, still had them
+    // on the rider map, and still sent them orders they could not see.
+    final status =
+        driverJson is Map ? driverJson['status']?.toString() : null;
+    return (
+      regions: regions,
+      currentRegionId: currentRegionId,
+      status: status
+    );
   }
 
   Future<void> selectDriverRegion(String regionId) async {
