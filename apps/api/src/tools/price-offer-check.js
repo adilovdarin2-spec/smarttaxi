@@ -165,6 +165,13 @@ function createExecutor() {
         // driver-approval-check.js for the dedicated document-gate tests).
         return { rows: ["DRIVER_LICENSE_FRONT", "DRIVER_LICENSE_BACK", "ID_CARD_FRONT", "ID_CARD_BACK", "VEHICLE_REGISTRATION"].map(type => ({ type, status: "APPROVED" })) };
       }
+      // The rider behind the order, so assertAssignmentPolicy can refuse a
+      // driver taking a trip they placed themselves. These fixtures are two
+      // different people; the dedicated case lives in
+      // self-order-check.js.
+      if (/SELECT user_id FROM clients WHERE id=\$1/i.test(sql)) {
+        return { rows: [{ user_id: `rider-of-${params[0]}` }] };
+      }
       throw new Error(`Unexpected SQL in price-offer check: ${sql}`);
     }
   };

@@ -317,6 +317,26 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     )
   `;
 
+  // A driver never sees an order placed by their own account.
+  //
+  // The apps let one person be both: a driver switches to "Режим пассажира"
+  // from the same login and orders a taxi. Nothing stopped them then
+  // accepting it themselves — confirmed end to end against the local stack,
+  // the order appeared in GET /driver/orders/incoming and POST
+  // /orders/:id/accept answered 200. A trip with one person on both sides
+  // is not a trip: it moves the service commission into that driver's debt
+  // and, once a referred client's first completed order pays the 500 ₸
+  // referral bonus to both sides (referrals.service.js), it pays for
+  // itself. Hidden here as well as refused at accept time, for the same
+  // reason the block lists are.
+  const notOwnOrder = `
+    NOT EXISTS (
+      SELECT 1 FROM clients rc
+      JOIN drivers rd ON rd.user_id = rc.user_id
+      WHERE rc.id = o.client_id AND rd.id = $1
+    )
+  `;
+
   // A driver who cancelled this specific order after accepting it never
   // sees it again in a broadcast (order-dispatch reopen path below) — they
   // can still see and act on any OTHER order, and any order they're
@@ -333,7 +353,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
       WHERE o.region_id=$2
         AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR o.driver_id=$1)
         AND o.status=$3
-        AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notPreviouslyCancelledByThisDriver}))
+        AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notOwnOrder} AND ${notPreviouslyCancelledByThisDriver}))
       ORDER BY o.created_at DESC
       LIMIT $4
     `, [driver.id, driver.current_region_id, status, limit, OPEN_ORDER_STATUSES])).rows;
@@ -349,7 +369,7 @@ export async function listOrdersForDriver({ driver, status, limit, executor, ord
     LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
     WHERE o.region_id=$2
       AND ((o.status = ANY($5::text[]) AND o.driver_id IS NULL) OR (o.driver_id=$1 AND o.status = ANY($3::text[])))
-      AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notPreviouslyCancelledByThisDriver}))
+      AND (o.driver_id=$1 OR (${notBlockedByClient} AND ${notBlockedClient} AND ${notOwnOrder} AND ${notPreviouslyCancelledByThisDriver}))
     ORDER BY o.offered_price_kzt DESC NULLS LAST, o.created_at DESC
     LIMIT $4
   `, [driver.id, driver.current_region_id, RECENT_DRIVER_STATUSES, limit, OPEN_ORDER_STATUSES])).rows;
@@ -392,6 +412,28 @@ export async function assertDriverCanServeOrder(driver, order, executor) {
   }
 }
 
+// One person cannot be both halves of a trip.
+//
+// See notOwnOrder in listOrdersForDriver for how this happens and why it
+// pays. Refused here too rather than only hidden there, because an order id
+// is all a driver needs to call accept — and because the owner assigning a
+// trip by hand goes through this same policy.
+export async function assertRiderIsNotThisDriver(order, driver, executor) {
+  if (!order?.client_id || !driver?.user_id) return;
+  const rider = (await runQuery(
+    executor,
+    "SELECT user_id FROM clients WHERE id=$1",
+    [order.client_id]
+  )).rows[0];
+  if (rider?.user_id && String(rider.user_id) === String(driver.user_id)) {
+    throw new AppError(
+      "A driver cannot take an order placed from their own account",
+      403,
+      "DRIVER_IS_THE_RIDER"
+    );
+  }
+}
+
 // Recheck after locking the current driver and order: a pending price is not
 // permission to bypass a later block, region change or cancellation.
 async function assertAssignmentPolicy(driver, order, executor) {
@@ -405,6 +447,7 @@ async function assertAssignmentPolicy(driver, order, executor) {
   }
   await assertDriverNotBlockedByClient(order.client_id, driver.id, executor);
   await assertClientNotBlockedByDriver(order.client_id, driver.id, executor);
+  await assertRiderIsNotThisDriver(order, driver, executor);
 }
 
 export async function acceptOrderForDriver({ orderId, userId, executor }) {
