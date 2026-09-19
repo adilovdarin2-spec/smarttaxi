@@ -559,7 +559,15 @@ function normalizeAddress(address) {
   // dispatchable address. It must never masquerade as a POI in the picker.
   const nonBookableCatalogPoint = address.selectionKind === "region-center" ||
     address.selectionKind === "device-location";
-  if (!title || technicalAddress || genericSettlement || nonBookableCatalogPoint || (bareStreet && !/\d/.test(title))) return null;
+  // Every guard above rejects what a GEOCODER returned. A name the rider
+  // typed for a point the map has no address for is the opposite case: they
+  // are standing there and we are not, so "улица Абая" or a bare landmark is
+  // the best address that exists for it. Only the coordinate check above and
+  // the empty-title check still apply.
+  const riderNamed = address.riderNamed === true;
+  if (!title) return null;
+  if (!riderNamed &&
+    (technicalAddress || genericSettlement || nonBookableCatalogPoint || (bareStreet && !/\d/.test(title)))) return null;
   const base = address.subtitle || address.city || "";
   const regionName = address.region || address.regionCode || "";
   // Live-geocoded subtitles (routing.service.js) already bake the region
@@ -580,6 +588,7 @@ function normalizeAddress(address) {
     regionCode: address.regionCode || address.region_code || "",
     regionId: address.regionId || address.region_id || "",
     tags: address.tags || [],
+    riderNamed,
     lat,
     lng
   };
@@ -1766,7 +1775,12 @@ export default function ClientApp() {
         }
       } catch {
         if (seq === mainMapReverseSeqRef.current) {
-          setMainMapCandidate({ ...fallback, title: "Адрес не найден", subtitle: "Передвиньте карту к ближайшему дому или объекту" });
+          // The home map guesses a pickup from wherever the map is sitting.
+          // When it cannot, say what actually works: four of the twelve
+          // regions have no named streets in OSM, so "move to the nearest
+          // house" is advice about a house that does not exist. Naming the
+          // point is done in the picker, one tap away.
+          setMainMapCandidate({ ...fallback, title: "Адрес не найден", subtitle: "Откройте «Откуда» и выберите точку на карте — там можно дать ей название" });
           setMainMapCandidateReady(false);
         }
       } finally {
@@ -3113,6 +3127,10 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
   const [mapPickLoading, setMapPickLoading] = useState(false);
   const [mapCandidate, setMapCandidate] = useState(null);
   const [mapCandidateReady, setMapCandidateReady] = useState(true);
+  // Set when the map has no address for this point, which is ordinary in the
+  // villages this service runs in rather than an error.
+  const [needsPointName, setNeedsPointName] = useState(false);
+  const [pointName, setPointName] = useState("");
   const [error, setError] = useState("");
   const selectableRegions = useMemo(() => {
     const source = mode === "destination" && destinationRegions.length ? destinationRegions : [region];
@@ -3210,6 +3228,7 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
       setMapCandidate(cached);
       setMapCandidateReady(true);
       setMapPickLoading(false);
+      setNeedsPointName(false);
       setError("");
       return;
     }
@@ -3229,11 +3248,16 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
         if (cacheKey) reverseCacheRef.current.set(cacheKey, address);
         setMapCandidate(address);
         setMapCandidateReady(true);
+        setNeedsPointName(false);
       }
     } catch {
       if (mountedRef.current && seq === reverseSeqRef.current) {
-        setMapCandidate({ ...fallback, title: "Адрес не найден", subtitle: "Передвиньте карту к ближайшему дому или объекту" });
+        // Not a dead end any more. Telling a rider in Бирлик to move the map
+        // to the nearest house is advice about a house that does not exist:
+        // OSM has no named streets there at all.
+        setMapCandidate({ ...fallback, title: "", subtitle: "" });
         setMapCandidateReady(false);
+        setNeedsPointName(true);
       }
     } finally {
       if (mountedRef.current && seq === reverseSeqRef.current) {
@@ -3248,11 +3272,34 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
     window.clearTimeout(reverseDebounceRef.current);
     setMapCandidateReady(false);
     setMapPickLoading(true);
+    setNeedsPointName(false);
+    setPointName("");
     setError("");
   }
 
+  // The rider's own name is long enough to be an address the server accepts:
+  // pickupText/dropoffText are z.string().trim().min(2).max(180).
+  const trimmedPointName = pointName.trim();
+  const pointNameUsable = trimmedPointName.length >= 2;
+  const canConfirmMapCandidate = Boolean(mapCandidate) && !mapPickLoading &&
+    (needsPointName ? pointNameUsable : mapCandidateReady);
+
   function confirmMapCandidate() {
-    if (!mapCandidate || !mapCandidateReady || mapPickLoading) return;
+    if (!canConfirmMapCandidate) return;
+    if (needsPointName) {
+      // Six of the thirteen regions have streets in OSM and almost no house
+      // numbers, so "no address here" is the ordinary case. The rider is the
+      // only person who knows this is the blue gate past the mosque; that name
+      // becomes the address the driver is sent.
+      onSelect({
+        ...mapCandidate,
+        title: trimmedPointName.slice(0, 120),
+        subtitle: searchRegion?.name || "",
+        riderNamed: true,
+        fallback: false
+      });
+      return;
+    }
     onSelect(mapCandidate);
   }
 
@@ -3317,8 +3364,8 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
           {mapSelectionActive ? "Вернуться к поиску" : "Выбрать точку на карте"}
         </button>
 
-        {showMapSelection && (
-          <button type="button" className="address-map-point-card" onClick={confirmMapCandidate} disabled={!mapCandidate || !mapCandidateReady || mapPickLoading}>
+        {showMapSelection && !needsPointName && (
+          <button type="button" className="address-map-point-card" onClick={confirmMapCandidate} disabled={!canConfirmMapCandidate}>
             <span className="address-map-point-icon">
               <IconAsset name="addressDestination" className="ui-asset-icon ui-asset-icon-md" />
             </span>
@@ -3328,6 +3375,22 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
             </span>
             <IconAsset name="addressChevron" className="ui-asset-icon ui-asset-icon-sm" />
           </button>
+        )}
+
+        {showMapSelection && needsPointName && (
+          <div className="address-point-name">
+            <strong>Как называется это место?</strong>
+            <small>У этой точки нет адреса на карте. Напишите, как её найти, — водитель увидит это в заказе.</small>
+            <input
+              value={pointName}
+              onChange={event => setPointName(event.target.value)}
+              onKeyDown={event => { if (event.key === "Enter") confirmMapCandidate(); }}
+              placeholder="Например: синие ворота за мечетью"
+              aria-label="Название точки на карте"
+              maxLength={120}
+              autoComplete="off"
+            />
+          </div>
         )}
 
         {!mapSelectionActive && loading && !results.length && <div className="address-picker-skeleton"><span /><span /><span /></div>}
@@ -3356,8 +3419,8 @@ function AddressPicker({ mode, region, initialPoint, destinationRegions = [], re
         </section>}
 
         {showMapSelection && (
-          <button type="button" className="address-picker-confirm" onClick={confirmMapCandidate} disabled={!mapCandidate || !mapCandidateReady || mapPickLoading}>
-            <span>{mapPickLoading ? "Определяем адрес..." : mode === "pickup" ? "Подтвердить адрес" : "Выбрать адрес"}</span>
+          <button type="button" className="address-picker-confirm" onClick={confirmMapCandidate} disabled={!canConfirmMapCandidate}>
+            <span>{mapPickLoading ? "Определяем адрес..." : needsPointName ? "Сохранить название" : mode === "pickup" ? "Подтвердить адрес" : "Выбрать адрес"}</span>
             <IconAsset name="addressChevron" className="ui-asset-icon ui-asset-icon-md" />
           </button>
         )}

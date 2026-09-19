@@ -14378,6 +14378,47 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   color: #a4abb7;
 }
 
+/* The rider names a point the map has no address for. Same card shape as the
+   resolved-address card it replaces, so the picker does not jump when the
+   lookup comes back empty. */
+.taxi-client-shell .address-point-name {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: var(--st-card);
+  border: 1px solid var(--st-border);
+}
+
+.taxi-client-shell .address-point-name strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--st-ink);
+}
+
+.taxi-client-shell .address-point-name small {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: #667085;
+}
+
+.taxi-client-shell .address-point-name input {
+  margin-top: 4px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--st-border);
+  background: var(--st-app-bg, #fff);
+  color: var(--st-ink);
+  font-size: 15px;
+}
+
+.taxi-client-shell .address-point-name input:focus {
+  outline: none;
+  border-color: var(--st-brand);
+}
+
 .taxi-client-shell .address-map-point-card {
   min-height: 74px;
   display: grid;
