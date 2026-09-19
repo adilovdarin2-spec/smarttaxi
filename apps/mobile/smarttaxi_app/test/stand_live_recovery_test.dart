@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:smarttaxi_app/core/map/map_style.dart';
 import 'package:smarttaxi_app/core/api/api_client.dart';
 import 'package:smarttaxi_app/core/sockets/socket_service.dart';
 import 'package:smarttaxi_app/core/theme/app_theme.dart';
@@ -107,7 +108,11 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: buildSmartTaxiTheme(),
-      home: PassengerStandsScreen(api: api, socket: socket, regionId: 'r1'),
+      home: PassengerStandsScreen(
+          api: api,
+          socket: socket,
+          regionId: 'r1',
+          mapStyle: MapStyleChoice.fallback),
     ));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Тестовая стоянка'));
@@ -154,7 +159,10 @@ void main() {
               .copyWith(textScaler: const TextScaler.linear(1.6)),
           child: child!),
       home: PassengerStandsScreen(
-          api: api, socket: StandSocket(), regionId: 'r1'),
+          api: api,
+          socket: StandSocket(),
+          regionId: 'r1',
+          mapStyle: MapStyleChoice.fallback),
     ));
     await tester.pumpAndSettle();
     api.closed = true;
@@ -185,7 +193,11 @@ void main() {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       theme: buildSmartTaxiTheme(),
-      home: PassengerStandsScreen(api: api, socket: socket, regionId: 'r1'),
+      home: PassengerStandsScreen(
+          api: api,
+          socket: socket,
+          regionId: 'r1',
+          mapStyle: MapStyleChoice.fallback),
     ));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Тестовая стоянка'));
