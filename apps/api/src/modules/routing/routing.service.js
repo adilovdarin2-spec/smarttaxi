@@ -683,6 +683,37 @@ function suggestionText(item) {
   return normalizedText([item.label, item.subtitle, item.city, item.region].filter(Boolean).join(" "));
 }
 
+// Providers whose answers are guesses at free text, as opposed to rows we
+// hold ourselves.
+const PROVIDER_SOURCES = new Set(["nominatim", "photon", "maptiler"]);
+
+// Whether a provider result has anything to do with what the rider typed.
+//
+// We do not send the rider's words to Photon/Nominatim/MapTiler on their own:
+// buildAddressSearchQuery appends the region and "Kazakhstan" so the provider
+// looks in the right place. When the provider cannot place the rider's words
+// it answers the part it *can* — the town — and returns it with no hint that
+// the rest was dropped. Measured against the local stack: "Gogol", "Magnum"
+// and the deliberate nonsense "zzzqqq" all came back with the same two rows,
+// "Атакент кенттік әкімдігі" and "Акимат Атакента, Копжасарова улица". A
+// rider sees two confident lines under what they typed, taps one, and orders
+// a taxi to the akimat.
+//
+// So a provider row has to contain at least one of the rider's own words
+// somewhere — label, subtitle, city or region. Rows we hold ourselves are
+// never filtered: the gazetteer matched the query to be returned at all.
+//
+// This can drop a genuine cross-script match (the rider types "Магнум", OSM
+// spells it "Magnum"). That case is already lost in the local catalogue,
+// which is Cyrillic and matches by ILIKE, and an empty result the rider can
+// answer with "выбрать на карте" is a better answer than the wrong building.
+function providerAnswersQuery(item, tokens) {
+  if (!PROVIDER_SOURCES.has(item?.source)) return true;
+  if (!tokens.length) return true;
+  const text = suggestionText(item);
+  return tokens.some((token) => token.length >= 2 && text.includes(token));
+}
+
 function addressQueryScore(item, query) {
   const normalizedQuery = normalizedText(query);
   if (!normalizedQuery) return 20;
@@ -1503,13 +1534,13 @@ export async function searchAddresses(
     // rider searching a street the local catalogue *had* got a 503. The
     // catalogue is the whole reason the app works in these villages;
     // losing it to someone else's outage defeats the point of holding it.
-    const remote = await filterAddressSuggestionsToServiceArea(
+    const remote = (await filterAddressSuggestionsToServiceArea(
       await searchAddressesRemote(
         { q, region, limit, countrycodes }, fetchImpl
       ).catch(() => []),
       regionFilter,
       executor
-    );
+    )).filter((item) => providerAnswersQuery(item, search.tokens));
     const seen = new Set(local.map((item) => item.label.toLowerCase()));
     const deduped = dedupeAddressSuggestions([
       ...local,
@@ -1532,11 +1563,11 @@ export async function searchAddresses(
   }
   // Nothing local. The remote cascade is allowed to fail loudly here: with no
   // catalogue answer either, an empty page would be a lie.
-  return filterAddressSuggestionsToServiceArea(
+  return (await filterAddressSuggestionsToServiceArea(
     await searchAddressesRemote({ q, region, limit, countrycodes }, fetchImpl),
     regionFilter,
     executor
-  );
+  )).filter((item) => providerAnswersQuery(item, search.tokens));
 }
 
 async function searchAddressesRemote({ q, region, limit = 8, countrycodes = "kz" }, fetchImpl = fetch) {

@@ -488,6 +488,89 @@ const tooShort = await searchAddresses(
 );
 assert.deepEqual(tooShort, [], "a one-character query short-circuits");
 
+// 11b. A provider that answers the town instead of the query answers nothing.
+//
+//      We never send the rider's words alone: buildAddressSearchQuery appends
+//      the region and "Kazakhstan" so the geocoder looks in the right place.
+//      When it cannot place the words it answers the part it can — the town —
+//      and says nothing about having dropped the rest. Measured against the
+//      local stack, "Gogol", "Magnum" and the nonsense "zzzqqq" all came back
+//      with the same two rows: the settlement akimat. Two confident lines
+//      under what the rider typed, and a taxi to the akimat one tap away.
+const townOnlyProvider = async (url) => ({
+  ok: true,
+  async json() {
+    if (url.toString().includes("/reverse")) return {};
+    return [
+      {
+        lat: "40.665495",
+        lon: "68.549994",
+        display_name: "Мырзакент кенттік әкімдігі, Мақтаарал ауданы, Казахстан",
+        address: { village: "Мырзакент" }
+      }
+    ];
+  }
+});
+const unanswerable = await searchAddresses(
+  { q: "zzzqqq", region: "Мырзакент", limit: 5 },
+  townOnlyProvider,
+  searchDb([])
+);
+assert.deepEqual(
+  unanswerable,
+  [],
+  "a geocoder that only matched the region we appended has not answered the rider"
+);
+
+// ...and the same guard must not touch a provider row that does answer. Only
+// the town-shaped row is dropped; the street the rider asked for comes back.
+const answeringProvider = async (url) => ({
+  ok: true,
+  async json() {
+    if (url.toString().includes("/reverse")) return {};
+    return [
+      {
+        lat: "40.665495",
+        lon: "68.549994",
+        display_name: "Мырзакент, Мақтаарал ауданы, Казахстан",
+        address: { village: "Мырзакент" }
+      },
+      {
+        lat: "40.6660",
+        lon: "68.5500",
+        display_name: "Гоголя улица, 4, Мырзакент, Казахстан",
+        address: { road: "Гоголя улица", house_number: "4", village: "Мырзакент" }
+      }
+    ];
+  }
+});
+const askedForIt = await searchAddresses(
+  { q: "Гоголя", region: "Мырзакент", limit: 5 },
+  answeringProvider,
+  searchDb([])
+);
+assert.equal(askedForIt.length, 1,
+  `only the row that answers survives — got ${JSON.stringify(askedForIt.map(i => i.label))}`);
+assert.match(String(askedForIt[0].label), /Гоголя/);
+
+// Nor a row we hold ourselves: the gazetteer matched the query to be
+// returned at all, and it is the only thing that works in these villages.
+const ourOwnRow = await searchAddresses(
+  { q: "Абая", region: "Мырзакент", limit: 5 },
+  townOnlyProvider,
+  searchDb([
+    { label: "улица Абая, 14", lat: 40.7001, lng: 68.5201, kind: "housenumber", region_name: "Мырзакент" }
+  ])
+);
+assert.ok(
+  ourOwnRow.some((item) => String(item.label).includes("Абая")),
+  "the local catalogue is never filtered by this"
+);
+assert.ok(
+  ourOwnRow.every((item) => !String(item.label).includes("әкімдігі")),
+  "and the town-only guess does not ride along beside it"
+);
+
 // 12. Both loaders must write search_text, and the query must name it plainly.
 //
 // searchGazetteer matches on search_text, which is covered by
