@@ -3377,7 +3377,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverConfirmPaymentHint =>
-      'Yo\'lovchini baholash uchun to\'lov qabul qilinganini tasdiqlang';
+      'To\'lovni tasdiqlang: tasdiqlanmaguncha yo\'lovchi yangi safarga buyurtma bera olmaydi';
 
   @override
   String get driverConfirmPaymentButton => 'To\'lov qabul qilindi';
@@ -4582,4 +4582,12 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerNamePointConfirm => 'Tayyor';
+
+  @override
+  String get driverUnsettledTripTitle => 'Safar yopilmagan';
+
+  @override
+  String driverUnsettledTripMessage(String amount) {
+    return '$amount safar uchun to\'lov hali tasdiqlanmagan. Siz tasdiqlamaguningizcha yo\'lovchi yangi safarga buyurtma bera olmaydi.';
+  }
 }

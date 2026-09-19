@@ -184,6 +184,7 @@ class _DriverShellState extends State<DriverShell> {
   // tell "this driver ended their shift" from "this driver's phone killed
   // the app while they were still working". See driverShouldResumeShift.
   String? _serverDriverStatus;
+  bool _settlingTripPayment = false;
   String? _error;
   String? _locationMessage;
   String? _acceptingOrderId;
@@ -2846,6 +2847,75 @@ class _DriverShellState extends State<DriverShell> {
     });
   }
 
+  // A finished trip whose fare the driver never confirmed.
+  //
+  // "Готово" on the settlement card clears the trip tab so the driver can get
+  // back to work, which is right — but the trip is not finished as far as the
+  // server is concerned. TRIP_COMPLETED and PAYMENT_PENDING both count against
+  // the rider's one-active-order limit, so until the driver taps "Оплата
+  // получена" that rider cannot order a taxi from anyone, and nothing in the
+  // app said so: the card was gone until the next cold start. This keeps it
+  // in front of the driver, on the screen they work from, without putting
+  // them back on a trip they have already left.
+  OrderSummary? get _unsettledTrip {
+    if (_activeOrder != null) return null;
+    for (final order in _orders) {
+      if (order.awaitsSettlement && _driverCanConfirmPayment(order)) {
+        return order;
+      }
+    }
+    return null;
+  }
+
+  // Mirrors assertDriverManualPaymentAllowed on the server: a driver can say
+  // "the rider handed me the money" for cash and for a Kaspi transfer made to
+  // them directly, but a card payment is the provider's to confirm and a
+  // driver pressing the button would only get a 403. Telling them the rider
+  // is blocked by something they cannot clear would be worse than silence —
+  // that one is the owner's to reconcile.
+  bool _driverCanConfirmPayment(OrderSummary order) {
+    final method = order.paymentMethod;
+    return method == null || const {'CASH', 'KASPI'}.contains(method);
+  }
+
+  Future<void> _settleTripPayment(OrderSummary order) async {
+    if (_settlingTripPayment) return;
+    setState(() => _settlingTripPayment = true);
+    try {
+      await widget.api.markOrderPaid(order.id);
+      await _loadOrders();
+      await _loadDriverStats();
+    } catch (error) {
+      if (mounted) {
+        AppToast.showError(
+            context, readableError(AppLocalizations.of(context), error));
+      }
+    } finally {
+      if (mounted) setState(() => _settlingTripPayment = false);
+    }
+  }
+
+  Widget? _unsettledTripCard() {
+    final order = _unsettledTrip;
+    if (order == null) return null;
+    final l10n = AppLocalizations.of(context);
+    return _DriverIssueBanner(
+      issue: _DriverAvailabilityIssue(
+        icon: Icons.payments_outlined,
+        title: l10n.driverUnsettledTripTitle,
+        // formatDriverMoney already carries the ₸.
+        message: l10n.driverUnsettledTripMessage(
+            formatDriverMoney((order.price ?? 0).round())),
+        actionLabel: _settlingTripPayment
+            ? l10n.driverConfirmingPaymentButton
+            : l10n.driverConfirmPaymentButton,
+        onAction: _settlingTripPayment
+            ? null
+            : () => unawaited(_settleTripPayment(order)),
+      ),
+    );
+  }
+
   Widget _lineTab() {
     final l10n = AppLocalizations.of(context);
     final disabledReason = _disabledReason();
@@ -2867,6 +2937,7 @@ class _DriverShellState extends State<DriverShell> {
         todayEarnings: todayEarnings,
       );
     }
+    final unsettledTrip = _unsettledTripCard();
     return RefreshIndicator(
       onRefresh: () async {
         await _loadRegions();
@@ -2951,6 +3022,10 @@ class _DriverShellState extends State<DriverShell> {
               danger: _selectedRegion?.status == 'BLOCKED',
             ),
           ],
+          if (unsettledTrip != null) ...[
+            const SizedBox(height: 12),
+            unsettledTrip,
+          ],
           const SizedBox(height: 12),
           DriverTodayStrip(
             stats: stats,
@@ -2990,6 +3065,7 @@ class _DriverShellState extends State<DriverShell> {
     required String? todayEarnings,
   }) {
     final screen = MediaQuery.sizeOf(context);
+    final unsettledTrip = _unsettledTripCard();
     return Stack(
       children: [
         Positioned.fill(
@@ -3081,6 +3157,10 @@ class _DriverShellState extends State<DriverShell> {
                         issue: availabilityIssue,
                         danger: _selectedRegion?.status == 'BLOCKED',
                       ),
+                    ],
+                    if (unsettledTrip != null) ...[
+                      const SizedBox(height: 10),
+                      unsettledTrip,
                     ],
                     const SizedBox(height: 10),
                     DriverTodayStrip(

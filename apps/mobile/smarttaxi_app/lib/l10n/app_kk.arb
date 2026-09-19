@@ -1357,7 +1357,7 @@
   "driverServiceCommissionLabel": "Сервис комиссиясы",
   "driverYouReceiveLabel": "Сіз аласыз",
   "driverConfirmPaymentTitle": "Клиент төлем жасады ма?",
-  "driverConfirmPaymentHint": "Жолаушыны бағалау үшін төлемді растаңыз",
+  "driverConfirmPaymentHint": "Төлемді растаңыз: расталмайынша жолаушы жаңа сапарға тапсырыс бере алмайды",
   "driverConfirmPaymentButton": "Төлем алынды",
   "driverConfirmingPaymentButton": "Растап жатырмыз...",
   "driverRatePassengerTitle": "Жолаушыны бағалаңыз",
@@ -1890,5 +1890,7 @@
   "passengerNamePointTitle": "Бұл жердің аты қалай?",
   "passengerNamePointSubtitle": "Бұл нүктенің картада мекенжайы жоқ. Оны қалай табуға болатынын жазыңыз — жүргізуші тапсырыста көреді.",
   "passengerNamePointHint": "Мысалы: мешіттің артындағы көк қақпа",
-  "passengerNamePointConfirm": "Дайын"
+  "passengerNamePointConfirm": "Дайын",
+  "driverUnsettledTripTitle": "Сапар жабылмаған",
+  "driverUnsettledTripMessage": "{amount} сапары үшін төлем әлі расталмаған. Сіз растағанша жолаушы жаңа сапарға тапсырыс бере алмайды."
 }

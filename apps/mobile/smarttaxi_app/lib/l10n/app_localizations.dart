@@ -6088,7 +6088,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverConfirmPaymentHint.
   ///
   /// In ru, this message translates to:
-  /// **'Подтвердите получение оплаты, чтобы продолжить и оценить пассажира'**
+  /// **'Подтвердите оплату: пока она не подтверждена, пассажир не может заказать новую поездку'**
   String get driverConfirmPaymentHint;
 
   /// No description provided for @driverConfirmPaymentButton.
@@ -8124,6 +8124,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Готово'**
   String get passengerNamePointConfirm;
+
+  /// No description provided for @driverUnsettledTripTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Поездка не закрыта'**
+  String get driverUnsettledTripTitle;
+
+  /// No description provided for @driverUnsettledTripMessage.
+  ///
+  /// In ru, this message translates to:
+  /// **'Оплата за поездку на {amount} ещё не подтверждена. Пассажир не сможет заказать новую поездку, пока вы её не подтвердите.'**
+  String driverUnsettledTripMessage(String amount);
 }
 
 class _AppLocalizationsDelegate

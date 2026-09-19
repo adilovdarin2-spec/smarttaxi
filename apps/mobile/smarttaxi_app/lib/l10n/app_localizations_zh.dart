@@ -3122,7 +3122,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverConfirmPaymentTitle => '乘客已支付行程费用了吗?';
 
   @override
-  String get driverConfirmPaymentHint => '请确认已收到付款,以便继续为乘客评分';
+  String get driverConfirmPaymentHint => '请确认收到付款:在确认之前,乘客无法预订新的行程';
 
   @override
   String get driverConfirmPaymentButton => '已收到付款';
@@ -4251,4 +4251,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passengerNamePointConfirm => '完成';
+
+  @override
+  String get driverUnsettledTripTitle => '行程尚未结清';
+
+  @override
+  String driverUnsettledTripMessage(String amount) {
+    return '$amount 的行程款项尚未确认。在您确认之前,乘客无法预订新的行程。';
+  }
 }

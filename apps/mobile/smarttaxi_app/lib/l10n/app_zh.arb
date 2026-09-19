@@ -1360,7 +1360,7 @@
   "driverServiceCommissionLabel": "服务佣金",
   "driverYouReceiveLabel": "您将获得",
   "driverConfirmPaymentTitle": "乘客已支付行程费用了吗?",
-  "driverConfirmPaymentHint": "请确认已收到付款,以便继续为乘客评分",
+  "driverConfirmPaymentHint": "请确认收到付款:在确认之前,乘客无法预订新的行程",
   "driverConfirmPaymentButton": "已收到付款",
   "driverConfirmingPaymentButton": "确认中...",
   "driverRatePassengerTitle": "请为乘客评分",
@@ -1893,5 +1893,7 @@
   "passengerNamePointTitle": "这个地点叫什么？",
   "passengerNamePointSubtitle": "该位置在地图上没有地址。请写明如何找到它——司机会在订单中看到。",
   "passengerNamePointHint": "例如：清真寺后面的蓝色大门",
-  "passengerNamePointConfirm": "完成"
+  "passengerNamePointConfirm": "完成",
+  "driverUnsettledTripTitle": "行程尚未结清",
+  "driverUnsettledTripMessage": "{amount} 的行程款项尚未确认。在您确认之前,乘客无法预订新的行程。"
 }

@@ -1360,7 +1360,7 @@
   "driverServiceCommissionLabel": "Комиссия сервиса",
   "driverYouReceiveLabel": "Вы получите",
   "driverConfirmPaymentTitle": "Клиент оплатил поездку?",
-  "driverConfirmPaymentHint": "Подтвердите получение оплаты, чтобы продолжить и оценить пассажира",
+  "driverConfirmPaymentHint": "Подтвердите оплату: пока она не подтверждена, пассажир не может заказать новую поездку",
   "driverConfirmPaymentButton": "Оплата получена",
   "driverConfirmingPaymentButton": "Подтверждаем...",
   "driverRatePassengerTitle": "Оцените пассажира",
@@ -1798,7 +1798,13 @@
   "standJoinNeedsLocation": "Включите геолокацию, чтобы встать в очередь",
   "standPresenceNeedsLocation": "Не удалось подтвердить геолокацию. Включите точное местоположение, чтобы сохранить место в очереди.",
   "standPendingSeats": "Ожидают подтверждения: {count, plural, one{{count} место} few{{count} места} many{{count} мест} other{{count} места}}",
-  "@standPendingSeats": {"placeholders": {"count": {"type": "int"}}},
+  "@standPendingSeats": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "standManualReleaseHint": "Кнопка «−» освобождает только места по звонку или на месте. Бронь из приложения отменяет пассажир.",
   "standJoinNeedsOnline": "Выйдите на линию, чтобы встать в очередь",
   "standYourPlaceTitle": "Ваше место в очереди",
@@ -1960,27 +1966,60 @@
   "assignmentDriverBlockedRider": "Вы заблокировали этого пассажира. Выберите другой заказ.",
   "assignmentRiderUnavailable": "Водитель больше не может принять этот заказ. Выберите другого водителя или отклоните предложение.",
   "mapStyleTitle": "Вид карты",
-  "@mapStyleTitle": {"description": "Heading of the sheet that picks how the map is drawn."},
+  "@mapStyleTitle": {
+    "description": "Heading of the sheet that picks how the map is drawn."
+  },
   "mapStyleButtonTooltip": "Вид карты",
-  "@mapStyleButtonTooltip": {"description": "Tooltip of the button on the map that opens the style picker."},
+  "@mapStyleButtonTooltip": {
+    "description": "Tooltip of the button on the map that opens the style picker."
+  },
   "mapStyle3d": "3D",
-  "@mapStyle3d": {"description": "Map style: buildings with volume."},
+  "@mapStyle3d": {
+    "description": "Map style: buildings with volume."
+  },
   "mapStyle3dDescription": "Объёмные дома — видно, где какой дом",
-  "@mapStyle3dDescription": {"description": "One line under the 3D option."},
+  "@mapStyle3dDescription": {
+    "description": "One line under the 3D option."
+  },
   "mapStyle2d": "2D",
-  "@mapStyle2d": {"description": "Map style: a flat plan."},
+  "@mapStyle2d": {
+    "description": "Map style: a flat plan."
+  },
   "mapStyle2dDescription": "Плоская схема — проще и быстрее",
-  "@mapStyle2dDescription": {"description": "One line under the 2D option."},
+  "@mapStyle2dDescription": {
+    "description": "One line under the 2D option."
+  },
   "mapStyleSatellite": "Спутник",
-  "@mapStyleSatellite": {"description": "Map style: satellite imagery."},
+  "@mapStyleSatellite": {
+    "description": "Map style: satellite imagery."
+  },
   "mapStyleSatelliteDescription": "Снимок со спутника с названиями улиц",
-  "@mapStyleSatelliteDescription": {"description": "One line under the satellite option."},
+  "@mapStyleSatelliteDescription": {
+    "description": "One line under the satellite option."
+  },
   "passengerNamePointTitle": "Как называется это место?",
-  "@passengerNamePointTitle": {"description": "Heading of the sheet asking the rider to name a point the map has no address for."},
+  "@passengerNamePointTitle": {
+    "description": "Heading of the sheet asking the rider to name a point the map has no address for."
+  },
   "passengerNamePointSubtitle": "У этой точки нет адреса на карте. Напишите, как её найти, — водитель увидит это в заказе.",
-  "@passengerNamePointSubtitle": {"description": "Explains that the driver will see this name in the order."},
+  "@passengerNamePointSubtitle": {
+    "description": "Explains that the driver will see this name in the order."
+  },
   "passengerNamePointHint": "Например: синие ворота за мечетью",
-  "@passengerNamePointHint": {"description": "Placeholder example of a landmark description."},
+  "@passengerNamePointHint": {
+    "description": "Placeholder example of a landmark description."
+  },
   "passengerNamePointConfirm": "Готово",
-  "@passengerNamePointConfirm": {"description": "Confirms the typed name for the picked point."}
+  "@passengerNamePointConfirm": {
+    "description": "Confirms the typed name for the picked point."
+  },
+  "driverUnsettledTripTitle": "Поездка не закрыта",
+  "driverUnsettledTripMessage": "Оплата за поездку на {amount} ещё не подтверждена. Пассажир не сможет заказать новую поездку, пока вы её не подтвердите.",
+  "@driverUnsettledTripMessage": {
+    "placeholders": {
+      "amount": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -1360,7 +1360,7 @@
   "driverServiceCommissionLabel": "Xizmat komissiyasi",
   "driverYouReceiveLabel": "Siz olasiz",
   "driverConfirmPaymentTitle": "Mijoz safar uchun to'ladimi?",
-  "driverConfirmPaymentHint": "Yo'lovchini baholash uchun to'lov qabul qilinganini tasdiqlang",
+  "driverConfirmPaymentHint": "To'lovni tasdiqlang: tasdiqlanmaguncha yo'lovchi yangi safarga buyurtma bera olmaydi",
   "driverConfirmPaymentButton": "To'lov qabul qilindi",
   "driverConfirmingPaymentButton": "Tasdiqlanmoqda...",
   "driverRatePassengerTitle": "Yo'lovchini baholang",
@@ -1893,5 +1893,7 @@
   "passengerNamePointTitle": "Bu joy qanday ataladi?",
   "passengerNamePointSubtitle": "Bu nuqtaning xaritada manzili yo‘q. Uni qanday topish mumkinligini yozing — haydovchi buyurtmada ko‘radi.",
   "passengerNamePointHint": "Masalan: masjid orqasidagi ko‘k darvoza",
-  "passengerNamePointConfirm": "Tayyor"
+  "passengerNamePointConfirm": "Tayyor",
+  "driverUnsettledTripTitle": "Safar yopilmagan",
+  "driverUnsettledTripMessage": "{amount} safar uchun to'lov hali tasdiqlanmagan. Siz tasdiqlamaguningizcha yo'lovchi yangi safarga buyurtma bera olmaydi."
 }

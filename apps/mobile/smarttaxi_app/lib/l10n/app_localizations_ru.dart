@@ -3338,7 +3338,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverConfirmPaymentHint =>
-      'Подтвердите получение оплаты, чтобы продолжить и оценить пассажира';
+      'Подтвердите оплату: пока она не подтверждена, пассажир не может заказать новую поездку';
 
   @override
   String get driverConfirmPaymentButton => 'Оплата получена';
@@ -4557,4 +4557,12 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerNamePointConfirm => 'Готово';
+
+  @override
+  String get driverUnsettledTripTitle => 'Поездка не закрыта';
+
+  @override
+  String driverUnsettledTripMessage(String amount) {
+    return 'Оплата за поездку на $amount ещё не подтверждена. Пассажир не сможет заказать новую поездку, пока вы её не подтвердите.';
+  }
 }

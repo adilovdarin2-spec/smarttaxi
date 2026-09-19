@@ -3346,7 +3346,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get driverConfirmPaymentHint =>
-      'Жолаушыны бағалау үшін төлемді растаңыз';
+      'Төлемді растаңыз: расталмайынша жолаушы жаңа сапарға тапсырыс бере алмайды';
 
   @override
   String get driverConfirmPaymentButton => 'Төлем алынды';
@@ -4536,4 +4536,12 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get passengerNamePointConfirm => 'Дайын';
+
+  @override
+  String get driverUnsettledTripTitle => 'Сапар жабылмаған';
+
+  @override
+  String driverUnsettledTripMessage(String amount) {
+    return '$amount сапары үшін төлем әлі расталмаған. Сіз растағанша жолаушы жаңа сапарға тапсырыс бере алмайды.';
+  }
 }
