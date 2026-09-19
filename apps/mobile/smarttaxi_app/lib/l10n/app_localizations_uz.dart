@@ -4590,4 +4590,13 @@ class AppLocalizationsUz extends AppLocalizations {
   String driverUnsettledTripMessage(String amount) {
     return '$amount safar uchun to\'lov hali tasdiqlanmagan. Siz tasdiqlamaguningizcha yo\'lovchi yangi safarga buyurtma bera olmaydi.';
   }
+
+  @override
+  String get passengerPriceRecommended => 'Tavsiya etilgan';
+
+  @override
+  String get passengerPriceYourBid => 'Sizning taklifingiz';
+
+  @override
+  String get tariffPriceCalculating => 'Hisoblanmoqda';
 }

@@ -1895,5 +1895,8 @@
   "passengerNamePointHint": "Masalan: masjid orqasidagi ko‘k darvoza",
   "passengerNamePointConfirm": "Tayyor",
   "driverUnsettledTripTitle": "Safar yopilmagan",
-  "driverUnsettledTripMessage": "{amount} safar uchun to'lov hali tasdiqlanmagan. Siz tasdiqlamaguningizcha yo'lovchi yangi safarga buyurtma bera olmaydi."
+  "driverUnsettledTripMessage": "{amount} safar uchun to'lov hali tasdiqlanmagan. Siz tasdiqlamaguningizcha yo'lovchi yangi safarga buyurtma bera olmaydi.",
+  "passengerPriceRecommended": "Tavsiya etilgan",
+  "passengerPriceYourBid": "Sizning taklifingiz",
+  "tariffPriceCalculating": "Hisoblanmoqda"
 }

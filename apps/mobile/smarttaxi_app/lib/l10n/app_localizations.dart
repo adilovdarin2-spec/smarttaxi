@@ -8136,6 +8136,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Оплата за поездку на {amount} ещё не подтверждена. Пассажир не сможет заказать новую поездку, пока вы её не подтвердите.'**
   String driverUnsettledTripMessage(String amount);
+
+  /// No description provided for @passengerPriceRecommended.
+  ///
+  /// In ru, this message translates to:
+  /// **'Рекомендованная'**
+  String get passengerPriceRecommended;
+
+  /// No description provided for @passengerPriceYourBid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ваша ставка'**
+  String get passengerPriceYourBid;
+
+  /// No description provided for @tariffPriceCalculating.
+  ///
+  /// In ru, this message translates to:
+  /// **'Расчёт'**
+  String get tariffPriceCalculating;
 }
 
 class _AppLocalizationsDelegate

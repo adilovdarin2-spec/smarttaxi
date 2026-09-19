@@ -4544,4 +4544,13 @@ class AppLocalizationsKk extends AppLocalizations {
   String driverUnsettledTripMessage(String amount) {
     return '$amount сапары үшін төлем әлі расталмаған. Сіз растағанша жолаушы жаңа сапарға тапсырыс бере алмайды.';
   }
+
+  @override
+  String get passengerPriceRecommended => 'Ұсынылған баға';
+
+  @override
+  String get passengerPriceYourBid => 'Сіздің бағаңыз';
+
+  @override
+  String get tariffPriceCalculating => 'Есептелуде';
 }

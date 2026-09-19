@@ -4565,4 +4565,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String driverUnsettledTripMessage(String amount) {
     return 'Оплата за поездку на $amount ещё не подтверждена. Пассажир не сможет заказать новую поездку, пока вы её не подтвердите.';
   }
+
+  @override
+  String get passengerPriceRecommended => 'Рекомендованная';
+
+  @override
+  String get passengerPriceYourBid => 'Ваша ставка';
+
+  @override
+  String get tariffPriceCalculating => 'Расчёт';
 }

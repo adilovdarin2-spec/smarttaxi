@@ -2021,5 +2021,8 @@
         "type": "String"
       }
     }
-  }
+  },
+  "passengerPriceRecommended": "Рекомендованная",
+  "passengerPriceYourBid": "Ваша ставка",
+  "tariffPriceCalculating": "Расчёт"
 }

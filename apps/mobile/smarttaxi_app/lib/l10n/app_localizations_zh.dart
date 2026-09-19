@@ -4259,4 +4259,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String driverUnsettledTripMessage(String amount) {
     return '$amount 的行程款项尚未确认。在您确认之前,乘客无法预订新的行程。';
   }
+
+  @override
+  String get passengerPriceRecommended => '推荐价格';
+
+  @override
+  String get passengerPriceYourBid => '您的出价';
+
+  @override
+  String get tariffPriceCalculating => '计算中';
 }

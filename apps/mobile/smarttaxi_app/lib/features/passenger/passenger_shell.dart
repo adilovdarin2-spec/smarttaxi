@@ -16523,7 +16523,9 @@ class _TariffComparisonCard extends StatelessWidget {
         subtitle: isDelivery
             ? l10n.tariffDeliveryWeight
             : (tripMeta ?? l10n.tariffUpToFourPassengers),
-        price: price == null ? 'Расчёт' : _formatTenge(price),
+        price: price == null
+            ? l10n.tariffPriceCalculating
+            : _formatTenge(price),
         art: art,
         selected: selected,
         onTap: onTap,
@@ -16664,7 +16666,9 @@ class _CompactPriceAdjuster extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  currentPrice == basePrice ? 'Рекомендованная' : 'Ваша ставка',
+                  currentPrice == basePrice
+                      ? l10n.passengerPriceRecommended
+                      : l10n.passengerPriceYourBid,
                   style: TextStyle(
                     color: palette.textSecondary,
                     fontSize: 9.5,

@@ -1895,5 +1895,8 @@
   "passengerNamePointHint": "例如：清真寺后面的蓝色大门",
   "passengerNamePointConfirm": "完成",
   "driverUnsettledTripTitle": "行程尚未结清",
-  "driverUnsettledTripMessage": "{amount} 的行程款项尚未确认。在您确认之前,乘客无法预订新的行程。"
+  "driverUnsettledTripMessage": "{amount} 的行程款项尚未确认。在您确认之前,乘客无法预订新的行程。",
+  "passengerPriceRecommended": "推荐价格",
+  "passengerPriceYourBid": "您的出价",
+  "tariffPriceCalculating": "计算中"
 }
