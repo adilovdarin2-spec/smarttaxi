@@ -406,6 +406,16 @@ class _PassengerShellState extends State<PassengerShell>
   int _nearbyDriversRequest = 0;
   final _mapPickerRequestGate = AddressRequestGate();
   String _mapPickerAddressLabel = 'Точка на карте';
+  // The label the geocoder actually returned, or null when it found nothing.
+  //
+  // Deliberately separate from the line above, which is what the sheet shows
+  // and is therefore translated. Deciding "did we find an address?" by
+  // matching that display text against the Russian words "точка на карте" is
+  // how a Kazakh, Uzbek or Chinese rider ended up ordering a car to a
+  // destination literally called "Картадағы нүкте": the placeholder did not
+  // match, so it was taken for a real address and the question that would
+  // have got the driver something useful was never asked.
+  String? _mapPickerResolvedLabel;
   // The reverse-geocoder returns the coordinate of the actual address/POI.
   // Keep it with the label: using only the free camera centre can display a
   // nearby house while routing from a different service lane.
@@ -1909,6 +1919,7 @@ class _PassengerShellState extends State<PassengerShell>
         _mapCenter = center;
         _mapZoom = math.max(_mapZoom ?? 16, 17.5);
         _mapPickerAddressLabel = l10n.passengerResolvingAddressLabel;
+        _mapPickerResolvedLabel = null;
         _mapPickerResolvedCoordinate = null;
         _mapPickerAddressHint = null;
         _mapPickerAddressLoading = true;
@@ -1947,29 +1958,23 @@ class _PassengerShellState extends State<PassengerShell>
         _mapCenter ??
         _selectedRegion?.center?.toLatLng() ??
         _atakentFallbackCenter;
-    // Outside the working region is not something the rider can fix by naming
-    // the place. _applyMapTap owns that message; let it refuse the point
-    // rather than asking a question whose answer is thrown away.
-    if (_shouldBlockPointByRegion(
-        _selectedRegion, Coordinate(lat: point.latitude, lng: point.longitude))) {
+    // Everything that can refuse this point is checked before the rider is
+    // asked to describe it. Neither answer is something a name can fix, and
+    // being asked to type one only to be told the point was never usable is
+    // the rudest possible way to find that out. _applyMapTap owns both
+    // messages; let it do the refusing.
+    final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
+    if (_shouldBlockPointByRegion(_selectedRegion, coordinate) ||
+        _wouldRepeatTripPoint(coordinate)) {
       await _applyMapTap(point);
       return;
     }
-    final knownLabel = _mapPickerAddressLoading
-        ? null
-        : _mapPickerAddressLabel.trim().isEmpty
-            ? null
-            : _mapPickerAddressLabel.trim();
     // No named building under the marker is not a reason to refuse the point —
     // in most of these villages OSM has the street but no house numbers, and
     // there is no nearer house to move the map to. The rider names it instead,
     // just below.
-    final usableLabel =
-        knownLabel != null && _isUsablePassengerAddressLabel(knownLabel)
-            ? knownLabel
-            : null;
     _mapPickerReverseDebounce?.cancel();
-    var label = usableLabel;
+    var label = _mapPickerResolvedLabel;
     if (label == null) {
       // The rider is the only person who knows what this place is called. Ask
       // them, rather than sending the driver the words "Точка на карте" — which
@@ -1991,6 +1996,7 @@ class _PassengerShellState extends State<PassengerShell>
     _mapPickerRequestGate.invalidate();
     setState(() {
       _mapPointPickerActive = false;
+      _mapPickerResolvedLabel = null;
       _mapPickerResolvedCoordinate = null;
       _mapPickerAddressHint = null;
       _mapPickerAddressLoading = false;
@@ -2016,6 +2022,7 @@ class _PassengerShellState extends State<PassengerShell>
       // about where the pin is now.
       setState(() {
         _mapPickerAddressLoading = true;
+        _mapPickerResolvedLabel = null;
         _mapPickerResolvedCoordinate = null;
         _mapPickerAddressHint = null;
       });
@@ -2043,6 +2050,7 @@ class _PassengerShellState extends State<PassengerShell>
     final l10n = AppLocalizations.of(context);
     final coordinate = Coordinate(lat: point.latitude, lng: point.longitude);
     var label = l10n.passengerMapPointLabel;
+    String? resolvedLabel;
     Coordinate? resolvedCoordinate;
     String? hint;
     final selectedRegion = _selectedRegion;
@@ -2056,6 +2064,7 @@ class _PassengerShellState extends State<PassengerShell>
             address.isResolved &&
             _isUsablePassengerAddressLabel(address.label)) {
           label = address.label.trim();
+          resolvedLabel = label;
           resolvedCoordinate = address.coordinate;
         } else {
           // Prefer the server's own wording: it names the rider's town, which
@@ -2076,10 +2085,26 @@ class _PassengerShellState extends State<PassengerShell>
     }
     setState(() {
       _mapPickerAddressLabel = label;
+      _mapPickerResolvedLabel = resolvedLabel;
       _mapPickerResolvedCoordinate = resolvedCoordinate;
       _mapPickerAddressHint = hint;
       _mapPickerAddressLoading = false;
     });
+  }
+
+  /// True when this point would be refused as "pickup and destination are the
+  /// same". Mirrors the guard inside [_applyPoint], including the pickup it
+  /// infers from the map when the rider has not chosen one yet — a rider who
+  /// opens the destination picker without moving the map is standing on
+  /// exactly that inferred point.
+  bool _wouldRepeatTripPoint(Coordinate coordinate) {
+    if (_target != PointTarget.dropoff) return false;
+    final inferredCenter = _mapCenter ??
+        _selectedRegion?.center?.toLatLng() ??
+        _atakentFallbackCenter;
+    final effectivePickup = _pickup ??
+        Coordinate(lat: inferredCenter.latitude, lng: inferredCenter.longitude);
+    return _isSameTripPoint(effectivePickup, coordinate);
   }
 
   Future<bool> _applyMapTap(LatLng point, {String? preferredLabel}) async {

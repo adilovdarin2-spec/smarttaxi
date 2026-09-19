@@ -45,12 +45,25 @@ void main() {
     expect(confirm, contains('_mapPickerResolvedCoordinate?.toLatLng() ??'));
     expect(confirm, contains('_mapCenter ??'));
 
-    // Outside the region is not something a name can fix, and the message for
-    // it belongs to _applyMapTap.
+    // Nothing a name can fix is left to be discovered after the rider has
+    // typed one. Found on a device: naming a point in Бирлик and only then
+    // being told "the destination is the same as the pickup".
     expect(confirm, contains('_shouldBlockPointByRegion('));
-    expect(confirm.indexOf('_shouldBlockPointByRegion('),
-        lessThan(confirm.indexOf('showMapPointNameSheet(')),
-        reason: 'do not ask for a name for a point that will then be refused');
+    expect(confirm, contains('_wouldRepeatTripPoint('));
+    for (final guard in ['_shouldBlockPointByRegion(', '_wouldRepeatTripPoint(']) {
+      expect(confirm.indexOf(guard),
+          lessThan(confirm.indexOf('showMapPointNameSheet(')),
+          reason: 'do not ask for a name for a point that will then be refused');
+    }
+
+    // The inferred pickup has to match the one _applyPoint would use, or the
+    // pre-check and the refusal disagree about which points are usable.
+    final helper = passenger.substring(
+      passenger.indexOf('bool _wouldRepeatTripPoint('),
+      passenger.indexOf('Future<bool> _applyMapTap('),
+    );
+    expect(helper, contains('_isSameTripPoint(effectivePickup, coordinate)'));
+    expect(helper, contains('_pickup ??'));
   });
 
   test('the rider is not kept waiting for a lookup that has an answer', () {
@@ -65,6 +78,31 @@ void main() {
     );
     expect(reverse, contains('receiveTimeout: reverseAddressTimeout'));
     expect(reverse, contains('sendTimeout: reverseAddressTimeout'));
+  });
+
+  test('whether an address was found is state, never translated text', () {
+    final passenger = _read('lib/features/passenger/passenger_shell.dart');
+    final confirm = passenger.substring(
+      passenger.indexOf('Future<void> _confirmMapPointSelection()'),
+      passenger.indexOf('void _cancelMapPointSelection()'),
+    );
+
+    // Found on a device with the app in Kazakh: the decision used to be made
+    // by matching the label shown on screen against the Russian words "точка
+    // на карте". In every other language the placeholder did not match, so it
+    // was taken for a real address — the rider was never asked to name the
+    // place and the driver was sent a destination literally called
+    // "Картадағы нүкте".
+    expect(confirm, contains('var label = _mapPickerResolvedLabel;'));
+    expect(confirm.contains('_isUsablePassengerAddressLabel'), isFalse,
+        reason: 'the display label is translated; it cannot decide this');
+    expect(confirm.contains('_mapPickerAddressLabel'), isFalse,
+        reason: 'the display label is translated; it cannot decide this');
+
+    // The resolved label is set in exactly one place: where the geocoder
+    // actually returned something usable.
+    expect(passenger, contains('resolvedLabel = label;'));
+    expect(passenger, contains('_mapPickerResolvedLabel = resolvedLabel;'));
   });
 
   test('the typed name is one the server will accept', () {
