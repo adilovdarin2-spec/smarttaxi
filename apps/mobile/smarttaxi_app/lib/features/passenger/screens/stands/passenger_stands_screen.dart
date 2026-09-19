@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/api/api_client.dart';
 import '../../../../core/config/app_config.dart';
+import '../../../../core/map/map_style.dart';
 import '../../../../core/sockets/socket_service.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -25,6 +26,7 @@ class PassengerStandsScreen extends StatefulWidget {
     required this.api,
     required this.socket,
     required this.regionId,
+    required this.mapStyle,
     this.regionCenter,
     this.initialStandId,
   });
@@ -32,6 +34,7 @@ class PassengerStandsScreen extends StatefulWidget {
   final ApiClient api;
   final SocketService socket;
   final String? regionId;
+  final MapStyleChoice mapStyle;
   final Coordinate? regionCenter;
   final String? initialStandId;
 
@@ -322,10 +325,17 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
                       ),
                     ),
                     children: [
+                      // The rider chose how their map is drawn; a screen that
+                      // ignores it is worse than not offering the choice.
+                      // Flat by construction, so only the imagery choice
+                      // reaches here.
                       TileLayer(
-                        urlTemplate: AppConfig.osmTileUrl,
+                        urlTemplate: widget.mapStyle.rasterTileUrl,
                         subdomains: const ['a', 'b', 'c', 'd'],
                         retinaMode: true,
+                        maxNativeZoom: widget.mapStyle.allowsTileTinting
+                            ? 19
+                            : AppConfig.satelliteMaxZoom,
                         userAgentPackageName: 'kz.baisapar.app',
                       ),
                       MarkerLayer(

@@ -2713,6 +2713,7 @@ class _PassengerShellState extends State<PassengerShell>
           api: widget.api,
           socket: widget.sockets,
           regionId: _selectedRegion?.id,
+          mapStyle: widget.mapStyle,
           regionCenter: _selectedRegion?.center,
         ),
       ),

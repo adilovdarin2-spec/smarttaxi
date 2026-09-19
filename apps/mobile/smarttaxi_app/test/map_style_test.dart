@@ -137,6 +137,27 @@ void main() {
     expect('mapStyle: _mapStyle,'.allMatches(main).length, 2);
   });
 
+  test('no map in either app is left drawn when the rider chose imagery', () {
+    // A screen that ignores the choice is worse than not offering it: the
+    // rider switches to a photograph and half the app is still a drawing.
+    // The passenger stands map was exactly that until it was found on a
+    // device.
+    final surfaces = Directory('lib')
+        .listSync(recursive: true)
+        .whereType<File>()
+        .where((file) => file.path.endsWith('.dart'))
+        .map((file) => MapEntry(file.path, file.readAsStringSync()))
+        .where((entry) => entry.value.contains('urlTemplate:'));
+    expect(surfaces, isNotEmpty, reason: 'the raster surfaces must still exist');
+    for (final entry in surfaces) {
+      expect(
+        entry.value,
+        contains('urlTemplate: widget.mapStyle.rasterTileUrl'),
+        reason: '${entry.key} draws tiles without honouring the chosen style',
+      );
+    }
+  });
+
   test('every choice is named in every language the app ships', () {
     for (final code in ['ru', 'kk', 'uz', 'zh']) {
       final arb =
