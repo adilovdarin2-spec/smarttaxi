@@ -8184,6 +8184,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось отправить сигнал. Позвоните на экстренную линию.'**
   String get sosSignalFailedToast;
+
+  /// No description provided for @standReservationPendingMinutes.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём подтверждения водителя · осталось {minutes} мин'**
+  String standReservationPendingMinutes(int minutes);
+
+  /// No description provided for @standReservationPendingLastMinute.
+  ///
+  /// In ru, this message translates to:
+  /// **'Ждём подтверждения водителя · меньше минуты'**
+  String get standReservationPendingLastMinute;
 }
 
 class _AppLocalizationsDelegate

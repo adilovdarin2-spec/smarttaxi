@@ -1903,5 +1903,7 @@
   "sosSendSignalTitle": "Qo'ng'iroqsiz yordam xizmatiga xabar berish",
   "sosSendSignalText": "Koordinatalaringiz va safar raqamingiz yordam xizmatiga yuboriladi. Gapira olsangiz — qo'ng'iroq tezroq.",
   "sosSignalSentToast": "Signal yordam xizmatiga yuborildi",
-  "sosSignalFailedToast": "Signal yuborilmadi. Favqulodda liniyaga qo'ng'iroq qiling."
+  "sosSignalFailedToast": "Signal yuborilmadi. Favqulodda liniyaga qo'ng'iroq qiling.",
+  "standReservationPendingMinutes": "Haydovchining tasdig'ini kutyapmiz · {minutes} daqiqa qoldi",
+  "standReservationPendingLastMinute": "Haydovchining tasdig'ini kutyapmiz · bir daqiqadan kam qoldi"
 }

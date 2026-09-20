@@ -4283,4 +4283,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sosSignalFailedToast => '信号发送失败，请拨打紧急电话。';
+
+  @override
+  String standReservationPendingMinutes(int minutes) {
+    return '等待司机确认 · 还剩 $minutes 分钟';
+  }
+
+  @override
+  String get standReservationPendingLastMinute => '等待司机确认 · 不到一分钟';
 }

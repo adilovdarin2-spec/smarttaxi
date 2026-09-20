@@ -4571,4 +4571,13 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get sosSignalFailedToast =>
       'Сигнал жіберілмеді. Жедел желіге қоңырау шалыңыз.';
+
+  @override
+  String standReservationPendingMinutes(int minutes) {
+    return 'Жүргізушінің растауын күтудеміз · $minutes мин қалды';
+  }
+
+  @override
+  String get standReservationPendingLastMinute =>
+      'Жүргізушінің растауын күтудеміз · бір минуттан аз қалды';
 }

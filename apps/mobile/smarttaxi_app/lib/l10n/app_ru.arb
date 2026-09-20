@@ -2029,5 +2029,14 @@
   "sosSendSignalTitle": "Сообщить в поддержку без звонка",
   "sosSendSignalText": "Уйдёт заявка с вашими координатами и номером поездки. Если вы можете говорить — звонок быстрее.",
   "sosSignalSentToast": "Сигнал отправлен в поддержку",
-  "sosSignalFailedToast": "Не удалось отправить сигнал. Позвоните на экстренную линию."
+  "sosSignalFailedToast": "Не удалось отправить сигнал. Позвоните на экстренную линию.",
+  "standReservationPendingMinutes": "Ждём подтверждения водителя · осталось {minutes} мин",
+  "standReservationPendingLastMinute": "Ждём подтверждения водителя · меньше минуты",
+  "@standReservationPendingMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  }
 }

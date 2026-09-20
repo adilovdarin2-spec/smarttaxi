@@ -4618,4 +4618,13 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get sosSignalFailedToast =>
       'Signal yuborilmadi. Favqulodda liniyaga qo\'ng\'iroq qiling.';
+
+  @override
+  String standReservationPendingMinutes(int minutes) {
+    return 'Haydovchining tasdig\'ini kutyapmiz · $minutes daqiqa qoldi';
+  }
+
+  @override
+  String get standReservationPendingLastMinute =>
+      'Haydovchining tasdig\'ini kutyapmiz · bir daqiqadan kam qoldi';
 }

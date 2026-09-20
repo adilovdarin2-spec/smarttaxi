@@ -4592,4 +4592,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get sosSignalFailedToast =>
       'Не удалось отправить сигнал. Позвоните на экстренную линию.';
+
+  @override
+  String standReservationPendingMinutes(int minutes) {
+    return 'Ждём подтверждения водителя · осталось $minutes мин';
+  }
+
+  @override
+  String get standReservationPendingLastMinute =>
+      'Ждём подтверждения водителя · меньше минуты';
 }

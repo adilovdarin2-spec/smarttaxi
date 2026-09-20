@@ -616,6 +616,25 @@ class PassengerStandReservationBanner extends StatelessWidget {
   final bool busy;
   final Future<void> Function() onCancel;
 
+  // A held seat is not held forever: the server expires it after
+  // RESERVATION_TTL_MINUTES and the sweeper gives the seat back. The rider is
+  // standing at the stand deciding whether to keep waiting or walk over to
+  // the car, and "waiting for the driver" alone does not tell them whether
+  // that is two minutes or twenty.
+  //
+  // Recomputed on each build, which this screen already does every twenty
+  // seconds as it polls — accurate enough for a number in minutes, and no
+  // ticker to leak.
+  String _pendingText(AppLocalizations l10n) {
+    final expiresAt = reservation.expiresAt;
+    if (expiresAt == null) return l10n.standReservationPending;
+    final left = expiresAt.difference(DateTime.now());
+    if (left.isNegative) return l10n.standReservationPending;
+    if (left.inSeconds < 60) return l10n.standReservationPendingLastMinute;
+    // Rounded up, so it never reads "0 min" while the seat is still held.
+    return l10n.standReservationPendingMinutes((left.inSeconds / 60).ceil());
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -650,7 +669,7 @@ class PassengerStandReservationBanner extends StatelessWidget {
           Text(
             confirmed
                 ? l10n.standReservationConfirmed
-                : l10n.standReservationPending,
+                : _pendingText(l10n),
             style: TextStyle(
               color: confirmed ? palette.success : palette.brand,
               fontWeight: FontWeight.w600,

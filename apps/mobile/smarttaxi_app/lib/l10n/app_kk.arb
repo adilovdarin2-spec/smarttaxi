@@ -1900,5 +1900,7 @@
   "sosSendSignalTitle": "Қоңырауcыз қолдауға хабарлау",
   "sosSendSignalText": "Координаттарыңыз бен сапар нөміріңіз қолдауға жіберіледі. Сөйлей алсаңыз — қоңырау жылдамырақ.",
   "sosSignalSentToast": "Сигнал қолдау қызметіне жіберілді",
-  "sosSignalFailedToast": "Сигнал жіберілмеді. Жедел желіге қоңырау шалыңыз."
+  "sosSignalFailedToast": "Сигнал жіберілмеді. Жедел желіге қоңырау шалыңыз.",
+  "standReservationPendingMinutes": "Жүргізушінің растауын күтудеміз · {minutes} мин қалды",
+  "standReservationPendingLastMinute": "Жүргізушінің растауын күтудеміз · бір минуттан аз қалды"
 }
