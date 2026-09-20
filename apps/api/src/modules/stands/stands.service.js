@@ -796,6 +796,24 @@ export async function reserveSeat({ client: rider, entryId, seats, pickupLabel, 
       if (entry.status !== "BOARDING") {
         throw new AppError("This car is not taking passengers yet", 409, "STAND_ENTRY_NOT_BOARDING", { status: entry.status });
       }
+      // Nobody rides in their own car. A driver can switch to passenger mode
+      // under the same login, and a seat they book in the car they are
+      // sitting in is a seat no real rider can have — held against the free
+      // count, and waiting on that same driver to answer their own request.
+      // Same rule as dispatch's assertRiderIsNotThisDriver, one stand over.
+      if (rider.user_id) {
+        const self = (await dbClient.query(
+          "SELECT 1 FROM drivers WHERE id=$1 AND user_id=$2",
+          [entry.driver_id, rider.user_id]
+        )).rows[0];
+        if (self) {
+          throw new AppError(
+            "You cannot book a seat in your own car",
+            403,
+            "STAND_RIDER_IS_THE_DRIVER"
+          );
+        }
+      }
       // Do not make a passenger wait for the periodic sweeper before booking
       // again after their previous request timed out. This only resolves
       // expired pending holds, never a confirmed seat.

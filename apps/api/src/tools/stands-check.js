@@ -400,6 +400,31 @@ assert.ok(
     `${index} is referenced by the translator but no longer created`
   );
 });
+// Nobody rides in their own car. A driver can switch to passenger mode under
+// the same login; a seat booked in the car they are sitting in is a seat no
+// real rider can have — held against the free count, waiting on that same
+// driver to answer their own request. Dispatch refuses the matching case
+// (assertRiderIsNotThisDriver in order-dispatch.service.js); the stand has to
+// refuse it too.
+{
+  const start = service.indexOf("export async function reserveSeat(");
+  const body = service.slice(start, service.indexOf("\nexport ", start + 1));
+  assert.match(
+    body,
+    /SELECT 1 FROM drivers WHERE id=\$1 AND user_id=\$2/,
+    "reserveSeat must check the rider is not the driver of this car"
+  );
+  assert.ok(
+    body.includes('"STAND_RIDER_IS_THE_DRIVER"'),
+    "and say so with its own code rather than a generic refusal"
+  );
+  assert.ok(
+    body.indexOf("STAND_RIDER_IS_THE_DRIVER") <
+      body.indexOf("INSERT INTO taxi_stand_seat_reservations"),
+    "the check must run before the seat is written"
+  );
+}
+
 ["joinQueue", "reserveSeat"].forEach((fn) => {
   const start = service.indexOf(`export async function ${fn}(`);
   assert.ok(start > 0, `${fn} must exist`);
