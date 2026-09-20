@@ -433,6 +433,38 @@ assert.ok(
   assert.ok(body.includes("throw translateUniqueViolation(error);"), `${fn} must translate a lost insert race`);
 });
 
+// A place in the line is held by the car being there, and the only proof is
+// the presence ping. The stand screen sends one while it is open — but
+// waiting in a line means taking your place and putting the phone away, and
+// a driver who did that went quiet and was swept with 'NO_SIGNAL' while
+// standing at the stand. The ordinary location stream, which runs the whole
+// time a driver is online, has to refresh it too.
+const routingService = readFileSync(
+  new URL("../modules/routing/routing.service.js", import.meta.url), "utf8"
+);
+assert.match(
+  routingService,
+  /import \{ touchPresence \} from "\.\.\/stands\/stands\.service\.js";/,
+  "driver location updates must refresh stand presence"
+);
+{
+  const start = routingService.indexOf("export async function updateDriverLocation(");
+  assert.ok(start > 0, "updateDriverLocation must exist");
+  const body = routingService.slice(start, routingService.indexOf("\nexport ", start + 1));
+  assert.match(
+    body,
+    /touchPresence\(\{ driverId: driver\.id, lat: point\.lat, lng: point\.lng \}, executor\)/,
+    "with the driver's real position, not an open app"
+  );
+  // A stands problem must not take driver location — and with it the
+  // passenger's live map and the trip counter — down with it.
+  assert.match(
+    body,
+    /try \{\s*await touchPresence\([^)]*\);\s*\} catch \(error\) \{/,
+    "the refresh must be best-effort"
+  );
+}
+
 // Closing a stand takes a driver's place and a rider's seat away through no
 // action of their own. Both used to find out by watching the screen empty: the
 // generic stand_updated says the stand changed, not that your place is gone.

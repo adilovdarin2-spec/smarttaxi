@@ -11,6 +11,7 @@ import { orderRoom, dispatchRegionRoom, ACTIVE_ORDER_STATUSES, TO_PICKUP_ORDER_S
 import { prepareOrderPricing } from "../orders/order-pricing.service.js";
 import { publicIntercityRoute, resolveIntercityRoute } from "../intercity/intercity-routes.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { touchPresence } from "../stands/stands.service.js";
 import { findActiveRegionForPoint, listActiveRegions, normalizePoint, pointInPolygon, publicRegion } from "../regions/regions.service.js";
 
 function run(executor, sql, params = []) {
@@ -2350,6 +2351,24 @@ export async function updateDriverLocation({ userId, location, io = null, execut
     RETURNING *
   `, [driver.id, driver.current_region_id, point.lat, point.lng, heading, speed, accuracy, source]);
   await run(executor, "UPDATE drivers SET lat=$1, lng=$2, last_seen_at=NOW() WHERE id=$3", [point.lat, point.lng, driver.id]);
+
+  // A place in a stand's line is held by the car being there, and the only
+  // proof of that is this ping. Until now the only thing that sent it was the
+  // stand screen while it was open and in the foreground — so a driver who
+  // took their place and then switched to the Line tab or put the phone in
+  // their pocket, which is exactly what waiting in a line looks like, went
+  // quiet and the sweeper dropped them after STALE_PRESENCE_MINUTES with
+  // left_reason 'NO_SIGNAL'. They were standing right there.
+  //
+  // Cheap for everyone else: touchPresence returns on its first indexed read
+  // when the driver has no live entry. Best-effort on purpose — a stands
+  // problem must not take driver location down with it, and the sweeper's
+  // own grace period is the backstop if a ping is missed.
+  try {
+    await touchPresence({ driverId: driver.id, lat: point.lat, lng: point.lng }, executor);
+  } catch (error) {
+    console.error("[driver-location] stand presence refresh failed", error);
+  }
 
   activeOrder = activeOrder || (await run(executor, `
     SELECT id, status, distance_traveled_m, is_intercity
