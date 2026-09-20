@@ -61,6 +61,27 @@ const statements = [
        currency=EXCLUDED.currency,
        is_active=EXCLUDED.is_active,
        updated_at=NOW()`,
+  // Разовые правки, которые нельзя повторять при каждом запуске.
+  //
+  // Все остальные строки в этом файле идемпотентны: их можно выполнять хоть
+  // сто раз. Но "поставить комиссию 7 процентов" — не такая правка. Если
+  // выполнять её каждый раз, владелец больше никогда не сможет изменить
+  // комиссию из панели: следующий деплой вернёт её обратно. Отметка о
+  // выполнении делает правку однократной.
+  `CREATE TABLE IF NOT EXISTS schema_one_time_changes (
+    name TEXT PRIMARY KEY,
+    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  // Оферта обещает водителю 7 процентов с заказа, а в тарифах стояло 15.
+  // Расхождение между тем, что подписано, и тем, что списывается, лечится
+  // в пользу подписанного.
+  `WITH claim AS (
+     INSERT INTO schema_one_time_changes(name) VALUES ('service_commission_7_percent')
+     ON CONFLICT (name) DO NOTHING
+     RETURNING name
+   )
+   UPDATE tariffs SET service_commission_percent=7, updated_at=NOW()
+   WHERE EXISTS (SELECT 1 FROM claim) AND service_commission_percent <> 7`,
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS car_color TEXT",
   `CREATE TABLE IF NOT EXISTS driver_region_approvals (
@@ -160,10 +181,10 @@ const statements = [
    FROM regions r
    CROSS JOIN (
      VALUES
-      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,15,0,1,3,50,0,10,true),
-      ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,15,0,1,3,60,0,20,true),
-      ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,15,0,1,3,80,0,25,true),
-      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,15,0,1,3,50,0,30,true)
+      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0,1,3,50,0,10,true),
+      ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,7,0,1,3,60,0,20,true),
+      ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,7,0,1,3,80,0,25,true),
+      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
    WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
    ON CONFLICT (region_id, name) DO UPDATE
@@ -174,7 +195,6 @@ const statements = [
        price_per_km=EXCLUDED.price_per_km,
        price_per_minute=EXCLUDED.price_per_minute,
        min_price=EXCLUDED.min_price,
-       service_commission_percent=EXCLUDED.service_commission_percent,
        cashback_percent=EXCLUDED.cashback_percent,
        surge_multiplier=EXCLUDED.surge_multiplier,
        free_waiting_minutes=EXCLUDED.free_waiting_minutes,
@@ -200,7 +220,7 @@ const statements = [
     city TEXT NOT NULL DEFAULT 'Atakent',
     currency TEXT NOT NULL DEFAULT 'KZT',
     currency_symbol TEXT NOT NULL DEFAULT '₸',
-    default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
+    default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 7,
     auto_approve_drivers BOOLEAN NOT NULL DEFAULT false,
     auto_assign_orders BOOLEAN NOT NULL DEFAULT false,
     support_phone TEXT NOT NULL DEFAULT '',
@@ -208,6 +228,15 @@ const statements = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT service_settings_singleton CHECK (id = 1)
   )`,
+  // Здесь же, а не рядом с тарифами: таблица настроек создаётся ниже по
+  // списку, и обращаться к ней раньше нельзя.
+  `WITH claim AS (
+     INSERT INTO schema_one_time_changes(name) VALUES ('default_commission_7_percent')
+     ON CONFLICT (name) DO NOTHING
+     RETURNING name
+   )
+   UPDATE service_settings SET default_commission_percent=7, updated_at=NOW()
+   WHERE EXISTS (SELECT 1 FROM claim) AND default_commission_percent <> 7`,
   `CREATE TABLE IF NOT EXISTS driver_applications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     full_name TEXT NOT NULL,

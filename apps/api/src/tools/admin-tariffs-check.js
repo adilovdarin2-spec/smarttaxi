@@ -125,6 +125,64 @@ if (hasWebSource) {
   "Тарифы пока не настроены"
 ].forEach(copy => assert(adminApp.includes(copy), `Admin tariff UI missing ${copy}`));
 
+// --- Комиссия: одно число, и оно совпадает с офертой ---
+//
+// В legal-content.json водителю обещаны 7 процентов с заказа. Пока в тарифах
+// стояло 15, подписанное и списываемое расходились — а увидел бы это водитель
+// уже после поездки.
+const legalPath = join(root, "..", "..", "web", "src", "legal", "legal-content.json");
+if (hasWebSource && existsSync(legalPath)) {
+  const legal = readFileSync(legalPath, "utf8");
+  const promised = [...legal.matchAll(/комиссия Платформы составляет (\d+) процент/g)]
+    .map(match => Number(match[1]))
+    .filter(percent => percent > 0);
+  assert(promised.length > 0, "оферта должна называть размер комиссии");
+  const offerPercent = promised[0];
+  assert(
+    promised.every(percent => percent === offerPercent),
+    `оферта называет разные ставки комиссии: ${[...new Set(promised)].join(", ")}`
+  );
+  [schema, migrations].forEach((source, index) => {
+    const where = index === 0 ? "schema.sql" : "migrations.js";
+    const rows = [...source.matchAll(/\('(Economy|Comfort|Business|Delivery)',[^)]*?,(\d+),\d+,\d+,\d+,\d+,\d+,\d+,(?:true|false)\)/g)];
+    assert(rows.length === 4, `${where}: ожидались 4 посеянных тарифа, найдено ${rows.length}`);
+    rows.forEach(([, name, percent]) => assert.equal(
+      Number(percent),
+      offerPercent,
+      `${where}: тариф ${name} сеется с комиссией ${percent}%, а оферта обещает ${offerPercent}%`
+    ));
+  });
+}
+
+// Посев не имеет права переписывать комиссию у существующего тарифа: иначе
+// владелец меняет её в панели, а следующий деплой молча возвращает посеянную.
+[schema, migrations].forEach((source, index) => {
+  const where = index === 0 ? "schema.sql" : "migrations.js";
+  assert(
+    !/service_commission_percent=EXCLUDED\.service_commission_percent/.test(source),
+    `${where}: посев перезаписывает комиссию — правка владельца не переживёт деплой`
+  );
+});
+
+// Разовая правка должна остаться разовой.
+assert.match(
+  migrations,
+  /CREATE TABLE IF NOT EXISTS schema_one_time_changes/,
+  "нужна отметка о выполненных однократных правках"
+);
+["service_commission_7_percent", "default_commission_7_percent"].forEach(claim => {
+  assert(migrations.includes(claim), `однократная правка ${claim} потерялась`);
+  const statement = migrations.slice(
+    migrations.indexOf(claim) - 400,
+    migrations.indexOf(claim) + 600
+  );
+  assert.match(
+    statement,
+    /INSERT INTO schema_one_time_changes[\s\S]*ON CONFLICT \(name\) DO NOTHING/,
+    `${claim} должна выполняться под отметкой, иначе она повторится при каждом запуске`
+  );
+});
+
 // The road between two towns has its own price, set in its own place. Without
 // this screen the 156 seeded fares would be whatever the migration guessed,
 // with nowhere for the owner to correct them.

@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS tariffs (
   price_per_km INTEGER NOT NULL,
   price_per_minute INTEGER NOT NULL,
   min_price INTEGER NOT NULL,
-  service_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
+  service_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 7,
   cashback_percent NUMERIC(5,2) NOT NULL DEFAULT 2,
   surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1,
   included_km NUMERIC(8,2) NOT NULL DEFAULT 0,
@@ -325,7 +325,7 @@ CREATE TABLE IF NOT EXISTS service_settings (
   city TEXT NOT NULL DEFAULT 'Atakent',
   currency TEXT NOT NULL DEFAULT 'KZT',
   currency_symbol TEXT NOT NULL DEFAULT '₸',
-  default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 15,
+  default_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 7,
   auto_approve_drivers BOOLEAN NOT NULL DEFAULT false,
   auto_assign_orders BOOLEAN NOT NULL DEFAULT false,
   support_phone TEXT NOT NULL DEFAULT '',
@@ -657,10 +657,10 @@ SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, se
 FROM regions r
 CROSS JOIN (
   VALUES
-    ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,15,0,1,3,50,0,10,true),
-    ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,15,0,1,3,60,0,20,true),
-    ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,15,0,1,3,80,0,999,false),
-    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,15,0,1,3,50,0,30,true)
+    ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0,1,3,50,0,10,true),
+    ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,7,0,1,3,60,0,20,true),
+    ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,7,0,1,3,80,0,999,false),
+    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
 ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
 WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
 ON CONFLICT (region_id, name) DO UPDATE
@@ -671,7 +671,6 @@ SET region_id=EXCLUDED.region_id,
     price_per_km=EXCLUDED.price_per_km,
     price_per_minute=EXCLUDED.price_per_minute,
     min_price=EXCLUDED.min_price,
-    service_commission_percent=EXCLUDED.service_commission_percent,
     cashback_percent=EXCLUDED.cashback_percent,
     surge_multiplier=EXCLUDED.surge_multiplier,
     free_waiting_minutes=EXCLUDED.free_waiting_minutes,
