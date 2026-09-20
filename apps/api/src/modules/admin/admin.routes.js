@@ -630,6 +630,32 @@ router.patch("/drivers/:id/block", requireAuth, requireRole("OWNER"), async (req
     const driver = await tx(async client => {
       const before = (await client.query("SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
       if (!before) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
+      // A driver carrying a rider cannot simply be switched off. Blocking
+      // sets status OFFLINE and clears current_region_id, and every driver
+      // action on an order checks both — so the trip they are on becomes one
+      // nobody can move: the driver cannot complete it, and the operator
+      // cannot cancel it either, because CANCELLED_BY_OPERATOR is not
+      // reachable from TRIP_STARTED. The rider stays in the car with a frozen
+      // map and, afterwards, an order that still counts as their active one.
+      //
+      // So the owner is told instead of surprised. They can close the trip
+      // first — cancel it before it starts, complete it after — and block the
+      // driver the moment it is over. The block is a flag in a database; it
+      // was never the thing that gets a rider out of a car.
+      if (body.isBlocked && !before.is_blocked) {
+        const active = (await client.query(
+          "SELECT id, short_id, status FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1",
+          [params.id, ACTIVE_ORDER_STATUSES]
+        )).rows[0];
+        if (active) {
+          throw new AppError(
+            "This driver is on a trip right now — close that trip first",
+            409,
+            "DRIVER_HAS_ACTIVE_ORDER",
+            { orderId: active.id, shortId: active.short_id, orderStatus: active.status }
+          );
+        }
+      }
       const updated = (await client.query(`
         UPDATE drivers
         SET is_blocked=$1,

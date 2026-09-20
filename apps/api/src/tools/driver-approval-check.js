@@ -192,4 +192,47 @@ for (const [label, body] of [["admin.routes.js", adminBlockBody], ["drivers.rout
   assert.match(body, /current_region_id=CASE WHEN \$1=true THEN NULL ELSE current_region_id END/, `${label}'s block endpoint must clear current_region_id when blocking, matching every other place a driver gets blocked`);
 }
 
+// A driver carrying a rider cannot simply be switched off.
+//
+// Blocking sets status OFFLINE and clears current_region_id, and every driver
+// action on an order checks both — so the trip becomes one nobody can move:
+// the driver cannot complete it, and the operator cannot cancel it either,
+// because CANCELLED_BY_OPERATOR is not reachable from TRIP_STARTED. The rider
+// sits in the car with a frozen map, and afterwards keeps an order that still
+// counts as their active one.
+for (const [name, source] of [["admin", adminRoutes], ["drivers", driverRoutes]]) {
+  assert.match(
+    source,
+    /if \(body\.isBlocked && !before\.is_blocked\) \{/,
+    `${name} block must check for a trip in progress, and only when blocking`
+  );
+  assert.match(
+    source,
+    /"SELECT id, short_id, status FROM orders WHERE driver_id=\$1 AND status = ANY\(\$2::text\[\]\) LIMIT 1"/,
+    `${name} block must look for an active order`
+  );
+  assert.match(
+    source,
+    /"DRIVER_HAS_ACTIVE_ORDER",\s*\{ orderId: active\.id, shortId: active\.short_id, orderStatus: active\.status \}/,
+    `${name} block must name the trip so the owner can go and close it`
+  );
+  // Unblocking has no trip to protect, and must not be refused by this.
+  const blockRoute = source.slice(source.indexOf('/block"'));
+  assert.ok(
+    blockRoute.indexOf("body.isBlocked && !before.is_blocked") <
+      blockRoute.indexOf("UPDATE drivers"),
+    `${name} block must refuse before it writes`
+  );
+}
+// CANCELLED_BY_OPERATOR really is unreachable once the trip has started —
+// that is the whole reason the block has to be refused rather than warned
+// about. If this ever changes, the refusal can soften with it.
+const dispatchSource = readFileSync(join(root, "modules", "orders", "order-dispatch.service.js"), "utf8");
+const operatorRule = dispatchSource.match(/CANCELLED_BY_OPERATOR: \[([^\]]*)\]/);
+assert.ok(operatorRule, "the operator cancellation rule must exist");
+assert.ok(
+  !operatorRule[1].includes("TRIP_STARTED"),
+  "an operator who can cancel a started trip would make the block refusal unnecessary"
+);
+
 console.log("Driver region approval checks ok");
