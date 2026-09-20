@@ -389,3 +389,30 @@ test("Дом and Работа go to the address the rider saved", () => {
   // or the chip on the home screen has nothing to resolve.
   assert.match(source, /section === "favorites" \|\| section === "home"/);
 });
+
+test("a finished trip says why a new one cannot be ordered yet", () => {
+  // TRIP_COMPLETED and PAYMENT_PENDING both count against the rider's
+  // one-active-order limit on the server (CLIENT_ACTIVE_ORDER_STATUSES), so
+  // until the driver taps "Оплата получена" this rider is refused with 409.
+  // The screen said the trip was over and quietly refused to start another,
+  // which reads as the app being broken rather than as waiting on someone.
+  const source = readFileSync(new URL("../src/features/client/ClientApp.jsx", import.meta.url), "utf8");
+  const stage = source.slice(
+    source.indexOf("function clientLifecycleStage("),
+    source.indexOf("function ", source.indexOf("function clientLifecycleStage(") + 10),
+  );
+  for (const status of ["TRIP_COMPLETED", "PAYMENT_PENDING"]) {
+    const block = stage.slice(stage.indexOf(`${status}: {`));
+    const subtitle = block.slice(0, block.indexOf("canStartNewTrip"));
+    assert.match(
+      subtitle,
+      /водитель подтвердит оплату/,
+      `${status} must say what the rider is waiting on`,
+    );
+    assert.match(
+      block,
+      /canStartNewTrip: false/,
+      `${status} still cannot start a new trip — the server refuses it`,
+    );
+  }
+});

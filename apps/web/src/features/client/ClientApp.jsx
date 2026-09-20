@@ -475,9 +475,15 @@ function clientLifecycleStage(status, order, route = null) {
       canContact: true,
       canStartNewTrip: false
     },
+    // canStartNewTrip is false here because the server agrees: TRIP_COMPLETED
+    // and PAYMENT_PENDING both count against the rider's one-active-order
+    // limit (CLIENT_ACTIVE_ORDER_STATUSES), so ordering again answers 409
+    // until the driver taps "Оплата получена". The subtitle used to say only
+    // "check the amount", which left the rider looking at a finished trip
+    // that would not let them order and no reason why.
     TRIP_COMPLETED: {
       title: "Поездка окончена",
-      subtitle: `Проверьте сумму и оплату: ${payment}`,
+      subtitle: `Рассчитайтесь с водителем (${payment}). Новый заказ будет доступен, когда водитель подтвердит оплату.`,
       badge: label,
       canCancel: false,
       canContact: false,
@@ -485,7 +491,7 @@ function clientLifecycleStage(status, order, route = null) {
     },
     PAYMENT_PENDING: {
       title: "Поездка окончена",
-      subtitle: `Способ оплаты: ${payment}`,
+      subtitle: `Способ оплаты: ${payment}. Новый заказ будет доступен, когда водитель подтвердит оплату.`,
       badge: label,
       canCancel: false,
       canContact: false,

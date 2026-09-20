@@ -4599,4 +4599,8 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get tariffPriceCalculating => 'Hisoblanmoqda';
+
+  @override
+  String get passengerPaymentBlocksNewOrderNote =>
+      'To\'lov tasdiqlanmaguncha yangi buyurtma bera olmaysiz';
 }

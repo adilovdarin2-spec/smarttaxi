@@ -4553,4 +4553,8 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get tariffPriceCalculating => 'Есептелуде';
+
+  @override
+  String get passengerPaymentBlocksNewOrderNote =>
+      'Төлем расталмайынша жаңа тапсырыс бере алмайсыз';
 }

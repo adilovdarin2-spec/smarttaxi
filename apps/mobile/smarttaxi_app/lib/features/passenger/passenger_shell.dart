@@ -11257,15 +11257,39 @@ class _TripReceiptPanel extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              processing
-                  ? l10n.passengerPaymentProcessingText
-                  : l10n.passengerPaymentAwaitingText,
-              style: TextStyle(
-                color: palette.brandDeep,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  processing
+                      ? l10n.passengerPaymentProcessingText
+                      : l10n.passengerPaymentAwaitingText,
+                  style: TextStyle(
+                    color: palette.brandDeep,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                // A card payment clears itself in a moment. Cash waits on the
+                // driver tapping "Оплата получена", and until they do, the
+                // server counts this finished trip as the rider's active one
+                // — so ordering again answers CLIENT_HAS_ACTIVE_ORDER and
+                // bounces them straight back to this screen with no reason
+                // given. Say the reason.
+                if (!processing) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    l10n.passengerPaymentBlocksNewOrderNote,
+                    style: TextStyle(
+                      color: palette.textSecondary,
+                      fontSize: 12,
+                      height: 1.3,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
         ],

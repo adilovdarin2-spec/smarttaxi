@@ -1895,5 +1895,6 @@
   "driverUnsettledTripMessage": "{amount} сапары үшін төлем әлі расталмаған. Сіз растағанша жолаушы жаңа сапарға тапсырыс бере алмайды.",
   "passengerPriceRecommended": "Ұсынылған баға",
   "passengerPriceYourBid": "Өз ұсынысыңыз",
-  "tariffPriceCalculating": "Есептелуде"
+  "tariffPriceCalculating": "Есептелуде",
+  "passengerPaymentBlocksNewOrderNote": "Төлем расталмайынша жаңа тапсырыс бере алмайсыз"
 }

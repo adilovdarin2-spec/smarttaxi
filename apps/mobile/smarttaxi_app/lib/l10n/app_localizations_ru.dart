@@ -4574,4 +4574,8 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get tariffPriceCalculating => 'Расчёт';
+
+  @override
+  String get passengerPaymentBlocksNewOrderNote =>
+      'Пока оплата не подтверждена, новый заказ создать нельзя';
 }

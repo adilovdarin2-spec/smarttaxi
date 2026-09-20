@@ -2024,5 +2024,6 @@
   },
   "passengerPriceRecommended": "Рекомендованная",
   "passengerPriceYourBid": "Ваша ставка",
-  "tariffPriceCalculating": "Расчёт"
+  "tariffPriceCalculating": "Расчёт",
+  "passengerPaymentBlocksNewOrderNote": "Пока оплата не подтверждена, новый заказ создать нельзя"
 }

@@ -8154,6 +8154,12 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Расчёт'**
   String get tariffPriceCalculating;
+
+  /// No description provided for @passengerPaymentBlocksNewOrderNote.
+  ///
+  /// In ru, this message translates to:
+  /// **'Пока оплата не подтверждена, новый заказ создать нельзя'**
+  String get passengerPaymentBlocksNewOrderNote;
 }
 
 class _AppLocalizationsDelegate

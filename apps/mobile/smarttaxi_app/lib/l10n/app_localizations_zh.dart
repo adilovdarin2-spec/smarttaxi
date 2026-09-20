@@ -4268,4 +4268,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tariffPriceCalculating => '计算中';
+
+  @override
+  String get passengerPaymentBlocksNewOrderNote => '在付款确认之前无法创建新订单';
 }

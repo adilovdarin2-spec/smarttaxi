@@ -1898,5 +1898,6 @@
   "driverUnsettledTripMessage": "{amount} safar uchun to'lov hali tasdiqlanmagan. Siz tasdiqlamaguningizcha yo'lovchi yangi safarga buyurtma bera olmaydi.",
   "passengerPriceRecommended": "Tavsiya etilgan",
   "passengerPriceYourBid": "Sizning taklifingiz",
-  "tariffPriceCalculating": "Hisoblanmoqda"
+  "tariffPriceCalculating": "Hisoblanmoqda",
+  "passengerPaymentBlocksNewOrderNote": "To'lov tasdiqlanmaguncha yangi buyurtma bera olmaysiz"
 }
