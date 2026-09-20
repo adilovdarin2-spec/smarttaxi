@@ -26,11 +26,11 @@ export function publicIntercityRoute(route) {
     destinationRegionCode: route.destination_region_code || null,
     destinationRegionName: route.destination_region_name || null,
     isActive: Boolean(route.is_active),
+    // What this road costs, one number per direction.
+    averagePriceKzt: numberOrNull(route.average_price_kzt),
+    // Sanity limits on what a client may claim about the route, not pricing.
     maxDistanceKm: Number(route.max_distance_km),
     maxDurationMin: Number(route.max_duration_min),
-    baseSurchargeKzt: Number(route.base_surcharge_kzt || 0),
-    pricePerKmOverride: numberOrNull(route.price_per_km_override),
-    minPriceOverride: numberOrNull(route.min_price_override),
     requiresDestinationApproval: Boolean(route.requires_destination_approval)
   };
 }
@@ -72,21 +72,18 @@ export async function listIntercityRoutes(executor = defaultQuery) {
 export async function createIntercityRoute(input, executor = defaultQuery) {
   const result = await run(executor, `
     INSERT INTO intercity_routes(
-      origin_region_id, destination_region_id, is_active, max_distance_km,
-      max_duration_min, base_surcharge_kzt, price_per_km_override,
-      min_price_override, requires_destination_approval
+      origin_region_id, destination_region_id, is_active, average_price_kzt,
+      max_distance_km, max_duration_min, requires_destination_approval
     )
-    VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    VALUES($1,$2,$3,$4,$5,$6,$7)
     RETURNING *
   `, [
     input.originRegionId,
     input.destinationRegionId,
     input.isActive ?? true,
+    input.averagePriceKzt,
     input.maxDistanceKm,
     input.maxDurationMin,
-    input.baseSurchargeKzt ?? 0,
-    input.pricePerKmOverride ?? null,
-    input.minPriceOverride ?? null,
     input.requiresDestinationApproval ?? true
   ]);
   return result.rows[0];
@@ -95,11 +92,9 @@ export async function createIntercityRoute(input, executor = defaultQuery) {
 export async function updateIntercityRoute(routeId, input, executor = defaultQuery) {
   const columns = {
     isActive: "is_active",
+    averagePriceKzt: "average_price_kzt",
     maxDistanceKm: "max_distance_km",
     maxDurationMin: "max_duration_min",
-    baseSurchargeKzt: "base_surcharge_kzt",
-    pricePerKmOverride: "price_per_km_override",
-    minPriceOverride: "min_price_override",
     requiresDestinationApproval: "requires_destination_approval"
   };
   const entries = Object.entries(input).filter(([key]) => columns[key]);

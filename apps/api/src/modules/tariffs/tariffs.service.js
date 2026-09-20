@@ -11,29 +11,30 @@ function run(executor, sql, params = []) {
 
 export function publicTariff(tariff) {
   if (!tariff) return null;
-  const basePrice = Number(tariff.base_price);
-  const pricePerKm = Number(tariff.price_per_km);
-  const pricePerMinute = Number(tariff.price_per_minute);
-  const minimumPrice = Number(tariff.min_price);
-  const fixedPriceKzt = pricePerKm === 0 && pricePerMinute === 0
-    ? Math.max(basePrice, minimumPrice)
-    : null;
+  // One number: what a trip of this class inside this town costs. The
+  // per-kilometre fields below are a mirror of it, kept so an older client and
+  // a NOT NULL column both still have something to read — nothing prices a
+  // trip from them.
+  const averagePriceKzt = tariff.average_price_kzt == null
+    ? null
+    : Number(tariff.average_price_kzt);
   return {
     id: tariff.id,
     regionId: tariff.region_id,
     name: tariff.name,
     displayName: tariff.display_name || tariff.name,
     description: tariff.description || "",
-    basePrice,
-    pricePerKm,
-    pricePerMinute,
-    minimumPrice,
-    fixedPriceKzt,
-    pricingType: fixedPriceKzt ? "fixed" : "formula",
+    averagePriceKzt,
+    basePrice: averagePriceKzt,
+    pricePerKm: 0,
+    pricePerMinute: 0,
+    minimumPrice: averagePriceKzt,
+    fixedPriceKzt: averagePriceKzt,
+    pricingType: "average",
     serviceCommissionPercent: Number(tariff.service_commission_percent),
     cashbackPercent: Number(tariff.cashback_percent),
-    surgeMultiplier: Number(tariff.surge_multiplier ?? 1),
-    includedKm: Number(tariff.included_km ?? 0),
+    surgeMultiplier: 1,
+    includedKm: 0,
     includedMinutes: Number(tariff.included_minutes ?? 0),
     freeWaitingMinutes: Number(tariff.free_waiting_minutes ?? 0),
     waitingPricePerMinute: Number(tariff.waiting_price_per_minute ?? 0),
@@ -67,6 +68,7 @@ function dbInput(input) {
     name: "name",
     displayName: "display_name",
     description: "description",
+    averagePriceKzt: "average_price_kzt",
     basePrice: "base_price",
     pricePerKm: "price_per_km",
     pricePerMinute: "price_per_minute",
@@ -92,6 +94,23 @@ function dbInput(input) {
     if (Object.prototype.hasOwnProperty.call(input, key)) result[column] = input[key];
   }
   return result;
+}
+
+// base_price, price_per_km, price_per_minute and min_price are NOT NULL on a
+// table that predates this change, and an owner no longer types any of them.
+// They are written as a mirror of the one number that matters, so an old row
+// and a new one read the same way and nothing has to be nullable to move on.
+function withMirroredLegacyPrice(body) {
+  if (body.average_price_kzt == null) return body;
+  const average = Number(body.average_price_kzt);
+  return {
+    ...body,
+    base_price: average,
+    min_price: average,
+    price_per_km: 0,
+    price_per_minute: 0,
+    surge_multiplier: 1
+  };
 }
 
 function mapUniqueTariffError(error) {
@@ -270,7 +289,7 @@ export async function getAdminTariff(id, executor = defaultQuery) {
 }
 
 export async function createAdminTariff(input, executor = defaultQuery) {
-  const body = dbInput(input);
+  const body = withMirroredLegacyPrice(dbInput(input));
   try {
     const result = await run(executor, `
       INSERT INTO tariffs(region_id, name, display_name, description, base_price, price_per_km, price_per_minute, min_price, service_commission_percent, cashback_percent, surge_multiplier, included_km, included_minutes, free_waiting_minutes, waiting_price_per_minute, cancellation_fee, no_show_fee, zone_surcharge, intercity_override, night_coefficient, demand_coefficient, sort_order, is_active)
@@ -308,7 +327,7 @@ export async function createAdminTariff(input, executor = defaultQuery) {
 }
 
 export async function updateAdminTariff(id, input, executor = defaultQuery) {
-  const body = dbInput(input);
+  const body = withMirroredLegacyPrice(dbInput(input));
   const entries = Object.entries(body);
   if (!entries.length) throw new AppError("No tariff fields provided", 400, "VALIDATION_ERROR");
   const values = entries.map(([, value]) => value);

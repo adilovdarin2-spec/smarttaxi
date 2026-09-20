@@ -101,15 +101,21 @@ const RegionCreate = z.object({
 
 const RegionUpdate = RegionCreate.partial().refine(value => Object.keys(value).length > 0, "at least one field is required");
 
+// What the road between these two towns costs. One number per direction, so
+// Атакент → Шымкент and Шымкент → Атакент can differ if the owner says they
+// do. The kilometre rate and the floor it used to be built from are gone:
+// nothing reads them, and an editable field that changes nothing is a trap.
+//
+// maxDistanceKm and maxDurationMin stay. They never priced anything — they
+// are the sanity limits that keep an absurd claim about the route away from
+// the router.
 const IntercityRouteFields = z.object({
   originRegionId: z.string().uuid(),
   destinationRegionId: z.string().uuid(),
   isActive: z.boolean().default(true),
+  averagePriceKzt: z.coerce.number().int().min(1).max(1_000_000),
   maxDistanceKm: z.coerce.number().int().min(1).max(1000).default(350),
   maxDurationMin: z.coerce.number().int().min(1).max(1440).default(720),
-  baseSurchargeKzt: z.coerce.number().int().min(0).max(1_000_000).default(0),
-  pricePerKmOverride: z.coerce.number().int().min(0).max(100_000).nullable().optional(),
-  minPriceOverride: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   requiresDestinationApproval: z.boolean().default(true)
 });
 
@@ -126,18 +132,19 @@ const DriverRegionApprovalUpdate = z.object({
   reason: z.string().trim().max(300).optional().default("")
 });
 
+// One number the owner sets: what a trip of this class inside this town
+// costs. The kilometre rate, the per-minute rate, the minimum and the surge
+// multiplier are gone from what an owner can type — nothing reads them any
+// more (see calculatePricingComponents), and leaving editable fields that
+// quietly do nothing is how a price nobody can explain comes back.
 const TariffBase = {
   regionId: z.string().uuid(),
   name: z.string().trim().min(2).max(80),
   displayName: z.string().trim().max(120).optional().default(""),
   description: z.string().trim().max(500).optional().default(""),
-  basePrice: z.coerce.number().int().min(0).max(1000000),
-  pricePerKm: z.coerce.number().int().min(0).max(1000000),
-  pricePerMinute: z.coerce.number().int().min(0).max(1000000),
-  minimumPrice: z.coerce.number().int().min(0).max(1000000),
+  averagePriceKzt: z.coerce.number().int().min(1).max(1000000),
   serviceCommissionPercent: z.coerce.number().min(0).max(100),
   cashbackPercent: z.coerce.number().min(0).max(100).optional().default(0),
-  surgeMultiplier: z.coerce.number().min(1).max(10),
   freeWaitingMinutes: z.coerce.number().int().min(0).max(300).default(0),
   waitingPricePerMinute: z.coerce.number().int().min(0).max(1000000).default(0),
   cancellationFee: z.coerce.number().int().min(0).max(1000000).default(0),
@@ -191,23 +198,20 @@ const FinanceDebtAdjustment = z.object({
 });
 
 const TariffPreviewDraft = z.object({
-  basePrice: z.coerce.number().int().min(0).max(1000000),
-  pricePerKm: z.coerce.number().int().min(0).max(1000000),
-  pricePerMinute: z.coerce.number().int().min(0).max(1000000),
-  minimumPrice: z.coerce.number().int().min(0).max(1000000),
+  averagePriceKzt: z.coerce.number().int().min(1).max(1000000),
   serviceCommissionPercent: z.coerce.number().min(0).max(100),
-  surgeMultiplier: z.coerce.number().min(1).max(10),
   freeWaitingMinutes: z.coerce.number().int().min(0).max(300).default(0),
   waitingPricePerMinute: z.coerce.number().int().min(0).max(1000000).default(0),
   cancellationFee: z.coerce.number().int().min(0).max(1000000).default(0)
 });
 
+// Distance and duration are no longer asked for: there is nothing for them to
+// change. What is still worth previewing is how the fare splits — what the
+// service keeps, what the driver takes home — and what waiting adds.
 const TariffPricePreview = z.object({
   regionId: z.string().uuid().optional(),
   tariffId: z.string().uuid().optional(),
   tariff: TariffPreviewDraft.optional(),
-  distanceKm: z.coerce.number().gt(0).max(300),
-  durationMin: z.coerce.number().gt(0).max(600),
   waitingMinutes: z.coerce.number().min(0).max(1440).default(0),
   includeCancellationFee: z.boolean().optional().default(false)
 }).passthrough();
@@ -260,10 +264,11 @@ function draftToTariffRow(draft) {
     region_id: draft.regionId || draft.region_id || null,
     name: draft.name || "Preview",
     display_name: draft.displayName || draft.display_name || draft.name || "Preview",
-    base_price: draft.basePrice ?? draft.base_price,
-    price_per_km: draft.pricePerKm ?? draft.price_per_km,
-    price_per_minute: draft.pricePerMinute ?? draft.price_per_minute,
-    min_price: draft.minimumPrice ?? draft.minPrice ?? draft.min_price,
+    average_price_kzt: draft.averagePriceKzt ?? draft.average_price_kzt,
+    base_price: draft.averagePriceKzt ?? draft.average_price_kzt,
+    price_per_km: 0,
+    price_per_minute: 0,
+    min_price: draft.averagePriceKzt ?? draft.average_price_kzt,
     service_commission_percent: draft.serviceCommissionPercent ?? draft.service_commission_percent,
     cashback_percent: draft.cashbackPercent ?? draft.cashback_percent ?? 0,
     surge_multiplier: draft.surgeMultiplier ?? draft.surge_multiplier,
@@ -1051,8 +1056,6 @@ router.post("/tariffs/preview-price", requireAuth, requireRole("OWNER", "FINANCE
     }
 
     const preview = calculatePricingComponents(tariff, {
-      distanceKm: body.distanceKm,
-      durationMin: body.durationMin,
       waitingMinutes: body.waitingMinutes,
       includeCancellationFee: body.includeCancellationFee
     });

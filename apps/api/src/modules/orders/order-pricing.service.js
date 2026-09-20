@@ -38,56 +38,58 @@ function roundCurrency(value) {
   return Math.round(Number(value || 0));
 }
 
-export function calculatePricingComponents(tariff, { distanceKm, durationMin, waitingMinutes = 0, includeCancellationFee = false }) {
-  const basePrice = Number(tariff.base_price);
-  const pricePerKm = Number(tariff.price_per_km);
-  const pricePerMinute = Number(tariff.price_per_minute);
-  const minimumPrice = Number(tariff.min_price);
-  const surgeMultiplier = Number(tariff.surge_multiplier ?? 1);
-  const includedKm = Number(tariff.included_km ?? 0);
-  const includedMinutes = Number(tariff.included_minutes ?? 0);
+// What a trip costs.
+//
+// One number per fare: what a trip inside this town costs, or what the road
+// between these two towns costs. Not a meter. The price is known before
+// anyone gets in, and if the trip is unusual the rider raises or lowers it
+// themselves (offeredPriceBounds below) and the driver can answer with a
+// price of their own — that is how a fare is actually agreed here, and it is
+// a conversation between two people rather than an argument with a formula.
+//
+// Distance and duration are still measured and still shown, because a rider
+// wants to know how far it is. They no longer decide what it costs.
+export function calculatePricingComponents(tariff, { waitingMinutes = 0, includeCancellationFee = false } = {}) {
+  const averagePrice = Number(tariff.average_price_kzt);
+  if (!Number.isFinite(averagePrice) || averagePrice <= 0) {
+    // Better to refuse than to invent a number: a fare nobody set is not a
+    // fare, and quoting a made-up one is how a driver ends up arguing with a
+    // rider about money neither of them agreed to.
+    throw new AppError(
+      "Price is not set for this route yet",
+      409,
+      "PRICE_NOT_CONFIGURED",
+      { tariffId: tariff.id ?? null, tariffName: tariff.name ?? null }
+    );
+  }
   const freeWaitingMinutes = Number(tariff.free_waiting_minutes ?? 0);
   const waitingPricePerMinute = Number(tariff.waiting_price_per_minute ?? 0);
   const cancellationFee = includeCancellationFee ? Number(tariff.cancellation_fee ?? 0) : 0;
-  const zoneSurcharge = Number(tariff.zone_surcharge ?? 0);
-  const nightCoefficient = Number(tariff.night_coefficient ?? 1);
-  const demandCoefficient = Number(tariff.demand_coefficient ?? 1);
   const serviceCommissionPercent = Number(tariff.service_commission_percent ?? 0);
-  const billableDistanceKm = Math.max(0, distanceKm - includedKm);
-  const billableDurationMin = Math.max(0, durationMin - includedMinutes);
-  const raw = basePrice + billableDistanceKm * pricePerKm + billableDurationMin * pricePerMinute + zoneSurcharge;
-  const surged = raw * surgeMultiplier * nightCoefficient * demandCoefficient;
-  const withMinimum = Math.max(minimumPrice, surged);
-  const billableWaitingMinutes = Math.max(0, waitingMinutes - freeWaitingMinutes);
+
+  // Waiting is not part of the road. It is the rider keeping a driver parked,
+  // and it is still charged by the minute after the free window.
+  const billableWaitingMinutes = Math.max(0, Number(waitingMinutes || 0) - freeWaitingMinutes);
   const waitingPrice = billableWaitingMinutes * waitingPricePerMinute;
-  const finalPrice = roundCurrency(withMinimum + waitingPrice + cancellationFee);
+
+  const finalPrice = roundCurrency(averagePrice + waitingPrice + cancellationFee);
   const serviceCommission = roundCurrency(finalPrice * serviceCommissionPercent / 100);
 
   return {
-    rawPrice: roundCurrency(raw),
-    surgePrice: roundCurrency(surged),
-    withMinimumPrice: roundCurrency(withMinimum),
+    averagePrice: roundCurrency(averagePrice),
+    // Kept under their old names so nothing downstream has to be rewritten to
+    // read a price: with no meter, all three are the same number.
+    rawPrice: roundCurrency(averagePrice),
+    surgePrice: roundCurrency(averagePrice),
+    withMinimumPrice: roundCurrency(averagePrice),
     waitingPrice: roundCurrency(waitingPrice),
     finalPrice,
     serviceCommission,
     driverEarning: roundCurrency(finalPrice - serviceCommission),
     formulaParts: {
-      basePrice,
-      pricePerKm,
-      pricePerMinute,
-      minimumPrice,
-      surgeMultiplier,
-      nightCoefficient,
-      demandCoefficient,
-      includedKm,
-      includedMinutes,
-      billableDistanceKm,
-      billableDurationMin,
-      zoneSurcharge,
-      distanceKm,
-      durationMin,
+      averagePriceKzt: roundCurrency(averagePrice),
       freeWaitingMinutes,
-      waitingMinutes,
+      waitingMinutes: Number(waitingMinutes || 0),
       billableWaitingMinutes,
       waitingPricePerMinute,
       cancellationFee,
@@ -96,49 +98,31 @@ export function calculatePricingComponents(tariff, { distanceKm, durationMin, wa
   };
 }
 
-export function calculateOrderPrice(tariff, distanceKm, durationMin) {
-  return calculatePricingComponents(tariff, { distanceKm, durationMin }).finalPrice;
+// Distance and duration are accepted and ignored: callers still measure the
+// route, and this keeps their call sites honest about that rather than
+// pretending the numbers were never there.
+export function calculateOrderPrice(tariff) {
+  return calculatePricingComponents(tariff).finalPrice;
 }
 
-// City tariffs are often deliberately flat for a short ride.  Reusing such
-// a tariff unchanged for a 70 km journey would quote a clearly wrong 700 ₸.
-// The intercity route owns the distance/minimum policy; the regular tariff
-// still supplies its service commission, cashback and waiting rules.
+// A trip between two towns is priced by the road, not by the town it starts
+// in: Атакент's in-town fare says nothing about what Шымкент costs. The route
+// carries its own average, and the town's tariff still supplies the service
+// commission, the cashback and the waiting rules.
 export function intercityTariff(tariff, intercityRoute) {
   if (!intercityRoute) return tariff;
-  // SQL NULL means inherit the existing distance policy. Number(null) is 0,
-  // which silently disabled kilometre pricing for routes without an override.
-  // A genuinely configured zero remains an explicit override, not a default.
-  const routeRate = intercityRoute.price_per_km_override == null
-    ? NaN : Number(intercityRoute.price_per_km_override);
-  const tariffRate = Number(tariff.price_per_km);
-  const routeMinimum = Number(intercityRoute.min_price_override);
-  const tariffIntercityMinimum = Number(tariff.intercity_override);
-  const regularMinimum = Number(tariff.min_price);
-  return {
-    ...tariff,
-    base_price: Number(tariff.base_price || 0) + Number(intercityRoute.base_surcharge_kzt || 0),
-    // A route must always be able to quote a distance-based price, even if
-    // its city tariff is flat.  The migration supplies 140 ₸/km as the safe
-    // default and an owner can tune each route later.
-    price_per_km: Number.isFinite(routeRate) && routeRate >= 0
-      ? routeRate
-      : (Number.isFinite(tariffRate) && tariffRate > 0 ? tariffRate : 140),
-    min_price: Number.isFinite(tariffIntercityMinimum) && tariffIntercityMinimum > 0
-      ? tariffIntercityMinimum
-      : (Number.isFinite(routeMinimum) && routeMinimum > 0 ? routeMinimum : Math.max(1800, regularMinimum || 0))
-  };
+  const routeAverage = Number(intercityRoute.average_price_kzt);
+  if (!Number.isFinite(routeAverage) || routeAverage <= 0) {
+    throw new AppError(
+      "Price is not set for this intercity route yet",
+      409,
+      "PRICE_NOT_CONFIGURED",
+      { intercityRouteId: intercityRoute.id ?? null }
+    );
+  }
+  return { ...tariff, average_price_kzt: routeAverage };
 }
 
-// Mirrors the mobile app's "своя цена" price-adjuster stepper bounds so the
-// server rejects anything the UI shouldn't have let the rider reach in the
-// first place. Pure function (no DB import) so it can be unit-tested
-// directly instead of only through orders.routes.js.
-//
-// Negotiation remains useful without letting a long trip be officially
-// recorded for a token amount.  The bounds move with the server-computed
-// estimate: up to 30% down and 50% up, rounded to a rider-friendly 50 ₸.
-// A small absolute floor still keeps short, low-price trips usable.
 export function offeredPriceBounds(estimatedPrice) {
   const estimate = Math.max(0, Math.round(Number(estimatedPrice) || 0));
   const roundUpToStep = (value) => Math.ceil(value / 50) * 50;
@@ -152,14 +136,17 @@ export function offeredPriceBounds(estimatedPrice) {
 }
 
 export function buildPricingSnapshot({ region, destinationRegion = region, tariff, distanceKm, durationMin, waitingMinutes = 0, components, intercityRoute = null }) {
+  const averagePriceKzt = Number(tariff.average_price_kzt);
+  // The old per-kilometre fields are still written down so an order created
+  // before the change and one created after can be read side by side. Nothing
+  // computes a price from them any more — calculatePricingComponents reads
+  // average_price_kzt and nothing else.
   const basePrice = Number(tariff.base_price);
   const pricePerKm = Number(tariff.price_per_km);
   const pricePerMinute = Number(tariff.price_per_minute);
   const minimumPrice = Number(tariff.min_price);
-  const fixedPriceKzt = pricePerKm === 0 && pricePerMinute === 0
-    ? Math.max(basePrice, minimumPrice)
-    : null;
   return {
+    averagePriceKzt,
     regionId: region.id,
     destinationRegionId: destinationRegion.id,
     isIntercity: Boolean(intercityRoute),
@@ -172,8 +159,9 @@ export function buildPricingSnapshot({ region, destinationRegion = region, tarif
     pricePerKm,
     pricePerMinute,
     minimumPrice,
-    fixedPriceKzt,
-    pricingType: fixedPriceKzt ? "fixed" : "formula",
+    // Kept for older clients that look for it; same number, older name.
+    fixedPriceKzt: averagePriceKzt,
+    pricingType: "average",
     surgeMultiplier: Number(tariff.surge_multiplier ?? 1),
     includedKm: Number(tariff.included_km ?? 0),
     includedMinutes: Number(tariff.included_minutes ?? 0),

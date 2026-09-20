@@ -1136,7 +1136,64 @@ const statements = [
     vote TEXT NOT NULL CHECK (vote IN ('CONFIRM','DISMISS')),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`,
-  "CREATE UNIQUE INDEX IF NOT EXISTS idx_road_alert_votes_one_per_driver ON road_alert_votes(alert_id, driver_id)"
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_road_alert_votes_one_per_driver ON road_alert_votes(alert_id, driver_id)",
+
+  // --- One average fare, not a meter ---
+  //
+  // A trip inside a town costs what a trip inside that town costs, and a trip
+  // between two towns costs what that road costs. That is how the fare is
+  // actually agreed here — the price is known before anyone gets in, and the
+  // rider raises or lowers it themselves if the trip is unusual. Charging by
+  // the kilometre made the app quote a number nobody could predict and turned
+  // every route argument into an argument about the meter.
+  //
+  // In-town fares were already flat in the data (price_per_km and
+  // price_per_minute are 0 in every seeded tariff), so this backfill changes
+  // nothing about what an in-town trip costs: it moves the number the app was
+  // already quoting into a column that says what it is.
+  "ALTER TABLE tariffs ADD COLUMN IF NOT EXISTS average_price_kzt INTEGER",
+  "UPDATE tariffs SET average_price_kzt = GREATEST(base_price, min_price) WHERE average_price_kzt IS NULL",
+  `DO $$
+  BEGIN
+    ALTER TABLE tariffs ADD CONSTRAINT tariffs_average_price_positive CHECK (average_price_kzt IS NULL OR average_price_kzt > 0);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`,
+
+  // Between towns there was no such number — only 140 ₸/km with an 1800 ₸
+  // floor, the same on all 156 routes because nobody had tuned them. The
+  // starting value here is what that formula would have quoted for a trip
+  // between the two town centres: straight-line distance with a 1.3 road
+  // factor, at the route's own rate, rounded to the nearest hundred and never
+  // below its floor. It is an estimate to start from, not a decision — every
+  // route is editable in the owner's panel, and they are the ones who know
+  // what the road to Шымкент actually costs.
+  "ALTER TABLE intercity_routes ADD COLUMN IF NOT EXISTS average_price_kzt INTEGER",
+  `UPDATE intercity_routes ir
+   SET average_price_kzt = GREATEST(
+         COALESCE(ir.min_price_override, 0),
+         (100 * ROUND(
+            (
+              COALESCE(ir.base_surcharge_kzt, 0)
+              + 2 * 6371
+                * asin(sqrt(
+                    power(sin(radians(d.center_lat - o.center_lat) / 2), 2)
+                    + cos(radians(o.center_lat)) * cos(radians(d.center_lat))
+                      * power(sin(radians(d.center_lng - o.center_lng) / 2), 2)
+                  ))
+                * 1.3
+                * COALESCE(ir.price_per_km_override, 140)
+            )::numeric / 100
+          ))::integer
+       )
+   FROM regions o, regions d
+   WHERE o.id = ir.origin_region_id
+     AND d.id = ir.destination_region_id
+     AND ir.average_price_kzt IS NULL`,
+  `DO $$
+  BEGIN
+    ALTER TABLE intercity_routes ADD CONSTRAINT intercity_average_price_positive CHECK (average_price_kzt IS NULL OR average_price_kzt > 0);
+  EXCEPTION WHEN duplicate_object THEN NULL;
+  END $$`
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies

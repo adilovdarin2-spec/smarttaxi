@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   calculatePricingComponents,
+  intercityTariff,
   calculateOrderPrice,
   prepareOrderPricing
 } from "../modules/orders/order-pricing.service.js";
@@ -88,43 +89,89 @@ assert.doesNotMatch(createRouteSource, /\.emit\(/, "Milestone 3 order creation m
 assert.match(createRouteSource, /SELECT id, short_id, status[\s\S]*FROM orders[\s\S]*client_id=\$1[\s\S]*CLIENT_ACTIVE_ORDER_STATUSES/i, "duplicate client order check must happen inside create transaction");
 assert.match(tariffsRoutes, /regionId/, "tariff listing must support region scoping");
 
-const formulaTariff = {
-  id: "tariff-formula",
+// One average fare, not a meter.
+//
+// A trip inside a town costs what a trip inside that town costs; a trip
+// between two towns costs what that road costs. The rider raises or lowers it
+// themselves if the trip is unusual, and the driver can answer with a price
+// of their own. Distance and duration are still measured and shown — they no
+// longer decide what anything costs.
+const townTariff = {
+  id: "tariff-atakent-economy",
   region_id: "region-a",
-  name: "Formula",
+  name: "Economy",
+  average_price_kzt: 700,
+  service_commission_percent: 15,
+  is_active: true
+};
+assert.equal(calculateOrderPrice(townTariff), 700, "a trip inside the town costs the town's fare");
+assert.equal(
+  calculatePricingComponents(townTariff).finalPrice,
+  calculatePricingComponents(townTariff, { waitingMinutes: 0 }).finalPrice,
+  "and nothing about the route changes it"
+);
+
+// The old per-kilometre fields are dead weight now: present on a row, read by
+// nothing. If any of them ever comes back into the price, this fails.
+const withLegacyFields = {
+  ...townTariff,
   base_price: 400,
   price_per_km: 100,
   price_per_minute: 20,
-  min_price: 700,
-  service_commission_percent: 15,
-  surge_multiplier: 1,
-  is_active: true
+  min_price: 1000,
+  included_km: 1,
+  included_minutes: 5,
+  zone_surcharge: 100,
+  surge_multiplier: 1.5,
+  night_coefficient: 1.2,
+  demand_coefficient: 1.1
 };
-assert.equal(calculateOrderPrice(formulaTariff, 3, 10), 900, "price formula must apply distance and duration");
-assert.equal(calculateOrderPrice({ ...formulaTariff, min_price: 1000 }, 1, 1), 1000, "minimum price must apply");
-assert.equal(calculateOrderPrice({ ...formulaTariff, surge_multiplier: 1.5 }, 3, 10), 1350, "surge multiplier must apply");
-assert.equal(calculateOrderPrice({ ...formulaTariff, included_km: 1, included_minutes: 5 }, 3, 10), 700, "included distance/minutes must reduce billable metrics");
-assert.equal(calculateOrderPrice({ ...formulaTariff, zone_surcharge: 100, night_coefficient: 1.2, demand_coefficient: 1.1 }, 3, 10), 1320, "zone/night/demand coefficients must apply");
-const fixedLaunchTariff = {
-  ...formulaTariff,
-  id: "tariff-fixed",
-  name: "Economy",
-  base_price: 700,
-  price_per_km: 0,
-  price_per_minute: 0,
-  min_price: 700
-};
-assert.equal(calculateOrderPrice(fixedLaunchTariff, 1, 3), 700, "fixed launch tariff must return its configured price for a short route");
-assert.equal(calculateOrderPrice(fixedLaunchTariff, 20, 45), 700, "fixed launch tariff must not change with distance or duration");
-const previewComponents = calculatePricingComponents({
-  ...formulaTariff,
+assert.equal(
+  calculateOrderPrice(withLegacyFields),
+  700,
+  "no leftover kilometre, minimum, surge or coefficient may move the fare"
+);
+
+// A fare nobody set is not a fare. Quoting a made-up one is how a driver ends
+// up arguing with a rider about money neither of them agreed to.
+for (const missing of [undefined, null, 0, -100, "abc"]) {
+  assert.throws(
+    () => calculateOrderPrice({ ...townTariff, average_price_kzt: missing }),
+    (error) => error.code === "PRICE_NOT_CONFIGURED" && error.status === 409,
+    `average_price_kzt=${missing} must refuse rather than invent a price`
+  );
+}
+
+// Waiting is not part of the road: it is the rider keeping a driver parked,
+// and it is still charged by the minute once the free window is over.
+const waited = calculatePricingComponents({
+  ...townTariff,
+  average_price_kzt: 900,
   free_waiting_minutes: 2,
   waiting_price_per_minute: 50
-}, { distanceKm: 3, durationMin: 10, waitingMinutes: 5 });
-assert.equal(previewComponents.waitingPrice, 150, "waiting price must apply after free minutes");
-assert.equal(previewComponents.finalPrice, 1050, "final price must include waiting");
-assert.equal(previewComponents.serviceCommission, 158, "service commission must be calculated from final price");
-assert.equal(previewComponents.driverEarning, 892, "driver earning must subtract service commission");
+}, { waitingMinutes: 5 });
+assert.equal(waited.waitingPrice, 150, "waiting price must apply after the free minutes");
+assert.equal(waited.finalPrice, 1050, "final price must include waiting");
+assert.equal(waited.serviceCommission, 158, "service commission must be calculated from the final price");
+assert.equal(waited.driverEarning, 892, "driver earning must subtract the service commission");
+
+// Between towns the road decides, not the town the trip starts in: Атакент's
+// in-town fare says nothing about what Шымкент costs.
+const road = intercityTariff(townTariff, { id: "route-1", average_price_kzt: 12000 });
+assert.equal(calculateOrderPrice(road), 12000, "an intercity trip costs that road's fare");
+assert.equal(
+  road.service_commission_percent,
+  townTariff.service_commission_percent,
+  "the town's tariff still supplies the commission, cashback and waiting rules"
+);
+assert.equal(intercityTariff(townTariff, null), townTariff, "an in-town trip is untouched");
+for (const missing of [undefined, null, 0]) {
+  assert.throws(
+    () => intercityTariff(townTariff, { id: "route-1", average_price_kzt: missing }),
+    (error) => error.code === "PRICE_NOT_CONFIGURED",
+    `a route with average_price_kzt=${missing} must refuse rather than fall back to the town fare`
+  );
+}
 
 function createExecutor() {
   const state = {
@@ -161,9 +208,9 @@ function createExecutor() {
       }
     ],
     tariffs: [
-      { ...formulaTariff, id: "tariff-a", name: "Economy" },
-      { ...formulaTariff, id: "tariff-a-inactive", name: "Inactive", is_active: false },
-      { ...formulaTariff, id: "tariff-b", region_id: "region-b", name: "Economy" }
+      { ...townTariff, id: "tariff-a", name: "Economy", average_price_kzt: 900 },
+      { ...townTariff, id: "tariff-a-inactive", name: "Inactive", is_active: false, average_price_kzt: 900 },
+      { ...townTariff, id: "tariff-b", region_id: "region-b", name: "Economy", average_price_kzt: 900 }
     ],
     orders: [],
     intercityRoutes: []
@@ -265,9 +312,7 @@ executor.state.intercityRoutes.push({
   is_active: true,
   max_distance_km: 350,
   max_duration_min: 720,
-  base_surcharge_kzt: 0,
-  price_per_km_override: 140,
-  min_price_override: 1800,
+  average_price_kzt: 3800,
   requires_destination_approval: true
 });
 const intercityPricing = await prepareOrderPricing({
@@ -279,36 +324,34 @@ const intercityPricing = await prepareOrderPricing({
 }, executor);
 assert.equal(intercityPricing.isIntercity, true, "enabled directional route creates an intercity estimate");
 assert.equal(intercityPricing.destinationRegionId, "region-b", "intercity estimate retains destination region");
-assert.equal(intercityPricing.estimatedPrice, 3800, "intercity estimate uses route kilometre pricing, not flat city fare");
+assert.equal(intercityPricing.estimatedPrice, 3800, "an intercity trip costs that road's fare, not the town's");
 assert.equal(intercityPricing.pricingSnapshot.isIntercity, true, "order snapshot retains intercity state");
+assert.equal(intercityPricing.pricingSnapshot.averagePriceKzt, 3800, "the snapshot records the fare that was quoted");
+assert.equal(intercityPricing.pricingSnapshot.pricingType, "average", "and says plainly that it is not a meter");
 
-executor.state.intercityRoutes[0].price_per_km_override = null;
-const withoutDistanceOverride = await prepareOrderPricing({
-  ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5,
-  distanceKm: 20, durationMin: 30
+// The same road, a much longer way round: the fare does not move.
+const longWayRound = await prepareOrderPricing({
+  ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, distanceKm: 120, durationMin: 200
 }, executor);
-assert.equal(withoutDistanceOverride.pricingSnapshot.pricePerKm, 100,
-  "SQL NULL means no route override, not a zero-tenge kilometre rate");
-assert.equal(withoutDistanceOverride.estimatedPrice, 3000,
-  "a 20 km journey without an override retains real kilometre pricing");
-for (const absent of [null, undefined]) {
-  const flatExecutor = createExecutor();
-  flatExecutor.state.tariffs[0].price_per_km = 0;
-  flatExecutor.state.tariffs[0].price_per_minute = 0;
-  flatExecutor.state.intercityRoutes.push({ ...executor.state.intercityRoutes[0], price_per_km_override: absent });
-  const inherited = await prepareOrderPricing({
-    ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, distanceKm: 20, durationMin: 30
-  }, flatExecutor);
-  assert.equal(inherited.pricingSnapshot.pricePerKm, 140,
-    "a flat city tariff retains the existing intercity fallback when no override is configured");
+assert.equal(longWayRound.estimatedPrice, 3800, "distance and duration do not move an intercity fare either");
+
+// A road nobody has priced yet is refused rather than quoted at the town fare.
+for (const missing of [null, undefined, 0]) {
+  const unpriced = createExecutor();
+  unpriced.state.intercityRoutes.push({
+    ...executor.state.intercityRoutes[0], average_price_kzt: missing
+  });
+  await assert.rejects(
+    () => prepareOrderPricing({
+      ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, distanceKm: 20, durationMin: 30
+    }, unpriced),
+    { code: "PRICE_NOT_CONFIGURED" },
+    `an intercity route with average_price_kzt=${missing} must refuse`
+  );
 }
-executor.state.intercityRoutes[0].price_per_km_override = 0;
-const explicitZero = await prepareOrderPricing({
-  ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, distanceKm: 20, durationMin: 30
-}, executor);
-assert.equal(explicitZero.pricingSnapshot.pricePerKm, 0,
-  "an explicitly configured zero is not changed by the missing-override fix");
-executor.state.intercityRoutes[0].price_per_km_override = 140;
+
+// The caps on what a client may claim about the route are still enforced —
+// they keep an abusive request away from routing, and always did.
 for (const metrics of [{ distanceKm: 351, durationMin: 30 }, { distanceKm: 20, durationMin: 721 }]) {
   await assert.rejects(() => prepareOrderPricing({
     ...baseInput, dropoffLat: 2.5, dropoffLng: 2.5, ...metrics

@@ -2,37 +2,34 @@ import assert from "node:assert/strict";
 import { calculateOrderPrice, calculatePricingComponents, offeredPriceBounds } from "../modules/orders/order-pricing.service.js";
 import { calculatePromoDiscount } from "../modules/orders/promo.service.js";
 
-// --- Tariff pricing: fixed-price tariffs (price_per_km/minute = 0) ---
-const fixedTariff = {
-  base_price: 700,
-  price_per_km: 0,
-  price_per_minute: 0,
-  min_price: 700,
-  surge_multiplier: 1,
+// --- One average fare, not a meter ---
+//
+// A trip inside a town costs what a trip inside that town costs. The rider
+// raises or lowers it themselves if the trip is unusual, and the driver can
+// answer with a price of their own — the bidding band below is that
+// conversation, and it is now the only thing that moves a fare.
+const townTariff = {
+  average_price_kzt: 700,
   service_commission_percent: 15
 };
-assert.equal(calculateOrderPrice(fixedTariff, 5.2, 12), 700, "fixed-price tariff must ignore distance/duration");
+assert.equal(calculateOrderPrice(townTariff), 700, "the fare is the town's fare");
 
-// --- Tariff pricing: formula-based tariffs ---
-const formulaTariff = {
-  base_price: 300,
-  price_per_km: 100,
-  price_per_minute: 20,
-  min_price: 500,
-  surge_multiplier: 1,
-  service_commission_percent: 15
-};
-// 300 + 5km*100 + 10min*20 = 300 + 500 + 200 = 1000
-assert.equal(calculateOrderPrice(formulaTariff, 5, 10), 1000, "formula tariff must sum base + distance + duration");
-
-const belowMinimum = calculateOrderPrice(formulaTariff, 0.5, 1);
-assert.equal(belowMinimum, 500, "formula tariff must floor at min_price for very short trips");
-
-const surged = calculatePricingComponents(
-  { ...formulaTariff, surge_multiplier: 2 },
-  { distanceKm: 5, durationMin: 10 }
+// Old per-kilometre fields on the same row must not come back into it.
+assert.equal(
+  calculateOrderPrice({
+    ...townTariff,
+    base_price: 300, price_per_km: 100, price_per_minute: 20,
+    min_price: 500, surge_multiplier: 2, night_coefficient: 1.5
+  }),
+  700,
+  "no leftover kilometre rate, minimum or multiplier may move the fare"
 );
-assert.equal(surged.finalPrice, 2000, "surge multiplier must apply to the whole formula price");
+
+const components = calculatePricingComponents(townTariff);
+assert.equal(components.finalPrice, 700);
+assert.equal(components.serviceCommission, 105, "commission is a share of the fare");
+assert.equal(components.driverEarning, 595, "and the rest is the driver's");
+assert.equal(components.formulaParts.averagePriceKzt, 700, "the fare is written down as what it is");
 
 // --- "Своя цена" bidding bounds ---
 // Flat floor/ceiling regardless of the estimated price — a rider can always

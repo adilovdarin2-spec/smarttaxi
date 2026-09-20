@@ -60,17 +60,43 @@ assert.match(migrations, /ON CONFLICT \(region_id, name\)/i, "seed tariffs must 
   `tariff analytics implementation missing ${token}`
 ));
 
+// What the fare is made of now: one average, plus waiting, minus the
+// service's share. No kilometres, no minutes of driving, no multipliers.
 [
-  "billableDistanceKm",
-  "billableDurationMin",
-  "nightCoefficient",
-  "demandCoefficient",
+  "averagePriceKzt",
   "waitingPrice",
   "serviceCommission",
   "driverEarning",
   "freeWaitingMinutes",
   "waitingPricePerMinute"
 ].forEach(token => assert(pricingService.includes(token), `pricing service missing ${token}`));
+
+// And what must never come back into it. A leftover kilometre rate in the
+// formula is the whole problem this change removed: a price nobody could
+// predict before getting in.
+{
+  const start = pricingService.indexOf("export function calculatePricingComponents(");
+  const body = pricingService.slice(start, pricingService.indexOf("\nexport ", start + 1));
+  // Prefixed with `tariff.` on purpose: waiting_price_per_minute is a real
+  // charge that stays, and a bare "price_per_minute" would match inside it.
+  [
+    "tariff.price_per_km",
+    "tariff.price_per_minute",
+    "tariff.surge_multiplier",
+    "tariff.night_coefficient",
+    "tariff.demand_coefficient",
+    "tariff.included_km",
+    "tariff.included_minutes",
+    "tariff.zone_surcharge",
+    "tariff.min_price",
+    "tariff.base_price",
+    "distanceKm",
+    "durationMin"
+  ].forEach(token => assert(
+    !body.includes(token),
+    `the fare must not read ${token} — it is one number the owner sets, not a meter`
+  ));
+}
 
 if (hasWebSource) {
 [
