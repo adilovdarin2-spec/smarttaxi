@@ -416,3 +416,16 @@ test("a finished trip says why a new one cannot be ordered yet", () => {
     );
   }
 });
+
+test("an expired trip link says the ride ended, not that something broke", () => {
+  // The link stops working a day after the trip does — that is the ordinary
+  // ending, not a fault. It used to surface the API's English "Trip not
+  // found" on a Russian page, which reads like the app is broken.
+  const source = readFileSync(new URL("../src/features/track/TrackApp.jsx", import.meta.url), "utf8");
+  assert.match(source, /err\.code === "TRIP_NOT_FOUND"/);
+  assert.match(source, /Ссылка больше не активна/);
+  // Anything genuinely unexpected still says what it was.
+  assert.match(source, /err\.message \|\| "Не удалось загрузить поездку\."/);
+  // And a blip on a later poll must still never wipe a trip already on screen.
+  assert.match(source, /if \(alive && !hasLoadedOnce\) \{/);
+});

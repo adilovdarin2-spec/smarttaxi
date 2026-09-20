@@ -225,6 +225,14 @@ router.post("/estimate", rateLimit({ prefix: "orders-estimate", windowMs: 60_000
 // "Поделиться поездкой": no auth, keyed by an unguessable share_token (not
 // the order id/short_id) so a shared link can only ever reveal this one
 // trip's safe, non-sensitive fields — no phone numbers, no price.
+//
+// The link also stops working a day after the trip ends. The live position
+// already stopped at that point, but the addresses and the driver's car and
+// plate stayed readable to anyone holding the link forever — and these links
+// live on in WhatsApp threads long after the ride. A rider shares one so
+// somebody can watch them get home, not so that months later anyone who
+// scrolls far enough can read where they went.
+const TRACK_LINK_AFTER_TRIP_HOURS = 24;
 router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000, max: 30 }), async (req, res, next) => {
   try {
     const { token } = z.object({ token: z.string().uuid() }).parse(req.params);
@@ -239,7 +247,12 @@ router.get("/track/:token", rateLimit({ prefix: "orders-track", windowMs: 60_000
       LEFT JOIN drivers d ON d.id=o.driver_id LEFT JOIN drivers od ON od.id=o.driver_offer_by_driver_id
       LEFT JOIN driver_locations dl ON dl.driver_id=o.driver_id
       WHERE o.share_token=$1
-    `, [token])).rows[0];
+        AND (
+          o.status = ANY($2::text[])
+          OR COALESCE(o.completed_at, o.cancelled_at, o.created_at)
+             > NOW() - INTERVAL '${TRACK_LINK_AFTER_TRIP_HOURS} hours'
+        )
+    `, [token, [...OPEN_ORDER_STATUSES, ...ACTIVE_ORDER_STATUSES]])).rows[0];
     if (!order) throw new AppError("Trip not found", 404, "TRIP_NOT_FOUND");
     const isActive = ACTIVE_ORDER_STATUSES.includes(order.status);
     const driverLocation = isActive && order.driver_lat != null

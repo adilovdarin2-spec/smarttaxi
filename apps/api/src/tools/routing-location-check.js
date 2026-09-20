@@ -40,6 +40,49 @@ assert.match(driversRoutes, /router\.get\("\/nearby"/, "anonymous nearby drivers
 assert.match(driversRoutes, /anonymous:\s*true/, "nearby drivers must be explicitly anonymous");
 assert.doesNotMatch(driversRoutes, /phone:\s*row\.phone|plate:\s*row\.plate|name:\s*row\.name/, "nearby drivers must not expose private driver data");
 assert.match(driversRoutes, /router\.patch\("\/me\/location"/, "driver location endpoint must exist");
+
+// A shared trip link stops working a day after the trip ends.
+//
+// The live position already stopped when the trip did, but the addresses and
+// the driver's car and plate stayed readable to anyone holding the link
+// forever — and these links live on in WhatsApp threads long after the ride.
+// A rider shares one so somebody can watch them get home, not so that months
+// later anyone who scrolls far enough can read where they went.
+const ordersRoutes = readFileSync(join(root, "modules", "orders", "orders.routes.js"), "utf8");
+assert.match(
+  ordersRoutes,
+  /const TRACK_LINK_AFTER_TRIP_HOURS = (\d+);/,
+  "the tracking link must declare how long it outlives the trip"
+);
+const trackHours = Number(ordersRoutes.match(/const TRACK_LINK_AFTER_TRIP_HOURS = (\d+);/)[1]);
+assert.ok(trackHours > 0 && trackHours <= 72,
+  `a link that lives ${trackHours} hours past the trip is a standing record, not a tracking link`);
+{
+  const start = ordersRoutes.indexOf('router.get("/track/:token"');
+  assert.ok(start > 0, "the public tracking route must exist");
+  const route = ordersRoutes.slice(start, ordersRoutes.indexOf("\nrouter.", start + 1));
+  assert.match(
+    route,
+    /COALESCE\(o\.completed_at, o\.cancelled_at, o\.created_at\)\s+> NOW\(\) - INTERVAL '\$\{TRACK_LINK_AFTER_TRIP_HOURS\} hours'/,
+    "the window must be measured from when the trip ended"
+  );
+  // A trip still being driven, or still waiting for a driver, is never cut
+  // off by the window — that is exactly when the link matters most.
+  assert.match(
+    route,
+    /o\.status = ANY\(\$2::text\[\]\)/,
+    "a live trip must always be visible through its link"
+  );
+  assert.match(
+    route,
+    /\[token, \[\.\.\.OPEN_ORDER_STATUSES, \.\.\.ACTIVE_ORDER_STATUSES\]\]/,
+    "both open and active trips count as live"
+  );
+  // And the link still never carries a phone number or a price.
+  for (const forbidden of ["rider_phone", "driver_phone", "o.price"]) {
+    assert.ok(!route.includes(forbidden), `the tracking link must not expose ${forbidden}`);
+  }
+}
 // A car is only drawn for the rider while its GPS is still speaking. Nothing
 // on the server ever returns a driver to OFFLINE, so without this the map
 // keeps showing whoever forgot to tap the toggle, at wherever they were when
@@ -370,6 +413,13 @@ function createExecutor(overrides = {}) {
         // driver-approval-check.js for the dedicated document-gate tests).
         return { rows: ["DRIVER_LICENSE_FRONT", "DRIVER_LICENSE_BACK", "ID_CARD_FRONT", "ID_CARD_BACK", "VEHICLE_REGISTRATION"].map(type => ({ type, status: "APPROVED" })) };
       }
+      // A driver's position also refreshes their place in a stand's line —
+      // see updateDriverLocation. No driver in these fixtures is standing in
+      // one, so touchPresence's first read comes back empty and it returns.
+      if (/FROM taxi_stand_queue_entries e/i.test(sql)) {
+        return { rows: [] };
+      }
+
       throw new Error(`Unexpected SQL in routing location check: ${sql}`);
     }
   };

@@ -77,7 +77,18 @@ export default function TrackApp() {
       } catch (err) {
         // A transient failure on a later poll shouldn't wipe an already
         // displayed trip — only surface the error while nothing has loaded yet.
-        if (alive && !hasLoadedOnce) setError(err.message || "Не удалось загрузить поездку.");
+        //
+        // TRIP_NOT_FOUND is the ordinary ending here, not a fault: the link
+        // stops working a day after the trip does. Saying "Trip not found" in
+        // English on a Russian page reads like something broke, when what
+        // actually happened is that the ride finished yesterday.
+        if (alive && !hasLoadedOnce) {
+          setError(
+            err.code === "TRIP_NOT_FOUND"
+              ? "Ссылка больше не активна — поездка закончилась больше суток назад."
+              : err.message || "Не удалось загрузить поездку."
+          );
+        }
       } finally {
         if (alive) setLoading(false);
       }
