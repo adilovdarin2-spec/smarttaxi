@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { query } from "../../db/pool.js";
+import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
@@ -206,15 +206,29 @@ router.patch("/:id/confirm", requireAuth, requireRole("DRIVER"), async (req, res
       throw new AppError("You cannot confirm your own report", 403, "CANNOT_CONFIRM_OWN_ALERT");
     }
     await resolveDriverRegion(driver, alert.region_id);
-    const result = await query(`
-      UPDATE road_alerts
-      SET confirmations_count=confirmations_count + 1,
-          confidence_score=LEAST(100, confidence_score + 12)
-      WHERE id=$1 AND status='ACTIVE' AND expires_at > NOW()
-      RETURNING *
-    `, [params.id]);
-    if (!result.rows[0]) throw new AppError("Road alert is expired", 409, "ROAD_ALERT_EXPIRED");
-    res.json({ alert: publicAlert(result.rows[0]) });
+    const updated = await tx(async (client) => {
+      // One driver, one vote. Without this the same driver could tap confirm
+      // eight times and take any report to full confidence on their own.
+      const vote = await client.query(`
+        INSERT INTO road_alert_votes(alert_id, driver_id, vote)
+        VALUES($1,$2,'CONFIRM')
+        ON CONFLICT (alert_id, driver_id) DO NOTHING
+        RETURNING id
+      `, [params.id, driver.id]);
+      if (!vote.rows[0]) {
+        throw new AppError("You have already answered this report", 409, "ROAD_ALERT_ALREADY_ANSWERED");
+      }
+      const result = await client.query(`
+        UPDATE road_alerts
+        SET confirmations_count=confirmations_count + 1,
+            confidence_score=LEAST(100, confidence_score + 12)
+        WHERE id=$1 AND status='ACTIVE' AND expires_at > NOW()
+        RETURNING *
+      `, [params.id]);
+      if (!result.rows[0]) throw new AppError("Road alert is expired", 409, "ROAD_ALERT_EXPIRED");
+      return result.rows[0];
+    });
+    res.json({ alert: publicAlert(updated) });
   } catch (error) {
     next(error);
   }
@@ -232,16 +246,35 @@ router.patch("/:id/expire", requireAuth, requireRole("DRIVER"), async (req, res,
     // immediate; third-party dismissals only expire it once dismissals have
     // driven confidence_score to zero (mirrors /confirm's gradual, capped design).
     const isOwnReport = alert.driver_id === driver.id;
-    const result = await query(`
-      UPDATE road_alerts
-      SET dismissals_count=dismissals_count + 1,
-          confidence_score=GREATEST(0, confidence_score - 20),
-          status=CASE WHEN $2 OR confidence_score - 20 <= 0 THEN 'EXPIRED' ELSE status END,
-          expires_at=CASE WHEN $2 OR confidence_score - 20 <= 0 THEN LEAST(expires_at, NOW()) ELSE expires_at END
-      WHERE id=$1
-      RETURNING *
-    `, [params.id, isOwnReport]);
-    res.json({ alert: publicAlert(result.rows[0]) });
+    const updated = await tx(async (client) => {
+      // The reporter retracting their own report is not a vote — it is the
+      // person who filed it saying it is over, and it stays immediate.
+      // Everyone else gets one, or five taps from one driver would expire an
+      // accident several other drivers had just confirmed. That is what the
+      // comment above always said and nothing enforced.
+      if (!isOwnReport) {
+        const vote = await client.query(`
+          INSERT INTO road_alert_votes(alert_id, driver_id, vote)
+          VALUES($1,$2,'DISMISS')
+          ON CONFLICT (alert_id, driver_id) DO NOTHING
+          RETURNING id
+        `, [params.id, driver.id]);
+        if (!vote.rows[0]) {
+          throw new AppError("You have already answered this report", 409, "ROAD_ALERT_ALREADY_ANSWERED");
+        }
+      }
+      const result = await client.query(`
+        UPDATE road_alerts
+        SET dismissals_count=dismissals_count + 1,
+            confidence_score=GREATEST(0, confidence_score - 20),
+            status=CASE WHEN $2 OR confidence_score - 20 <= 0 THEN 'EXPIRED' ELSE status END,
+            expires_at=CASE WHEN $2 OR confidence_score - 20 <= 0 THEN LEAST(expires_at, NOW()) ELSE expires_at END
+        WHERE id=$1
+        RETURNING *
+      `, [params.id, isOwnReport]);
+      return result.rows[0];
+    });
+    res.json({ alert: publicAlert(updated) });
   } catch (error) {
     next(error);
   }

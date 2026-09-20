@@ -1118,7 +1118,25 @@ const statements = [
   // The service renamed itself to BaiSapar. Only a row still carrying the old
   // default is touched: an owner who typed their own name in admin settings
   // keeps it.
-  `UPDATE service_settings SET service_name='BaiSapar' WHERE service_name='SmartTaxi'`
+  `UPDATE service_settings SET service_name='BaiSapar' WHERE service_name='SmartTaxi'`,
+
+  // One driver, one vote per road alert.
+  //
+  // /confirm and /expire only moved counters, so the same driver could tap
+  // either one as many times as they liked: eight confirmations drove any
+  // report to full confidence, and five dismissals expired any report at all
+  // — including an accident several other drivers had just confirmed. The
+  // comment on /expire already said that must not be possible; nothing
+  // enforced it. Drivers see these alerts while driving, so a single person
+  // being able to delete them is a safety problem, not a scoring one.
+  `CREATE TABLE IF NOT EXISTS road_alert_votes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    alert_id UUID NOT NULL REFERENCES road_alerts(id) ON DELETE CASCADE,
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    vote TEXT NOT NULL CHECK (vote IN ('CONFIRM','DISMISS')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_road_alert_votes_one_per_driver ON road_alert_votes(alert_id, driver_id)"
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies
