@@ -1899,5 +1899,9 @@
   "passengerPriceRecommended": "推荐价格",
   "passengerPriceYourBid": "您设定的价格",
   "tariffPriceCalculating": "计算中",
-  "passengerPaymentBlocksNewOrderNote": "在付款确认之前无法创建新订单"
+  "passengerPaymentBlocksNewOrderNote": "在付款确认之前无法创建新订单",
+  "sosSendSignalTitle": "不打电话，直接通知客服",
+  "sosSendSignalText": "将把您的坐标和行程编号发送给客服。如果您能说话，打电话更快。",
+  "sosSignalSentToast": "已向客服发送求助信号",
+  "sosSignalFailedToast": "信号发送失败，请拨打紧急电话。"
 }

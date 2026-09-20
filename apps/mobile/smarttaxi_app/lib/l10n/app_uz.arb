@@ -1899,5 +1899,9 @@
   "passengerPriceRecommended": "Tavsiya etilgan",
   "passengerPriceYourBid": "Sizning taklifingiz",
   "tariffPriceCalculating": "Hisoblanmoqda",
-  "passengerPaymentBlocksNewOrderNote": "To'lov tasdiqlanmaguncha yangi buyurtma bera olmaysiz"
+  "passengerPaymentBlocksNewOrderNote": "To'lov tasdiqlanmaguncha yangi buyurtma bera olmaysiz",
+  "sosSendSignalTitle": "Qo'ng'iroqsiz yordam xizmatiga xabar berish",
+  "sosSendSignalText": "Koordinatalaringiz va safar raqamingiz yordam xizmatiga yuboriladi. Gapira olsangiz — qo'ng'iroq tezroq.",
+  "sosSignalSentToast": "Signal yordam xizmatiga yuborildi",
+  "sosSignalFailedToast": "Signal yuborilmadi. Favqulodda liniyaga qo'ng'iroq qiling."
 }

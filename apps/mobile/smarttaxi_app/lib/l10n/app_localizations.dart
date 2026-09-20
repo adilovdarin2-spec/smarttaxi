@@ -8160,6 +8160,30 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Пока оплата не подтверждена, новый заказ создать нельзя'**
   String get passengerPaymentBlocksNewOrderNote;
+
+  /// No description provided for @sosSendSignalTitle.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сообщить в поддержку без звонка'**
+  String get sosSendSignalTitle;
+
+  /// No description provided for @sosSendSignalText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уйдёт заявка с вашими координатами и номером поездки. Если вы можете говорить — звонок быстрее.'**
+  String get sosSendSignalText;
+
+  /// No description provided for @sosSignalSentToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сигнал отправлен в поддержку'**
+  String get sosSignalSentToast;
+
+  /// No description provided for @sosSignalFailedToast.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить сигнал. Позвоните на экстренную линию.'**
+  String get sosSignalFailedToast;
 }
 
 class _AppLocalizationsDelegate

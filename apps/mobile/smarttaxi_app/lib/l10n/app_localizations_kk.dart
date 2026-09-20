@@ -4557,4 +4557,18 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get passengerPaymentBlocksNewOrderNote =>
       'Төлем расталмайынша жаңа тапсырыс бере алмайсыз';
+
+  @override
+  String get sosSendSignalTitle => 'Қоңырауcыз қолдауға хабарлау';
+
+  @override
+  String get sosSendSignalText =>
+      'Координаттарыңыз бен сапар нөміріңіз қолдауға жіберіледі. Сөйлей алсаңыз — қоңырау жылдамырақ.';
+
+  @override
+  String get sosSignalSentToast => 'Сигнал қолдау қызметіне жіберілді';
+
+  @override
+  String get sosSignalFailedToast =>
+      'Сигнал жіберілмеді. Жедел желіге қоңырау шалыңыз.';
 }

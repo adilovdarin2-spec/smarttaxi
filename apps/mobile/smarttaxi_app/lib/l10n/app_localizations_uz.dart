@@ -4603,4 +4603,19 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get passengerPaymentBlocksNewOrderNote =>
       'To\'lov tasdiqlanmaguncha yangi buyurtma bera olmaysiz';
+
+  @override
+  String get sosSendSignalTitle =>
+      'Qo\'ng\'iroqsiz yordam xizmatiga xabar berish';
+
+  @override
+  String get sosSendSignalText =>
+      'Koordinatalaringiz va safar raqamingiz yordam xizmatiga yuboriladi. Gapira olsangiz — qo\'ng\'iroq tezroq.';
+
+  @override
+  String get sosSignalSentToast => 'Signal yordam xizmatiga yuborildi';
+
+  @override
+  String get sosSignalFailedToast =>
+      'Signal yuborilmadi. Favqulodda liniyaga qo\'ng\'iroq qiling.';
 }

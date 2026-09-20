@@ -4271,4 +4271,16 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get passengerPaymentBlocksNewOrderNote => '在付款确认之前无法创建新订单';
+
+  @override
+  String get sosSendSignalTitle => '不打电话，直接通知客服';
+
+  @override
+  String get sosSendSignalText => '将把您的坐标和行程编号发送给客服。如果您能说话，打电话更快。';
+
+  @override
+  String get sosSignalSentToast => '已向客服发送求助信号';
+
+  @override
+  String get sosSignalFailedToast => '信号发送失败，请拨打紧急电话。';
 }

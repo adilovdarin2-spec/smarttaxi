@@ -14048,12 +14048,19 @@ class _SafetySheet extends StatelessWidget {
     await launchUrl(Uri(scheme: 'tel', path: sosPhone ?? '112'));
   }
 
-  // Fires alongside the emergency call, not instead of it — the call is the
-  // safety-critical action and must never be delayed or blocked by this.
+  // Fires alongside the emergency call, and on its own from the second row —
+  // a rider who is frightened of the person in the car needs a way to raise
+  // the alarm without holding a phone to their ear and saying so out loud,
+  // and calling used to be the only way this message ever went out. The call
+  // is still the better answer when it is possible, which is why it stays
+  // first and in red.
+  //
   // Puts the rider's current coordinates in the message body since the
   // support endpoint has no dedicated location field (topic/message/orderId
   // only); a short GPS timeout keeps a stuck fix from hanging the request.
-  Future<void> _sendSosAlert() async {
+  // Returns whether it actually reached support, so the silent path can say
+  // so honestly instead of claiming it did.
+  Future<bool> _sendSosAlert() async {
     var locationText = 'координаты недоступны';
     try {
       final position = await Geolocator.getCurrentPosition(
@@ -14074,10 +14081,28 @@ class _SafetySheet extends StatelessWidget {
             'Экстренный вызов во время поездки. Координаты: $locationText.',
         orderId: orderId,
       );
+      return true;
     } catch (_) {
-      // Best-effort — the phone call already went out, which is what
-      // actually keeps the rider safe.
+      // Best-effort on the call path — the phone call already went out,
+      // which is what actually keeps the rider safe. The silent path tells
+      // the rider instead, so they know to reach for the phone.
+      return false;
     }
+  }
+
+  // The messenger and both strings are read before the sheet closes: after
+  // the pop this widget's context is gone, and an alarm that cannot report
+  // its own result is the one thing this row must not be.
+  Future<void> _sendSilently(
+    ScaffoldMessengerState? messenger,
+    String sentText,
+    String failedText,
+  ) async {
+    final sent = await _sendSosAlert();
+    messenger?.showSnackBar(SnackBar(
+      content: Text(sent ? sentText : failedText),
+      backgroundColor: sent ? null : Colors.red.shade700,
+    ));
   }
 
   @override
@@ -14148,8 +14173,15 @@ class _SafetySheet extends StatelessWidget {
             ),
             Divider(height: 18, color: palette.border),
             _SettingsRow(
-              title: l10n.passengerSupportWillBeNotifiedTitle,
-              text: l10n.passengerSupportWillBeNotifiedText,
+              title: l10n.sosSendSignalTitle,
+              text: l10n.sosSendSignalText,
+              onTap: () {
+                final messenger = ScaffoldMessenger.maybeOf(context);
+                final sentText = l10n.sosSignalSentToast;
+                final failedText = l10n.sosSignalFailedToast;
+                Navigator.pop(context);
+                unawaited(_sendSilently(messenger, sentText, failedText));
+              },
             ),
           ],
         ),

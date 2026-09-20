@@ -590,11 +590,17 @@ class _DriverSosSheet extends StatelessWidget {
     await launchUrl(Uri(scheme: 'tel', path: sosPhone ?? '112'));
   }
 
-  // Fires alongside the emergency call, never instead of it — the call is
-  // the safety-critical action. Location is best-effort (short GPS timeout)
-  // and folded into the message body since the support endpoint has no
-  // dedicated location field.
-  Future<void> _sendSosAlert() async {
+  // Fires alongside the emergency call, and on its own from the second row —
+  // a driver who is being robbed or told not to speak needs a way to raise
+  // the alarm without putting a phone to their ear, and calling used to be
+  // the only way this message ever went out. The call is still the better
+  // answer when it is possible, which is why it stays first and in red.
+  //
+  // Location is best-effort (short GPS timeout) and folded into the message
+  // body since the support endpoint has no dedicated location field. Returns
+  // whether the alert actually reached support, so the silent path can say
+  // so honestly instead of claiming it did.
+  Future<bool> _sendSosAlert() async {
     var locationText = 'координаты недоступны';
     try {
       final position = await Geolocator.getCurrentPosition(
@@ -614,10 +620,28 @@ class _DriverSosSheet extends StatelessWidget {
         message: 'Экстренный вызов водителя. Координаты: $locationText.',
         orderId: orderId,
       );
+      return true;
     } catch (_) {
-      // Best-effort — the phone call already went out, which is what
-      // actually keeps the driver safe.
+      // Best-effort on the call path — the phone call already went out,
+      // which is what actually keeps the driver safe. The silent path tells
+      // the driver instead, so they know to reach for the phone.
+      return false;
     }
+  }
+
+  // The messenger and both strings are read before the sheet closes: after
+  // the pop this widget's context is gone, and an alarm that cannot report
+  // its own result is the one thing this row must not be.
+  Future<void> _sendSilently(
+    ScaffoldMessengerState? messenger,
+    String sentText,
+    String failedText,
+  ) async {
+    final sent = await _sendSosAlert();
+    messenger?.showSnackBar(SnackBar(
+      content: Text(sent ? sentText : failedText),
+      backgroundColor: sent ? null : Colors.red.shade700,
+    ));
   }
 
   @override
@@ -679,8 +703,15 @@ class _DriverSosSheet extends StatelessWidget {
             ),
             const Divider(height: 18),
             _DriverSosRow(
-              title: l10n.driverSupportWillReceiveSignal,
-              text: l10n.driverSupportSignalDescription,
+              title: l10n.sosSendSignalTitle,
+              text: l10n.sosSendSignalText,
+              onTap: () {
+                final messenger = ScaffoldMessenger.maybeOf(context);
+                final sentText = l10n.sosSignalSentToast;
+                final failedText = l10n.sosSignalFailedToast;
+                Navigator.pop(context);
+                unawaited(_sendSilently(messenger, sentText, failedText));
+              },
             ),
           ],
         ),

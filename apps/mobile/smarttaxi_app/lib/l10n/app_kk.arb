@@ -1896,5 +1896,9 @@
   "passengerPriceRecommended": "Ұсынылған баға",
   "passengerPriceYourBid": "Өз ұсынысыңыз",
   "tariffPriceCalculating": "Есептелуде",
-  "passengerPaymentBlocksNewOrderNote": "Төлем расталмайынша жаңа тапсырыс бере алмайсыз"
+  "passengerPaymentBlocksNewOrderNote": "Төлем расталмайынша жаңа тапсырыс бере алмайсыз",
+  "sosSendSignalTitle": "Қоңырауcыз қолдауға хабарлау",
+  "sosSendSignalText": "Координаттарыңыз бен сапар нөміріңіз қолдауға жіберіледі. Сөйлей алсаңыз — қоңырау жылдамырақ.",
+  "sosSignalSentToast": "Сигнал қолдау қызметіне жіберілді",
+  "sosSignalFailedToast": "Сигнал жіберілмеді. Жедел желіге қоңырау шалыңыз."
 }

@@ -4578,4 +4578,18 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get passengerPaymentBlocksNewOrderNote =>
       'Пока оплата не подтверждена, новый заказ создать нельзя';
+
+  @override
+  String get sosSendSignalTitle => 'Сообщить в поддержку без звонка';
+
+  @override
+  String get sosSendSignalText =>
+      'Уйдёт заявка с вашими координатами и номером поездки. Если вы можете говорить — звонок быстрее.';
+
+  @override
+  String get sosSignalSentToast => 'Сигнал отправлен в поддержку';
+
+  @override
+  String get sosSignalFailedToast =>
+      'Не удалось отправить сигнал. Позвоните на экстренную линию.';
 }

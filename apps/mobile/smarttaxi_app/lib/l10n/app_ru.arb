@@ -2025,5 +2025,9 @@
   "passengerPriceRecommended": "Рекомендованная",
   "passengerPriceYourBid": "Ваша ставка",
   "tariffPriceCalculating": "Расчёт",
-  "passengerPaymentBlocksNewOrderNote": "Пока оплата не подтверждена, новый заказ создать нельзя"
+  "passengerPaymentBlocksNewOrderNote": "Пока оплата не подтверждена, новый заказ создать нельзя",
+  "sosSendSignalTitle": "Сообщить в поддержку без звонка",
+  "sosSendSignalText": "Уйдёт заявка с вашими координатами и номером поездки. Если вы можете говорить — звонок быстрее.",
+  "sosSignalSentToast": "Сигнал отправлен в поддержку",
+  "sosSignalFailedToast": "Не удалось отправить сигнал. Позвоните на экстренную линию."
 }
