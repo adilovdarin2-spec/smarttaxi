@@ -418,6 +418,16 @@ export async function assertDriverCanServeOrder(driver, order, executor) {
 // pays. Refused here too rather than only hidden there, because an order id
 // is all a driver needs to call accept — and because the owner assigning a
 // trip by hand goes through this same policy.
+// One definition of "the same person", because three places need it: the
+// assignment policy below, and both ends of a recurring booking, which
+// inserts its orders already assigned and so never reaches that policy.
+// Ids come back from pg as strings in some paths and as uuid objects in
+// others, hence the String().
+export function isSamePerson(riderUserId, driverUserId) {
+  return Boolean(riderUserId) && Boolean(driverUserId) &&
+    String(riderUserId) === String(driverUserId);
+}
+
 export async function assertRiderIsNotThisDriver(order, driver, executor) {
   if (!order?.client_id || !driver?.user_id) return;
   const rider = (await runQuery(
@@ -425,7 +435,7 @@ export async function assertRiderIsNotThisDriver(order, driver, executor) {
     "SELECT user_id FROM clients WHERE id=$1",
     [order.client_id]
   )).rows[0];
-  if (rider?.user_id && String(rider.user_id) === String(driver.user_id)) {
+  if (isSamePerson(rider?.user_id, driver.user_id)) {
     throw new AppError(
       "A driver cannot take an order placed from their own account",
       403,

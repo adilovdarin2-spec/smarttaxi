@@ -2,7 +2,7 @@ import { query, tx } from "../../db/pool.js";
 import { randomBytes } from "node:crypto";
 import { writeAudit } from "../../common/audit.js";
 import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
-import { emitOrderCreated } from "../orders/order-dispatch.service.js";
+import { emitOrderCreated, isSamePerson } from "../orders/order-dispatch.service.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { runDistributedJob } from "../../common/distributedJob.js";
@@ -70,6 +70,19 @@ async function createOrderForBooking(booking) {
   if (!driver) {
     console.warn(`[recurring-bookings] driver ${booking.driver_id} missing for booking ${booking.id}, skipping`);
     await recordSkip(booking.id, "DRIVER_MISSING");
+    return;
+  }
+
+  // Bookings made before the rule below was enforced at creation time. This
+  // one can never become valid, so it is closed rather than skipped: a daily
+  // "no free driver today" notice to a rider who is the driver would be both
+  // wrong and endless.
+  if (isSamePerson(client.user_id, driver.user_id)) {
+    console.warn(`[recurring-bookings] booking ${booking.id} has the same person on both sides, cancelling it`);
+    await query(
+      "UPDATE recurring_bookings SET status='CANCELLED', updated_at=NOW() WHERE id=$1",
+      [booking.id]
+    );
     return;
   }
 

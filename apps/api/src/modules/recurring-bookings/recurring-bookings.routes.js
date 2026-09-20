@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { notifyUser } from "../notifications/notification.service.js";
+import { isSamePerson } from "../orders/order-dispatch.service.js";
 
 const router = Router();
 
@@ -78,6 +79,17 @@ router.post("/", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
     const driver = (await query("SELECT * FROM drivers WHERE id=$1", [body.driverId])).rows[0];
     if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
     if (driver.is_blocked) throw new AppError("Driver is blocked", 403, "DRIVER_BLOCKED");
+    // A standing arrangement with yourself. The scheduler inserts these
+    // orders already assigned, so they never reach assertAssignmentPolicy —
+    // without this, the one hole dispatch refuses reopens here, on a timer,
+    // every weekday.
+    if (isSamePerson(client.user_id, driver.user_id)) {
+      throw new AppError(
+        "A driver cannot set up a standing trip with themselves",
+        403,
+        "DRIVER_IS_THE_RIDER"
+      );
+    }
     const blocked = (await query(
       "SELECT 1 FROM client_driver_preferences WHERE client_id=$1 AND driver_id=$2 AND type='BLOCKED'",
       [client.id, driver.id]

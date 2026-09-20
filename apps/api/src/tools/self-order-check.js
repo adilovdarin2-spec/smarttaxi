@@ -18,9 +18,18 @@ const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 // took, and the only cost is a commission they set themselves by choosing the
 // fare.
 
-const { assertRiderIsNotThisDriver } = await import(
+const { assertRiderIsNotThisDriver, isSamePerson } = await import(
   "../modules/orders/order-dispatch.service.js"
 );
+
+// Ids arrive as strings from one query and as uuid objects from another.
+assert.equal(isSamePerson("u", "u"), true);
+assert.equal(isSamePerson("u", { toString: () => "u" }), true);
+assert.equal(isSamePerson("u", "v"), false);
+// A missing id is not a match — two rows with no user are not one person.
+assert.equal(isSamePerson(null, null), false);
+assert.equal(isSamePerson(undefined, "u"), false);
+assert.equal(isSamePerson("u", ""), false);
 
 const DRIVER = { id: "driver-1", user_id: "user-same" };
 const ORDER = { id: "order-1", client_id: "client-1" };
@@ -84,4 +93,35 @@ assert.equal(
   "both driver order queries must apply it"
 );
 
-console.log("Self-order checks ok: refused on every assignment path, hidden from dispatch, nobody else affected");
+// A recurring booking inserts its orders already assigned, so it never
+// reaches assertAssignmentPolicy. Without the same rule at both ends of that
+// feature, the hole dispatch refuses reopens on a timer, every weekday.
+const recurringRoutes = read("../modules/recurring-bookings/recurring-bookings.routes.js");
+const recurringScheduler = read("../modules/recurring-bookings/recurring-bookings.scheduler.js");
+assert.match(
+  recurringRoutes,
+  /isSamePerson\(client\.user_id, driver\.user_id\)/,
+  "a standing trip with yourself must be refused when it is set up"
+);
+assert.match(
+  recurringRoutes,
+  /"DRIVER_IS_THE_RIDER"/,
+  "and refused with the same code dispatch uses"
+);
+assert.match(
+  recurringScheduler,
+  /isSamePerson\(client\.user_id, driver\.user_id\)/,
+  "and a booking made before that rule must not keep firing"
+);
+assert.match(
+  recurringScheduler,
+  /UPDATE recurring_bookings SET status='CANCELLED'/,
+  "it is closed rather than skipped — it can never become valid, and a daily skip notice would be both wrong and endless"
+);
+assert.ok(
+  recurringScheduler.indexOf("isSamePerson(client.user_id, driver.user_id)") <
+    recurringScheduler.indexOf("INSERT INTO orders("),
+  "the check must run before the order is written"
+);
+
+console.log("Self-order checks ok: refused on every assignment path, hidden from dispatch, closed off in recurring bookings, nobody else affected");
