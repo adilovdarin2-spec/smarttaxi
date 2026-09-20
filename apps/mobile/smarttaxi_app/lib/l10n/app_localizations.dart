@@ -8190,6 +8190,24 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Ждём подтверждения водителя · меньше минуты'**
   String get standReservationPendingLastMinute;
+
+  /// No description provided for @addressKindSettlementCentre.
+  ///
+  /// In ru, this message translates to:
+  /// **'{city}, центр'**
+  String addressKindSettlementCentre(String city);
+
+  /// No description provided for @addressKindDistrictCentre.
+  ///
+  /// In ru, this message translates to:
+  /// **'{city}, административный центр округа'**
+  String addressKindDistrictCentre(String city);
+
+  /// No description provided for @addressKindStreet.
+  ///
+  /// In ru, this message translates to:
+  /// **'{city}, улица {street}'**
+  String addressKindStreet(String city, String street);
 }
 
 class _AppLocalizationsDelegate

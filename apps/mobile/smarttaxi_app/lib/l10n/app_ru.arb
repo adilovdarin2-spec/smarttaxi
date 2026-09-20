@@ -2037,5 +2037,32 @@
         "type": "int"
       }
     }
+  },
+  "addressKindSettlementCentre": "{city}, центр",
+  "@addressKindSettlementCentre": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "addressKindDistrictCentre": "{city}, административный центр округа",
+  "@addressKindDistrictCentre": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      }
+    }
+  },
+  "addressKindStreet": "{city}, улица {street}",
+  "@addressKindStreet": {
+    "placeholders": {
+      "city": {
+        "type": "String"
+      },
+      "street": {
+        "type": "String"
+      }
+    }
   }
 }

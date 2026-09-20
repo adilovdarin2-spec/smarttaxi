@@ -4624,4 +4624,19 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get standReservationPendingLastMinute =>
       'Haydovchining tasdig\'ini kutyapmiz · bir daqiqadan kam qoldi';
+
+  @override
+  String addressKindSettlementCentre(String city) {
+    return '$city, markaz';
+  }
+
+  @override
+  String addressKindDistrictCentre(String city) {
+    return '$city, qishloq okrugi markazi';
+  }
+
+  @override
+  String addressKindStreet(String city, String street) {
+    return '$city, $street ko\'chasi';
+  }
 }

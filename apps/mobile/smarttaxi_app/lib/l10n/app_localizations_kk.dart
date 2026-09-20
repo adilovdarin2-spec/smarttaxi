@@ -4577,4 +4577,19 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get standReservationPendingLastMinute =>
       'Жүргізушінің растауын күтудеміз · бір минуттан аз қалды';
+
+  @override
+  String addressKindSettlementCentre(String city) {
+    return '$city, орталық';
+  }
+
+  @override
+  String addressKindDistrictCentre(String city) {
+    return '$city, ауылдық округ орталығы';
+  }
+
+  @override
+  String addressKindStreet(String city, String street) {
+    return '$city, $street көшесі';
+  }
 }

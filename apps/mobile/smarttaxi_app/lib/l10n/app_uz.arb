@@ -1897,5 +1897,8 @@
   "sosSignalSentToast": "Signal yordam xizmatiga yuborildi",
   "sosSignalFailedToast": "Signal yuborilmadi. Favqulodda liniyaga qo'ng'iroq qiling.",
   "standReservationPendingMinutes": "Haydovchining tasdig'ini kutyapmiz · {minutes} daqiqa qoldi",
-  "standReservationPendingLastMinute": "Haydovchining tasdig'ini kutyapmiz · bir daqiqadan kam qoldi"
+  "standReservationPendingLastMinute": "Haydovchining tasdig'ini kutyapmiz · bir daqiqadan kam qoldi",
+  "addressKindSettlementCentre": "{city}, markaz",
+  "addressKindDistrictCentre": "{city}, qishloq okrugi markazi",
+  "addressKindStreet": "{city}, {street} ko'chasi"
 }

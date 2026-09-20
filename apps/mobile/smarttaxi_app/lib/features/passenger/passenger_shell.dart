@@ -46,6 +46,7 @@ import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/cancellation_reason_sheet.dart';
 import '../shared/models.dart';
+import 'address_subtitle.dart';
 import '../shared/assignment_error.dart';
 import 'screens/stands/passenger_stands_screen.dart';
 import 'screens/wallet/client_wallet_screen.dart';
@@ -15807,8 +15808,10 @@ class _AddressResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final subtitleParts = <String>[];
-    final rawSubtitle = (item.subtitle ?? '').trim();
+    final rawSubtitle =
+        (localizedAddressSubtitle(l10n, item) ?? item.subtitle ?? '').trim();
     final city = (item.city ?? '').trim();
     final region = (item.region ?? '').trim();
     if (rawSubtitle.isNotEmpty) subtitleParts.add(rawSubtitle);

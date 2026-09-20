@@ -1894,5 +1894,8 @@
   "sosSignalSentToast": "Сигнал қолдау қызметіне жіберілді",
   "sosSignalFailedToast": "Сигнал жіберілмеді. Жедел желіге қоңырау шалыңыз.",
   "standReservationPendingMinutes": "Жүргізушінің растауын күтудеміз · {minutes} мин қалды",
-  "standReservationPendingLastMinute": "Жүргізушінің растауын күтудеміз · бір минуттан аз қалды"
+  "standReservationPendingLastMinute": "Жүргізушінің растауын күтудеміз · бір минуттан аз қалды",
+  "addressKindSettlementCentre": "{city}, орталық",
+  "addressKindDistrictCentre": "{city}, ауылдық округ орталығы",
+  "addressKindStreet": "{city}, {street} көшесі"
 }

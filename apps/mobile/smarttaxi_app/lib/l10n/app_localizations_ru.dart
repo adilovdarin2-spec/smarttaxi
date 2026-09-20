@@ -4598,4 +4598,19 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get standReservationPendingLastMinute =>
       'Ждём подтверждения водителя · меньше минуты';
+
+  @override
+  String addressKindSettlementCentre(String city) {
+    return '$city, центр';
+  }
+
+  @override
+  String addressKindDistrictCentre(String city) {
+    return '$city, административный центр округа';
+  }
+
+  @override
+  String addressKindStreet(String city, String street) {
+    return '$city, улица $street';
+  }
 }

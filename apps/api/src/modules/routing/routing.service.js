@@ -258,196 +258,202 @@ const LEGACY_LOCAL_ADDRESS_HINTS = [
 const LOCAL_ADDRESS_HINTS = [
   {
     label: "Атакент (Ильич)",
-    subtitle: "Центр посёлка",
+    placeKind: "settlement_centre",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.844435,
     lng: 68.509021,
-    keywords: ["атакент", "atakent", "ильич", "ilich", "ilyich", "центр атакент", "центр ильич"]
+    keywords: ["атакент", "atakent", "ильич", "ilich", "ilyich", "центр атакент", "центр ильич", "центр", "посёлка"]
   },
   {
     label: "ул. Абая, Атакент",
-    subtitle: "Атакент, улица Абая",
+    placeKind: "street",
+    street: "Абая",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.84803,
     lng: 68.50768,
-    keywords: ["абая", "abai", "абай", "улица абая", "ул абая", "атакент абая"]
+    keywords: ["абая", "abai", "абай", "улица абая", "ул абая", "атакент абая", "атакент", "улица", "абая"]
   },
   {
     label: "ул. Жамбыла, Атакент",
-    subtitle: "Атакент, улица Жамбыла",
+    placeKind: "street",
+    street: "Жамбыла",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.84536,
     lng: 68.51574,
-    keywords: ["жамбыла", "zhambyl", "жамбыл", "улица жамбыла", "ул жамбыла"]
+    keywords: ["жамбыла", "zhambyl", "жамбыл", "улица жамбыла", "ул жамбыла", "атакент", "улица", "жамбыла"]
   },
   {
     label: "ул. Сатпаева, Атакент",
-    subtitle: "Атакент, улица Сатпаева",
+    placeKind: "street",
+    street: "Сатпаева",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.83995,
     lng: 68.50884,
-    keywords: ["сатпаева", "satpayev", "сатпаев", "улица сатпаева", "ул сатпаева"]
+    keywords: ["сатпаева", "satpayev", "сатпаев", "улица сатпаева", "ул сатпаева", "атакент", "улица", "сатпаева"]
   },
   {
     label: "ул. Толе би, Атакент",
-    subtitle: "Атакент, улица Толе би",
+    placeKind: "street",
+    street: "Толе би",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.85072,
     lng: 68.51212,
-    keywords: ["толе би", "төле би", "tole bi", "улица толе би", "ул толе би"]
+    keywords: ["толе би", "төле би", "tole bi", "улица толе би", "ул толе би", "атакент", "улица", "толе"]
   },
   {
     label: "Атакент базар",
-    subtitle: "Центральный рынок, Атакент",
+    placeKind: "settlement",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.84473,
     lng: 68.51162,
-    keywords: ["базар", "рынок", "центральный рынок", "atakent bazar", "market"]
+    keywords: ["базар", "рынок", "центральный рынок", "atakent bazar", "market", "центральный", "рынок", "атакент"]
   },
   {
     label: "Атакент автовокзал",
-    subtitle: "Ориентир, Атакент",
+    placeKind: "settlement",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.84621,
     lng: 68.50486,
-    keywords: ["автовокзал", "вокзал", "остановка", "станция", "bus station"]
+    keywords: ["автовокзал", "вокзал", "остановка", "станция", "bus station", "ориентир", "атакент"]
   },
   {
     label: "Районная больница «Атакент»",
-    subtitle: "Атакент, ул. Ж. Ибраева",
+    placeKind: "street",
+    street: "Ж. Ибраева",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.84210,
     lng: 68.51190,
-    keywords: ["больница", "поликлиника", "hospital", "ибраева", "районная больница"]
+    keywords: ["больница", "поликлиника", "hospital", "ибраева", "районная больница", "атакент", "ул.", "ибраева"]
   },
   {
     label: "ЖД станция Мактаарал",
-    subtitle: "Атакент, железнодорожная станция",
+    placeKind: "settlement",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.83980,
     lng: 68.49820,
-    keywords: ["жд станция", "вокзал жд", "станция мактаарал", "railway", "поезд"]
+    keywords: ["жд станция", "вокзал жд", "станция мактаарал", "railway", "поезд", "атакент", "железнодорожная", "станция"]
   },
   {
     label: "Акимат посёлка Атакент",
-    subtitle: "Атакент, здание акимата",
+    placeKind: "settlement",
     city: "Атакент",
     region: "Туркестанская область",
     lat: 40.84550,
     lng: 68.50750,
-    keywords: ["акимат", "акимшилик", "администрация", "atakent akimat"]
+    keywords: ["акимат", "акимшилик", "администрация", "atakent akimat", "атакент", "здание", "акимата"]
   },
   {
     label: "Мырзакент (Славянка)",
-    subtitle: "Центр Мырзакента",
+    placeKind: "settlement_centre",
     city: "Мырзакент",
     region: "Туркестанская область",
     lat: 40.665495,
     lng: 68.549994,
-    keywords: ["мырзакент", "myrzakent", "мирзакент", "славянка", "славян", "slavyanka", "центр мырзакент"]
+    keywords: ["мырзакент", "myrzakent", "мирзакент", "славянка", "славян", "slavyanka", "центр мырзакент", "центр", "мырзакента"]
   },
   {
     label: "Акимат Мактааральского района",
-    subtitle: "Мырзакент, районный акимат",
+    placeKind: "settlement",
     city: "Мырзакент",
     region: "Туркестанская область",
     lat: 40.66690,
     lng: 68.55210,
-    keywords: ["акимат", "администрация района", "мактаарал акимат", "district administration"]
+    keywords: ["акимат", "администрация района", "мактаарал акимат", "district administration", "мырзакент", "районный", "акимат"]
   },
   {
     label: "Мырзакент базар",
-    subtitle: "Центральный рынок, Мырзакент",
+    placeKind: "settlement",
     city: "Мырзакент",
     region: "Туркестанская область",
     lat: 40.66492,
     lng: 68.54464,
-    keywords: ["базар", "рынок", "центральный рынок", "myrzakent bazar", "market"]
+    keywords: ["базар", "рынок", "центральный рынок", "myrzakent bazar", "market", "центральный", "рынок", "мырзакент"]
   },
   {
     label: "Автовокзал Мырзакент",
-    subtitle: "Ориентир, Мырзакент",
+    placeKind: "settlement",
     city: "Мырзакент",
     region: "Туркестанская область",
     lat: 40.66848,
     lng: 68.53928,
-    keywords: ["автовокзал", "вокзал", "остановка", "станция", "bus station"]
+    keywords: ["автовокзал", "вокзал", "остановка", "станция", "bus station", "ориентир", "мырзакент"]
   },
   {
     label: "Центральная районная больница",
-    subtitle: "Мырзакент, ЦРБ Мактааральского района",
+    placeKind: "settlement",
     city: "Мырзакент",
     region: "Туркестанская область",
     lat: 40.66978,
     lng: 68.54742,
-    keywords: ["больница", "црб", "поликлиника", "hospital", "районная больница"]
+    keywords: ["больница", "црб", "поликлиника", "hospital", "районная больница", "мырзакент", "црб", "мактааральского", "района"]
   },
   {
     label: "Жетысай (Джетысай)",
-    subtitle: "Центр города",
+    placeKind: "settlement_centre",
     city: "Жетысай",
     region: "Туркестанская область",
     lat: 40.777134,
     lng: 68.324677,
-    keywords: ["жетысай", "жетісай", "zhetysay", "жетисай", "джетысай", "джетисай", "центр жетысай"]
+    keywords: ["жетысай", "жетісай", "zhetysay", "жетисай", "джетысай", "джетисай", "центр жетысай", "центр", "города"]
   },
   {
     label: "Центральный базар Жетысай",
-    subtitle: "Жетысай, центральный рынок",
+    placeKind: "settlement",
     city: "Жетысай",
     region: "Туркестанская область",
     lat: 40.77980,
     lng: 68.32190,
-    keywords: ["базар", "рынок", "центральный рынок", "zhetysay bazar", "market"]
+    keywords: ["базар", "рынок", "центральный рынок", "zhetysay bazar", "market", "жетысай", "центральный", "рынок"]
   },
   {
     label: "Акимат Жетысайского района",
-    subtitle: "Жетысай, городской сквер",
+    placeKind: "settlement",
     city: "Жетысай",
     region: "Туркестанская область",
     lat: 40.77650,
     lng: 68.32710,
-    keywords: ["акимат", "администрация", "городской сквер", "district administration"]
+    keywords: ["акимат", "администрация", "городской сквер", "district administration", "жетысай", "городской", "сквер"]
   },
   {
     label: "Мечеть «Нур»",
-    subtitle: "Жетысай",
+    placeKind: "settlement",
     city: "Жетысай",
     region: "Туркестанская область",
     lat: 40.77420,
     lng: 68.32990,
-    keywords: ["мечеть", "нур", "mosque", "nur mosque"]
+    keywords: ["мечеть", "нур", "mosque", "nur mosque", "жетысай"]
   },
   {
     label: "Автовокзал Жетысай",
-    subtitle: "Ориентир, Жетысай",
+    placeKind: "settlement",
     city: "Жетысай",
     region: "Туркестанская область",
     lat: 40.78191,
     lng: 68.31951,
-    keywords: ["автовокзал", "вокзал", "остановка", "станция", "bus station"]
+    keywords: ["автовокзал", "вокзал", "остановка", "станция", "bus station", "ориентир", "жетысай"]
   },
   {
     label: "ул. Мухтара Ауезова, Жетысай",
-    subtitle: "Жетысай, улица Ауезова",
+    placeKind: "street",
+    street: "Ауезова",
     city: "Жетысай",
     region: "Туркестанская область",
     lat: 40.77860,
     lng: 68.32860,
-    keywords: ["ауезова", "auezov", "мухтара ауезова", "улица ауезова", "ул ауезова"]
+    keywords: ["ауезова", "auezov", "мухтара ауезова", "улица ауезова", "ул ауезова", "жетысай", "улица", "ауезова"]
   },
   {
     label: "Киров (Оргебас)",
-    subtitle: "Кирово, центр",
+    placeKind: "settlement_centre",
     city: "Киров",
     region: "Туркестанская область",
     lat: 40.7869,
@@ -457,21 +463,21 @@ const LOCAL_ADDRESS_HINTS = [
     // координаты оставлены как "Киров" — под этим именем/кодом KIROV
     // заведена зона диспетчеризации в apps/api/src/db/migrations.js,
     // переименование сломало бы привязку заказов к региону.
-    keywords: ["киров", "кирово", "kirov", "kirovo", "оргебас", "orgebas", "центр киров", "базар киров"]
+    keywords: ["киров", "кирово", "kirov", "kirovo", "оргебас", "orgebas", "центр киров", "базар киров", "кирово", "центр"]
   },
   {
     label: "Асыката (Кировский)",
-    subtitle: "Асыката, центр",
+    placeKind: "settlement_centre",
     city: "Асыката",
     region: "Туркестанская область",
     lat: 40.8947,
     lng: 68.3635,
     // До переименования — посёлок Кировский (ru.wikipedia.org/wiki/Асыката).
-    keywords: ["асыката", "асықата", "asykata", "кировский", "kirovskiy", "центр асыката"]
+    keywords: ["асыката", "асықата", "asykata", "кировский", "kirovskiy", "центр асыката", "асыката", "центр"]
   },
   {
     label: "Аппарат акима Асыкатинского сельского округа",
-    subtitle: "Асыката — административный центр округа",
+    placeKind: "district_centre",
     city: "Асыката",
     region: "Туркестанская область",
     lat: 40.8955,
@@ -479,32 +485,33 @@ const LOCAL_ADDRESS_HINTS = [
     // Асыката подтверждена Wikipedia как административный центр
     // Асыкатинской сельской администрации; точный адрес здания акимата
     // не подтверждён — координата приблизительная, смещена от центра села.
-    keywords: ["акимат", "аппарат акима", "администрация", "asykata akimat"]
+    keywords: ["акимат", "аппарат акима", "администрация", "asykata akimat", "асыката", "административный", "центр", "округа"]
   },
   {
     label: "Хлопкоперерабатывающий завод «Ак-Алтын»",
-    subtitle: "Асыката",
+    placeKind: "settlement",
     city: "Асыката",
     region: "Туркестанская область",
     lat: 40.893,
     lng: 68.366,
     // Завод подтверждён Wikipedia (статья "Асыката"); точный адрес не
     // подтверждён — координата приблизительная, смещена от центра села.
-    keywords: ["ак-алтын", "ак алтын", "ak-altyn", "завод", "хлопкозавод", "хлопкоперерабатывающий"]
+    keywords: ["ак-алтын", "ак алтын", "ak-altyn", "завод", "хлопкозавод", "хлопкоперерабатывающий", "асыката"]
   },
   {
     label: "Достык (Ждановское)",
-    subtitle: "Достык, центр",
+    placeKind: "settlement_centre",
     city: "Достык",
     region: "Туркестанская область",
     lat: 40.8072,
     lng: 68.4592,
     // До 1995 г. — село Ждановское (ru.wikipedia.org/wiki/Достык_(Достыкский_сельский_округ)).
-    keywords: ["достык", "достық", "dostyk", "ждановское", "zhdanovskoe", "центр достык"]
+    keywords: ["достык", "достық", "dostyk", "ждановское", "zhdanovskoe", "центр достык", "достык", "центр"]
   },
   {
     label: "Акимат Достыкского сельского округа",
-    subtitle: "Достык, ул. Абая, 25а",
+    placeKind: "street",
+    street: "Абая, 25а",
     city: "Достык",
     region: "Туркестанская область",
     lat: 40.8085,
@@ -512,32 +519,33 @@ const LOCAL_ADDRESS_HINTS = [
     // Адрес подтверждён (2ГИС: "Акимат Достыкского сельского округа,
     // улица Абая, 25а, с. Достык"); координата приблизительная —
     // смещена от центра села, точную геопривязку дома не проверял.
-    keywords: ["акимат", "администрация", "абая", "абай", "dostyk akimat"]
+    keywords: ["акимат", "администрация", "абая", "абай", "dostyk akimat", "достык", "ул.", "абая", "25а"]
   },
   {
     label: "ул. Кантореев, Достык",
-    subtitle: "Достык, улица Кантореев",
+    placeKind: "street",
+    street: "Кантореев",
     city: "Достык",
     region: "Туркестанская область",
     lat: 40.806,
     lng: 68.457,
     // Улица подтверждена (postaldb.net, почтовый индекс X53D0A9, дом 45,
     // улица Кантореев, с. Достык); координата приблизительная.
-    keywords: ["кантореев", "kantoreev", "улица кантореев", "ул кантореев"]
+    keywords: ["кантореев", "kantoreev", "улица кантореев", "ул кантореев", "достык", "улица", "кантореев"]
   },
   {
     label: "Ынтымак (Микоян)",
-    subtitle: "Ынтымак, центр",
+    placeKind: "settlement_centre",
     city: "Ынтымак",
     region: "Туркестанская область",
     lat: 40.7606,
     lng: 68.4979,
     // До 1993 г. — село Микоян (ru.wikipedia.org/wiki/Ынтымак_(Мактааральский_район)).
-    keywords: ["ынтымак", "ынтымақ", "yntymak", "микоян", "mikoyan", "центр ынтымак"]
+    keywords: ["ынтымак", "ынтымақ", "yntymak", "микоян", "mikoyan", "центр ынтымак", "ынтымак", "центр"]
   },
   {
     label: "Бирлик",
-    subtitle: "Бірлік, центр",
+    placeKind: "settlement_centre",
     city: "Бирлик",
     region: "Туркестанская область",
     lat: 40.8225,
@@ -546,33 +554,34 @@ const LOCAL_ADDRESS_HINTS = [
     // «Большевик»" (ru.wikipedia.org/wiki/Бирлик_(Мактааральский_район));
     // это формальное обозначение, а не разговорный топоним, поэтому в
     // label не выносим, только в keywords для поиска.
-    keywords: ["бирлик", "бірлік", "birlik", "большевик", "bolshevik", "отделение 3", "центр бирлик"]
+    keywords: ["бирлик", "бірлік", "birlik", "большевик", "bolshevik", "отделение 3", "центр бирлик", "бірлік", "центр"]
   },
   {
     label: "Фирдоуси (Таджиккишлак)",
-    subtitle: "Фирдоуси, центр",
+    placeKind: "settlement_centre",
     city: "Фирдоуси",
     region: "Туркестанская область",
     lat: 40.7231,
     lng: 68.5016,
     // Прежние названия — Таджиккишлак, позднее Рохи нав
     // (ru.wikipedia.org/wiki/Фирдоуси_(село)).
-    keywords: ["фирдоуси", "фердоуси", "firdousi", "таджиккишлак", "tajikkishlak", "рохи нав", "rohi nav"]
+    keywords: ["фирдоуси", "фердоуси", "firdousi", "таджиккишлак", "tajikkishlak", "рохи нав", "rohi nav", "фирдоуси", "центр"]
   },
   {
     label: "ул. Макталы, Фирдоуси",
-    subtitle: "Фирдоуси, улица Макталы",
+    placeKind: "street",
+    street: "Макталы",
     city: "Фирдоуси",
     region: "Туркестанская область",
     lat: 40.7245,
     lng: 68.5035,
     // Улица подтверждена (postaldb.net, почтовый индекс X53H0M0, дом 43,
     // улица Макталы, с. Фирдоуси); координата приблизительная.
-    keywords: ["макталы", "maktaly", "улица макталы", "ул макталы"]
+    keywords: ["макталы", "maktaly", "улица макталы", "ул макталы", "фирдоуси", "улица", "макталы"]
   },
   {
     label: "Жана Жол",
-    subtitle: "Жаңа жол, центр",
+    placeKind: "settlement_centre",
     city: "Жана Жол",
     region: "Туркестанская область",
     lat: 40.7567,
@@ -580,11 +589,11 @@ const LOCAL_ADDRESS_HINTS = [
     // До 2000 г. называлось "30 лет Казахской ССР"
     // (ru.wikipedia.org/wiki/Жанажол_(Мактааральский_район)); громоздкое
     // советское название не выносим в label, только в keywords.
-    keywords: ["жана жол", "жаңа жол", "жанажол", "zhana zhol", "30 лет казсср", "тридцать лет казсср"]
+    keywords: ["жана жол", "жаңа жол", "жанажол", "zhana zhol", "30 лет казсср", "тридцать лет казсср", "жаңа", "жол", "центр"]
   },
   {
     label: "Акимат Жанажолского сельского округа",
-    subtitle: "Жана Жол — административный центр округа",
+    placeKind: "district_centre",
     city: "Жана Жол",
     region: "Туркестанская область",
     lat: 40.758,
@@ -594,30 +603,30 @@ const LOCAL_ADDRESS_HINTS = [
     // сельский округ", что обычно означает Жана Жол — его центр; прямого
     // подтверждения точного адреса акимата не нашёл, координата
     // приблизительная.
-    keywords: ["акимат", "администрация", "zhanazhol akimat"]
+    keywords: ["акимат", "администрация", "zhanazhol akimat", "жана", "жол", "административный", "центр", "округа"]
   },
   {
     label: "Мактаарал",
-    subtitle: "Мақтаарал, центр",
+    placeKind: "settlement_centre",
     city: "Мактаарал",
     region: "Туркестанская область",
     lat: 40.7358,
     lng: 68.5364,
-    keywords: ["мактаарал", "мақтаарал", "maktaaral"]
+    keywords: ["мактаарал", "мақтаарал", "maktaaral", "мақтаарал", "центр"]
   },
   {
     label: "Атамекен (Куйбышево)",
-    subtitle: "Атамекен, центр",
+    placeKind: "settlement_centre",
     city: "Атамекен",
     region: "Туркестанская область",
     lat: 40.8121,
     lng: 68.5839,
     // До 2000 г. — село Куйбышево (ru.wikipedia.org/wiki/Атамекен_(Мактааральский_район)).
-    keywords: ["атамекен", "ата мекен", "atameken", "куйбышево", "kuybyshevo"]
+    keywords: ["атамекен", "ата мекен", "atameken", "куйбышево", "kuybyshevo", "атамекен", "центр"]
   },
   {
     label: "Акимат Атамекенского сельского округа",
-    subtitle: "Атамекен — административный центр округа",
+    placeKind: "district_centre",
     city: "Атамекен",
     region: "Туркестанская область",
     lat: 40.811,
@@ -625,7 +634,7 @@ const LOCAL_ADDRESS_HINTS = [
     // Атамекен подтверждён Wikipedia как административный центр
     // Атамекенского сельского округа; точный адрес здания акимата не
     // подтверждён, координата приблизительная.
-    keywords: ["акимат", "администрация", "atameken akimat"]
+    keywords: ["акимат", "администрация", "atameken akimat", "атамекен", "административный", "центр", "округа"]
   }
 ];
 
@@ -646,7 +655,7 @@ function searchLocalAddressHints(query, regionHint, limit = 8) {
 
   const matches = LOCAL_ADDRESS_HINTS.filter(item => {
     const haystack = normalizedText(
-      [item.label, item.subtitle, item.city, item.region, ...(item.keywords || [])].join(" ")
+      [item.label, item.city, item.region, item.street, ...(item.keywords || [])].join(" ")
     );
     const itemCity = normalizedText(item.city || "");
     const regionMatches = !resolvedKey || itemCity === resolvedKey ||
@@ -663,7 +672,7 @@ function searchLocalAddressHints(query, regionHint, limit = 8) {
     const queryMatches = haystack.includes(normalizedQuery) ||
       (queryParts.length > 0 && queryParts.every(part => haystack.includes(part)));
     return queryMatches && regionMatches;
-  }).map(({ keywords, ...item }) => ({ ...item, source: "local" }));
+  }).map(item => ({ ...publicLocalHint(item), source: "local" }));
 
   return matches.slice(0, Math.min(Math.max(Number(limit) || 8, 1), 12));
 }
@@ -674,14 +683,59 @@ export function listLocalGeoCatalog({ region, limit = 100 } = {}) {
   return LOCAL_ADDRESS_HINTS
     .filter(item => {
       if (!normalizedRegion) return true;
-      return normalizedText([item.label, item.subtitle, item.city, item.region, ...(item.keywords || [])].join(" ")).includes(normalizedRegion);
+      return normalizedText([item.label, item.city, item.region, item.street, ...(item.keywords || [])].join(" ")).includes(normalizedRegion);
     })
     .slice(0, max)
-    .map(({ keywords, ...item }) => item);
+    .map(publicLocalHint);
+}
+
+// Подпись под адресом — это не готовая фраза, а место плюс его тип.
+//
+// Раньше здесь лежал русский текст: "Центр посёлка", "Атакент, улица Абая",
+// "Асыката — административный центр округа". Приложение показывало его как
+// есть — и человек, открывший приложение на казахском, видел русскую строку
+// под каждым найденным адресом. Название посёлка и улицы не переводится, а
+// вот "центр" и "улица" — переводится, поэтому теперь наружу уходят city,
+// street и placeKind, а собрать из них фразу клиент может на своём языке.
+//
+// subtitle остаётся и считается здесь же: его читают админка, веб-клиент
+// (он только на русском) и уже установленные приложения, которые про
+// placeKind ещё не знают.
+const LOCAL_PLACE_SUBTITLE_RU = {
+  settlement_centre: item => `${item.city}, центр`,
+  district_centre: item => `${item.city}, административный центр округа`,
+  street: item => `${item.city}, улица ${item.street}`,
+  settlement: item => item.city
+};
+
+function publicLocalHint(item) {
+  const { keywords, ...rest } = item;
+  const render = LOCAL_PLACE_SUBTITLE_RU[item.placeKind] || LOCAL_PLACE_SUBTITLE_RU.settlement;
+  return {
+    ...rest,
+    subtitle: render(item),
+    // У строк из общего каталога region -- это рабочий регион сервиса
+    // ("Атакент"), а здесь лежала область. Приложение считало это одним и
+    // тем же и дописывало "Туркестанская область" под каждым адресом.
+    // Все тринадцать регионов в одной области, так что различить она ничего
+    // не может -- только занимает строку. Искать по ней по-прежнему можно:
+    // она осталась в searchText.
+    region: item.city,
+    // Слова, по которым эту точку ищут, но которые на экране не показываются:
+    // "рынок" для базара, "вокзал" для автостанции. Раньше они лежали прямо в
+    // подписи, и ранжирование их видело. Подпись теперь собирается из типа
+    // места, и без этого поля запрос "рынок" опускал настоящий рынок ниже
+    // случайных совпадений.
+    searchText: [item.label, item.city, item.region, item.street, ...(keywords || [])]
+      .filter(Boolean)
+      .join(" ")
+  };
 }
 
 function suggestionText(item) {
-  return normalizedText([item.label, item.subtitle, item.city, item.region].filter(Boolean).join(" "));
+  return normalizedText(
+    [item.label, item.subtitle, item.city, item.region, item.searchText].filter(Boolean).join(" ")
+  );
 }
 
 // Providers whose answers are guesses at free text, as opposed to rows we

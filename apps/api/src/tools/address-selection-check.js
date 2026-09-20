@@ -21,7 +21,8 @@ import {
   reverseAddress,
   searchAddresses,
   filterGazetteerRowsToServiceArea,
-  isBookableAddressSuggestion
+  isBookableAddressSuggestion,
+  listLocalGeoCatalog
 } from "../modules/routing/routing.service.js";
 import {
   REGION_GEO,
@@ -634,5 +635,50 @@ assert.match(
   /item\.region === code && Boolean\(normalizeAddress\(item\)\)/,
   "the web popular-address list excludes non-bookable catalogue points"
 );
+
+// --- Подпись под адресом есть данные, а не русская фраза ---
+//
+// Приложение открывают на четырёх языках. Раньше под каждым найденным
+// адресом стояла русская строка из этого файла: "Центр посёлка",
+// "Атакент, улица Абая". Название посёлка и улицы не переводится, а
+// "центр" и "улица" -- переводится, поэтому наружу уходит тип места,
+// а фразу собирает клиент.
+{
+  const catalog = listLocalGeoCatalog({ limit: 500 });
+  assert(catalog.length >= 30, `курируемых точек стало ${catalog.length}`);
+
+  const KINDS = new Set(["settlement_centre", "district_centre", "street", "settlement"]);
+  catalog.forEach(place => {
+    assert(KINDS.has(place.placeKind), `${place.label}: неизвестный тип места ${place.placeKind}`);
+    assert(place.city, `${place.label}: без названия населённого пункта фразу не собрать`);
+    if (place.placeKind === "street") {
+      assert(place.street, `${place.label}: тип "улица" без названия улицы`);
+    }
+  });
+
+  // Собранная русская подпись остаётся: её читают веб-клиент и уже
+  // установленные приложения, которые про placeKind ещё не знают.
+  const centre = catalog.find(place => place.placeKind === "settlement_centre");
+  assert.equal(centre.subtitle, `${centre.city}, центр`);
+  const street = catalog.find(place => place.placeKind === "street");
+  assert.equal(street.subtitle, `${street.city}, улица ${street.street}`);
+  const okrug = catalog.find(place => place.placeKind === "district_centre");
+  assert.equal(okrug.subtitle, `${okrug.city}, административный центр округа`);
+
+  // Слова, по которым ищут, но которые не показываются, остались в строке
+  // поиска: без неё запрос "рынок" опускал настоящий рынок ниже
+  // случайных совпадений.
+  const market = catalog.find(place => /базар/i.test(place.label));
+  assert(market, "в каталоге должен быть базар");
+  assert(
+    /рынок/i.test(market.searchText || ""),
+    "синонимы поиска потерялись вместе с подписью"
+  );
+  assert(
+    !catalog.some(place => typeof place.keywords !== "undefined"),
+    "слова для поиска не должны утекать в ответ отдельным списком"
+  );
+}
+
 
 console.log(`Address selection checks ok: proximity, footprint containment, provider recovery, search, ${REGION_SEED.length} region radii, catalogue invariants`);

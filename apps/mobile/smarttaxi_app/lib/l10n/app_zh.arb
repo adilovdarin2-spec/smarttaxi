@@ -1897,5 +1897,8 @@
   "sosSignalSentToast": "已向客服发送求助信号",
   "sosSignalFailedToast": "信号发送失败，请拨打紧急电话。",
   "standReservationPendingMinutes": "等待司机确认 · 还剩 {minutes} 分钟",
-  "standReservationPendingLastMinute": "等待司机确认 · 不到一分钟"
+  "standReservationPendingLastMinute": "等待司机确认 · 不到一分钟",
+  "addressKindSettlementCentre": "{city}中心",
+  "addressKindDistrictCentre": "{city}，乡区行政中心",
+  "addressKindStreet": "{city}，{street}街"
 }

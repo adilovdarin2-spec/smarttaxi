@@ -298,14 +298,23 @@ class AddressSuggestion {
     this.subtitle,
     this.city,
     this.region,
+    this.placeKind,
+    this.street,
     this.isResolved = true,
   });
 
   final String label;
   final Coordinate coordinate;
+  // Готовая русская фраза от сервера. Показывается только тогда,
+  // когда собрать свою не из чего -- у внешних геокодеров типа места нет.
   final String? subtitle;
   final String? city;
   final String? region;
+  // Тип места для курируемых точек: settlement_centre, district_centre,
+  // street, settlement. Название посёлка и улицы не переводится, а "центр"
+  // и "улица" -- переводится, поэтому фразу собираем здесь.
+  final String? placeKind;
+  final String? street;
   final bool isResolved;
 
   factory AddressSuggestion.fromJson(Map<String, dynamic> json) {
@@ -316,6 +325,8 @@ class AddressSuggestion {
       subtitle: json['subtitle']?.toString(),
       city: json['city']?.toString(),
       region: json['region']?.toString(),
+      placeKind: json['placeKind']?.toString(),
+      street: json['street']?.toString(),
       isResolved: json['fallback'] != true &&
           lat != null &&
           lat.isFinite &&

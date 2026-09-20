@@ -4289,4 +4289,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get standReservationPendingLastMinute => '等待司机确认 · 不到一分钟';
+
+  @override
+  String addressKindSettlementCentre(String city) {
+    return '$city中心';
+  }
+
+  @override
+  String addressKindDistrictCentre(String city) {
+    return '$city，乡区行政中心';
+  }
+
+  @override
+  String addressKindStreet(String city, String street) {
+    return '$city，$street街';
+  }
 }
