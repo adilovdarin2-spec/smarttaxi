@@ -145,7 +145,12 @@ if (hasWebSource && existsSync(legalPath)) {
   [schema, migrations].forEach((source, index) => {
     const where = index === 0 ? "schema.sql" : "migrations.js";
     const rows = [...source.matchAll(/\('(Economy|Comfort|Business|Delivery)',[^)]*?,(\d+),\d+,\d+,\d+,\d+,\d+,\d+,(?:true|false)\)/g)];
-    assert(rows.length === 4, `${where}: ожидались 4 посеянных тарифа, найдено ${rows.length}`);
+    // Два тарифа: поездка и посылка. Комфорта и Бизнеса в сервисе нет.
+    assert.deepEqual(
+      rows.map(([, name]) => name).sort(),
+      ["Delivery", "Economy"],
+      `${where}: сеяться должны только Эконом и Доставка`
+    );
     rows.forEach(([, name, percent]) => assert.equal(
       Number(percent),
       offerPercent,
@@ -154,13 +159,22 @@ if (hasWebSource && existsSync(legalPath)) {
   });
 }
 
-// Посев не имеет права переписывать комиссию у существующего тарифа: иначе
-// владелец меняет её в панели, а следующий деплой молча возвращает посеянную.
+// Посев следит только за тем, что нужные строки существуют. Всё остальное в
+// тарифе — цена, комиссия, ожидание, включён он или нет — принадлежит
+// владельцу: иначе он правит тариф в панели, а следующий деплой молча
+// возвращает посеянное.
 [schema, migrations].forEach((source, index) => {
   const where = index === 0 ? "schema.sql" : "migrations.js";
-  assert(
-    !/service_commission_percent=EXCLUDED\.service_commission_percent/.test(source),
-    `${where}: посев перезаписывает комиссию — правка владельца не переживёт деплой`
+  const seedStart = source.indexOf("INSERT INTO tariffs(");
+  assert(seedStart > -1, `${where}: посев тарифов потерялся`);
+  const seedEnd = index === 0
+    ? source.indexOf(";", seedStart)
+    : source.indexOf("`,", seedStart);
+  const seed = source.slice(seedStart, seedEnd);
+  assert.match(
+    seed,
+    /ON CONFLICT \(region_id, name\) DO NOTHING/,
+    `${where}: посев переписывает существующий тариф — правка владельца не переживёт деплой`
   );
 });
 

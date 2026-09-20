@@ -658,27 +658,10 @@ FROM regions r
 CROSS JOIN (
   VALUES
     ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0,1,3,50,0,10,true),
-    ('Comfort','Комфорт','Фиксированная цена. Больше комфорта',1000,0,0,1000,7,0,1,3,60,0,20,true),
-    ('Business','Бизнес','Премиальная поездка',2500,0,0,2500,7,0,1,3,80,0,999,false),
     ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
 ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
 WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
-ON CONFLICT (region_id, name) DO UPDATE
-SET region_id=EXCLUDED.region_id,
-    display_name=EXCLUDED.display_name,
-    description=EXCLUDED.description,
-    base_price=EXCLUDED.base_price,
-    price_per_km=EXCLUDED.price_per_km,
-    price_per_minute=EXCLUDED.price_per_minute,
-    min_price=EXCLUDED.min_price,
-    cashback_percent=EXCLUDED.cashback_percent,
-    surge_multiplier=EXCLUDED.surge_multiplier,
-    free_waiting_minutes=EXCLUDED.free_waiting_minutes,
-    waiting_price_per_minute=EXCLUDED.waiting_price_per_minute,
-    cancellation_fee=EXCLUDED.cancellation_fee,
-    sort_order=EXCLUDED.sort_order,
-    is_active=EXCLUDED.is_active,
-    updated_at=NOW();
+ON CONFLICT (region_id, name) DO NOTHING;
 
 DO $$
 BEGIN

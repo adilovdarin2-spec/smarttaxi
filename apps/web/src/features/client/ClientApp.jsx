@@ -866,6 +866,10 @@ function cleanTariffKey(tariff) {
   return "Economy";
 }
 
+// Два тарифа, и только два: поездка и посылка. Этот список рисуется целиком,
+// даже когда сервер тариф не вернул — карточка просто становится
+// неактивной. Поэтому Комфорт и Бизнес убраны отсюда вместе с самими
+// тарифами: иначе пассажир видел бы серые карточки того, чего нет.
 const fixedTariffSpec = [
   {
     key: "Economy",
@@ -875,22 +879,6 @@ const fixedTariffSpec = [
     image: carImages.Economy,
     seats: 4,
     recommended: true
-  },
-  {
-    key: "Comfort",
-    title: "Комфорт",
-    subtitle: "Больше комфорта",
-    fixedPriceKzt: 1000,
-    image: carImages.Comfort,
-    seats: 4
-  },
-  {
-    key: "Business",
-    title: "Бизнес",
-    subtitle: "Премиальная поездка",
-    fixedPriceKzt: 2500,
-    image: carImages.Business,
-    seats: 4
   },
   {
     key: "Delivery",

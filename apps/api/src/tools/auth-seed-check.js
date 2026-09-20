@@ -78,9 +78,11 @@ assert.match(seed, /status='OFFLINE'/, "seeded driver must start offline");
 assert.match(seed, /current_region_id=\$4/, "seeded driver must select Atakent region");
 assert.match(seed, /driver_region_approvals/, "seed must approve driver for region");
 assert.match(seed, /'APPROVED'/, "seeded driver region approval must be approved");
+// В сервисе два тарифа: поездка и посылка. Комфорт и Бизнес убраны.
 assert.match(seed, /'Economy'/, "seed must include Economy tariff");
-assert.match(seed, /'Comfort'/, "seed must include Comfort tariff");
 assert.match(seed, /'Delivery'/, "seed must include Delivery tariff");
+assert.doesNotMatch(seed, /'Comfort'/, "Comfort tariff is retired and must not be seeded");
+assert.doesNotMatch(seed, /'Business'/, "Business tariff is retired and must not be seeded");
 assert.match(seed, /console\.table/, "seed must print release accounts");
 
 console.log("Auth and seed account checks ok");

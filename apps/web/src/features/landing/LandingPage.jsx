@@ -51,12 +51,12 @@ export default function LandingPage() {
         </section>
         <section id="tariffs" className="landing-tariff-section" aria-labelledby="landing-tariffs-title">
           <div className="landing-shell landing-section">
-            <div className="landing-section-head"><div><span className="landing-eyebrow">ПОЕЗДКА ПОД ВАШИ ПЛАНЫ</span><h2 id="landing-tariffs-title">В своём темпе.<br />В своём комфорте.</h2></div><a className="landing-text-link" href="/order">Посмотреть стоимость <Arrow /></a></div>
+            <div className="landing-section-head"><div><span className="landing-eyebrow">ПОЕЗДКА ПОД ВАШИ ПЛАНЫ</span><h2 id="landing-tariffs-title">В своём темпе.<br />По своей цене.</h2></div><a className="landing-text-link" href="/order">Посмотреть стоимость <Arrow /></a></div>
             <div className="landing-tariffs">
               <article className="landing-tariff"><div><span className="landing-tariff-label">НА КАЖДЫЙ ДЕНЬ</span><h3>Эконом</h3><p>Для привычных маршрутов<br />и повседневных дел.</p></div><img src="/cars/tariff_economy_unbranded_v2.png" alt="Автомобиль тарифа Эконом — иллюстрация" width="768" height="512" loading="lazy" /></article>
-              <article className="landing-tariff landing-tariff-comfort"><div><span className="landing-tariff-label">КОГДА ХОЧЕТСЯ БОЛЬШЕ</span><h3>Комфорт</h3><p>Для поездок, в которых<br />важен дополнительный комфорт.</p></div><img src="/cars/tariff_comfort_unbranded_v2.png" alt="Автомобиль тарифа Комфорт — иллюстрация" width="768" height="512" loading="lazy" /></article>
+              <article className="landing-tariff landing-tariff-delivery"><div><span className="landing-tariff-label">КОГДА ЕДЕТ НЕ ЧЕЛОВЕК</span><h3>Доставка</h3><p>Для посылок и небольших грузов<br />по району и между районами.</p></div><img src="/cars/tariff_delivery_smarttaxi_v3.png" alt="Автомобиль тарифа Доставка — иллюстрация" width="1536" height="1024" loading="lazy" /></article>
             </div>
-            <p className="landing-caption">Доступность тарифов и стоимость зависят от региона и маршрута. Изображения автомобилей иллюстративные.</p>
+            <p className="landing-caption">Цена поездки одна на весь район, а у дороги между районами — своя. Расстояние её не меняет. Изображения автомобилей иллюстративные.</p>
           </div>
         </section>
         <section className="landing-shell landing-section landing-driver" aria-labelledby="landing-driver-title">
