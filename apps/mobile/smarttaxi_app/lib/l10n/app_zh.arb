@@ -1753,6 +1753,7 @@
   "driverRegionsRetryAction": "刷新",
   "authTagline": "城市出租车",
   "passengerMapPointNoAddressHint": "确认该点，然后写明这个地点叫什么",
+  "passengerMapPointNoAddressHintNear": "确认这个点并给它起个名字 —— 例如{place}附近的地标",
   "standScreenTitle": "候客点",
   "standNearbyTitle": "附近的候客点",
   "standNoneTitle": "暂无候客点",

@@ -2065,12 +2065,16 @@ class _PassengerShellState extends State<PassengerShell>
           resolvedLabel = label;
           resolvedCoordinate = address.coordinate;
         } else {
-          // Prefer the server's own wording: it names the rider's town, which
-          // a generic string here cannot.
-          final serverHint = address?.subtitle?.trim();
-          hint = serverHint == null || serverHint.isEmpty
+          // Раньше здесь бралась формулировка сервера: только он знал
+          // название посёлка. Но сервер пишет её по-русски, а
+          // приложение чаще всего открыто на казахском — человек
+          // видел русскую фразу посреди казахского экрана. Название
+          // посёлка приходит отдельным полем, так что фразу собираем
+          // здесь и на языке самого приложения.
+          final place = address?.city?.trim();
+          hint = place == null || place.isEmpty
               ? l10n.passengerMapPointNoAddressHint
-              : serverHint;
+              : l10n.passengerMapPointNoAddressHintNear(place);
         }
       } catch (_) {
         hint = l10n.passengerMapPointNoAddressHint;
@@ -9725,8 +9729,17 @@ class _MapPointPickerSheet extends StatelessWidget {
                           Text(
                             addressLoading
                                 ? l10n.passengerResolvingAddressLabel
+                                // Заголовок строки -- "Точка на карте", и когда адреса
+                                // у неё нет, та же заглушка приходила и в подпись:
+                                // человек видел одну и ту же фразу дважды. Подсказка с
+                                // тем, что будет дальше, уже была посчитана -- но
+                                // показывалась только тогда, когда точку вообще нельзя
+                                // подтвердить.
                                 : canConfirm
-                                    ? addressLabel
+                                    ? (addressLabel == l10n.passengerMapPointLabel
+                                        ? (addressHint ??
+                                            l10n.passengerMapPointNoAddressHint)
+                                        : addressLabel)
                                     : addressHint ?? addressLabel,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,

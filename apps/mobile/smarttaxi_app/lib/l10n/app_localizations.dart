@@ -7363,6 +7363,12 @@ abstract class AppLocalizations {
   /// **'Подтвердите точку — и напишите, как называется это место'**
   String get passengerMapPointNoAddressHint;
 
+  /// No description provided for @passengerMapPointNoAddressHintNear.
+  ///
+  /// In ru, this message translates to:
+  /// **'Подтвердите точку и дайте ей название — например, ориентир в {place}'**
+  String passengerMapPointNoAddressHintNear(String place);
+
   /// No description provided for @standScreenTitle.
   ///
   /// In ru, this message translates to:

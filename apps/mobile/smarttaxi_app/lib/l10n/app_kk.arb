@@ -1750,6 +1750,7 @@
   "driverRegionsRetryAction": "Жаңарту",
   "authTagline": "ҚАЛАЛЫҚ ТАКСИ",
   "passengerMapPointNoAddressHint": "Нүктені растаңыз да, бұл жердің аты қалай екенін жазыңыз",
+  "passengerMapPointNoAddressHintNear": "Нүктені растап, оған атау беріңіз — мысалы, {place} маңындағы бағдар",
   "standScreenTitle": "Тұрақ",
   "standNearbyTitle": "Жақын тұрақтар",
   "standNoneTitle": "Тұрақтар жоқ",

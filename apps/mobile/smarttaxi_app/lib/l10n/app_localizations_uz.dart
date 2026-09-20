@@ -4120,6 +4120,11 @@ class AppLocalizationsUz extends AppLocalizations {
       'Nuqtani tasdiqlang va bu joy qanday atalishini yozing';
 
   @override
+  String passengerMapPointNoAddressHintNear(String place) {
+    return 'Nuqtani tasdiqlang va unga nom bering — masalan, $place atrofidagi mo\'ljal';
+  }
+
+  @override
   String get standScreenTitle => 'To‘xtash joyi';
 
   @override

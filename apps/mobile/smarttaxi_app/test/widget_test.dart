@@ -695,24 +695,41 @@ void main() {
     // карте" - with the confirm button dead and nothing saying why, while
     // reverseAddress() was already returning guidance naming the rider's town.
     expect(passenger, contains('_mapPickerAddressHint'));
+    // Подсказку собирает клиент, а не сервер. Сервер пишет её
+    // по-русски, а приложение чаще всего открыто на казахском;
+    // название посёлка приходит отдельным полем, так что
+    // фраза собирается на языке экрана.
     expect(
       passenger,
-      contains('final serverHint = address?.subtitle?.trim();'),
-      reason:
-          "the server's wording wins: it names the town, a local string cannot",
+      contains('final place = address?.city?.trim();'),
+      reason: 'the town name comes as data, not as a Russian sentence',
+    );
+    expect(
+      passenger,
+      contains('l10n.passengerMapPointNoAddressHintNear(place)'),
+      reason: 'and the sentence around it is written in the language of the app',
     );
     expect(
       passenger,
       contains('l10n.passengerMapPointNoAddressHint'),
-      reason: 'with a localised stand-in when the server sent none',
+      reason: 'with a localised stand-in when no town came back',
     );
     expect(
       passenger,
-      contains('''                                : canConfirm
-                                    ? addressLabel
+      isNot(contains('address?.subtitle?.trim()')),
+      reason: 'the server sentence is no longer shown verbatim',
+    );
+    expect(
+      passenger,
+      contains('''                                    ? (addressLabel == l10n.passengerMapPointLabel
+                                        ? (addressHint ??
+                                            l10n.passengerMapPointNoAddressHint)
+                                        : addressLabel)
                                     : addressHint ?? addressLabel,'''),
       reason:
-          'and the card shows the hint precisely when confirmation is blocked',
+          'and the card shows the hint whenever the pin has no address of its '
+          'own -- not only when confirmation is blocked, which left a '
+          'confirmable pin printing its own heading twice',
     );
     // A stale hint must not survive the pin moving, being cancelled, or the
     // picker being reopened.

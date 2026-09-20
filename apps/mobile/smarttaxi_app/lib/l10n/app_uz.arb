@@ -1753,6 +1753,7 @@
   "driverRegionsRetryAction": "Yangilash",
   "authTagline": "SHAHAR TAKSISI",
   "passengerMapPointNoAddressHint": "Nuqtani tasdiqlang va bu joy qanday atalishini yozing",
+  "passengerMapPointNoAddressHintNear": "Nuqtani tasdiqlang va unga nom bering — masalan, {place} atrofidagi mo'ljal",
   "standScreenTitle": "To‘xtash joyi",
   "standNearbyTitle": "Yaqindagi to‘xtash joylari",
   "standNoneTitle": "To‘xtash joylari yo‘q",

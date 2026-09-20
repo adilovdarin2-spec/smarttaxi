@@ -3822,6 +3822,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerMapPointNoAddressHint => '确认该点，然后写明这个地点叫什么';
 
   @override
+  String passengerMapPointNoAddressHintNear(String place) {
+    return '确认这个点并给它起个名字 —— 例如$place附近的地标';
+  }
+
+  @override
   String get standScreenTitle => '候客点';
 
   @override

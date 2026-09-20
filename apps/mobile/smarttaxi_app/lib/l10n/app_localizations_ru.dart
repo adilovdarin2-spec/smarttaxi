@@ -4079,6 +4079,11 @@ class AppLocalizationsRu extends AppLocalizations {
       'Подтвердите точку — и напишите, как называется это место';
 
   @override
+  String passengerMapPointNoAddressHintNear(String place) {
+    return 'Подтвердите точку и дайте ей название — например, ориентир в $place';
+  }
+
+  @override
   String get standScreenTitle => 'Стоянка';
 
   @override

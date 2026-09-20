@@ -4083,6 +4083,11 @@ class AppLocalizationsKk extends AppLocalizations {
       'Нүктені растаңыз да, бұл жердің аты қалай екенін жазыңыз';
 
   @override
+  String passengerMapPointNoAddressHintNear(String place) {
+    return 'Нүктені растап, оған атау беріңіз — мысалы, $place маңындағы бағдар';
+  }
+
+  @override
   String get standScreenTitle => 'Тұрақ';
 
   @override
