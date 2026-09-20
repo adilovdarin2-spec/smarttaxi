@@ -20628,11 +20628,13 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     drop-shadow(0 0 14px rgba(29, 111, 255, .16)) !important;
 }
 
-.taxi-client-shell .smarttaxi-center-picker span,
-.taxi-client-shell .smarttaxi-map-marker {
-  background: linear-gradient(180deg, #ffffff 0%, #f2f7ff 100%) !important;
-  border-color: #1d6fff !important;
-}
+/* Метка сама себя рисует.
+   Белая плашка под ней осталась от старого маркера: тогда это был белый
+   "пилюль" с маленькой иконкой внутри (см. правила с width:34px для img
+   ниже — картинки в метке давно нет). Сейчас внутри цельный SVG со своей
+   подложкой и хвостом, и плашка проступала из-под него белым
+   прямоугольником. На экране выбора адреса её уже гасили отдельным
+   !important; на экране заказа гасить было нечем. */
 
 .taxi-client-shell .smarttaxi-center-picker img,
 .taxi-client-shell .smarttaxi-map-marker img {
