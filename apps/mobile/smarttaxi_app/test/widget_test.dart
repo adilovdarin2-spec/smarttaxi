@@ -99,38 +99,39 @@ void main() {
         _read('android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml');
     expect(adaptive, contains('<monochrome'));
 
+    // Приложение показывает две машины: седан и фургон. Всё остальное, что
+    // накопилось за предыдущие подходы к оформлению тарифов -- v11, 3d_v2,
+    // white_sedan_flutter, unbranded_v2 и фотографии машин, -- ехало в
+    // сборке, но не рисовалось ни на одном экране. Проверка держит их вне
+    // списка ассетов: 10.9 МБ, которые человек в районе качает по
+    // мобильному интернету, стоят того, чтобы за ними следить.
     expect(
       pubspec,
-      contains('assets/cars/tariff_v11_economy.png'),
+      contains('assets/cars/tariff_economy_smarttaxi_v3.png'),
     );
     expect(
       pubspec,
-      contains('assets/cars/tariff_v11_delivery.png'),
+      contains('assets/cars/tariff_delivery_smarttaxi_v3.png'),
     );
-    expect(
-      pubspec,
-      contains('assets/cars/tariff_comfort_white_sedan_flutter.png'),
-    );
-    expect(
-      pubspec,
-      contains('assets/cars/tariff_business_white_premium_sedan_flutter.png'),
-    );
-    expect(
-      pubspec,
-      contains('assets/cars/tariff_economy_white_sedan_flutter.png'),
-    );
-    expect(
-      pubspec,
-      contains('assets/cars/tariff_economy_unbranded_v2.png'),
-    );
-    expect(
-      pubspec,
-      contains('assets/cars/tariff_comfort_unbranded_v2.png'),
-    );
-    expect(
-      pubspec,
-      contains('assets/cars/tariff_business_unbranded_v2.png'),
-    );
+    for (final dead in const [
+      'assets/cars/tariff_v11_economy.png',
+      'assets/cars/tariff_v11_delivery.png',
+      'assets/cars/tariff_economy_3d_v2.png',
+      'assets/cars/tariff_delivery_3d_v2.png',
+      'assets/cars/tariff_economy_white_sedan_flutter.png',
+      'assets/cars/tariff_comfort_white_sedan_flutter.png',
+      'assets/cars/tariff_business_white_premium_sedan_flutter.png',
+      'assets/cars/tariff_economy_unbranded_v2.png',
+      'assets/cars/tariff_comfort_unbranded_v2.png',
+      'assets/cars/tariff_business_unbranded_v2.png',
+      'assets/cars/car_economy_photo_v1.png',
+      'assets/cars/car_delivery_photo_v1.png',
+      'assets/auth/auth_phone_full_reference.png',
+      'assets/auth/auth_welcome_logo_mark.png',
+    ]) {
+      expect(pubspec, isNot(contains(dead)), reason: '$dead не рисуется');
+      expect(File(dead).existsSync(), isFalse, reason: '$dead не рисуется');
+    }
     expect(pubspec, contains('assets/map/driver_car_topview_white.png'));
     expect(pubspec, contains('assets/map/marker_destination_2026.png'));
     // Метку точки и метку "я здесь" приложение рисует в коде
@@ -347,9 +348,13 @@ void main() {
       // of hardcoded Russian literals matched against the backend name.
       expect(passenger, contains('_TariffVisualClass'));
       expect(passenger, contains('tariffEconomyTitle'));
+      expect(passenger, contains('tariffDeliveryTitle'));
+      // Комфорт и Бизнес сервис больше не предлагает, но их названия нужны
+      // истории: поездка, заказанная тогда, должна и сейчас читаться как
+      // "Комфорт", а не как сырое Comfort из базы.
       expect(passenger, contains('tariffComfortTitle'));
       expect(passenger, contains('tariffBusinessTitle'));
-      expect(passenger, contains('tariffDeliveryTitle'));
+      expect(passenger, contains('_localizedTariffLabel'));
       expect(
         passenger,
         contains('assets/cars/tariff_economy_smarttaxi_v3.png'),
@@ -357,14 +362,6 @@ void main() {
       expect(
         passenger,
         contains('assets/cars/tariff_delivery_smarttaxi_v3.png'),
-      );
-      expect(
-        passenger,
-        contains('assets/cars/tariff_comfort_unbranded_v2.png'),
-      );
-      expect(
-        passenger,
-        contains('assets/cars/tariff_business_unbranded_v2.png'),
       );
       expect(passenger, contains('passengerTariffNotConfiguredTitle'));
       expect(passenger, contains('_PaymentMethodRow'));
@@ -426,11 +423,11 @@ void main() {
     expect(passenger, contains('l10n.passengerCtaPickDropoff'));
     expect(passenger, contains('return l10n.passengerCtaCalculate'));
     expect(passenger, contains('return l10n.passengerCtaOrderDelivery'));
-    expect(
-      passenger,
-      contains(
-          'return label == null\n        ? l10n.passengerCtaOrder\n        : l10n.passengerCtaOrderWithLabel(label)'),
-    );
+    // Кнопка называет действие, а не тариф: шаблон с подстановкой
+    // названия ломал казахскую грамматику -- там нужен падеж, а
+    // подставлялась именительная форма.
+    expect(passenger, contains('return l10n.passengerCtaOrderRide'));
+    expect(passenger, isNot(contains('passengerCtaOrderWithLabel')));
     expect(passenger, contains('AnimatedSwitcher'));
     expect(passenger, contains('AnimatedSize'));
     expect(passenger, contains('_TariffCard'));

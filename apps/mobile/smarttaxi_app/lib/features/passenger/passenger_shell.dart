@@ -54,8 +54,6 @@ import 'widgets/passenger_region_connection_notice.dart';
 // Product-owned illustrations keep the premium card presentation distinct
 // without copying artwork from the visual references.
 const _tariffEconomyAsset = 'assets/cars/tariff_economy_smarttaxi_v3.png';
-const _tariffComfortAsset = 'assets/cars/tariff_comfort_unbranded_v2.png';
-const _tariffBusinessAsset = 'assets/cars/tariff_business_unbranded_v2.png';
 const _tariffDeliveryAsset = 'assets/cars/tariff_delivery_smarttaxi_v3.png';
 const _driverCarMarkerAsset = 'assets/map/driver_car_topview_white.png';
 // One fixed size for the car icon everywhere it appears on this map --
@@ -3409,19 +3407,16 @@ class _PassengerShellState extends State<PassengerShell>
         break;
       }
     }
+    // Кнопка называет не тариф, а то, что человек заказывает: поездку или
+    // доставку. Подставлять название тарифа в шаблон "{label} тапсырыс беру"
+    // было нельзя: в казахском нужен падеж, и получалось "Эконом тапсырыс
+    // беру" вместо "Экономға...". Тарифов теперь два, выбранный и так
+    // подсвечен карточкой выше, а цена стоит рядом на самой кнопке.
     final name = (selectedTariff?.name ?? '').toLowerCase();
     final isDelivery = name.contains('delivery') || name.contains('достав');
-    final label = name.contains('comfort') || name.contains('комфорт')
-        ? l10n.tariffComfortTitle
-        : isDelivery
-            ? l10n.tariffDeliveryTitle
-            : name.contains('econom') || name.contains('экон')
-                ? l10n.tariffEconomyTitle
-                : selectedTariff?.name;
     if (isDelivery) return l10n.passengerCtaOrderDelivery;
-    return label == null
-        ? l10n.passengerCtaOrder
-        : l10n.passengerCtaOrderWithLabel(label);
+    if (selectedTariff == null) return l10n.passengerCtaOrder;
+    return l10n.passengerCtaOrderRide;
   }
 
   Widget _tripsScreen() {
@@ -16166,7 +16161,11 @@ class _LocationPermissionSheet extends StatelessWidget {
 // known visual presentations -- title/description shown to the rider must
 // come from AppLocalizations (via tariffTitleFor/tariffDescriptionFor below),
 // never from this enum or the matched `tariff.name` itself.
-enum _TariffVisualClass { economy, comfort, business, delivery }
+// Две поездки, которые пассажир может выбрать: обычная и посылка.
+// Комфорт и Бизнес сервис больше не предлагает; их названия остались
+// только в _localizedTariffLabel, чтобы старые поездки в истории
+// читались так же, как в день заказа.
+enum _TariffVisualClass { economy, delivery }
 
 class _PassengerTariffVisual {
   const _PassengerTariffVisual({
@@ -16207,20 +16206,6 @@ _PassengerTariffVisual? _passengerTariffVisual(TariffOption tariff) {
       asset: _tariffEconomyAsset,
     );
   }
-  if (normalized.contains('comfort') || normalized.contains('комфорт')) {
-    return _PassengerTariffVisual(
-      tariff: tariff,
-      classId: _TariffVisualClass.comfort,
-      asset: _tariffComfortAsset,
-    );
-  }
-  if (normalized.contains('business') || normalized.contains('бизнес')) {
-    return _PassengerTariffVisual(
-      tariff: tariff,
-      classId: _TariffVisualClass.business,
-      asset: _tariffBusinessAsset,
-    );
-  }
   if (normalized.contains('delivery') ||
       normalized.contains('доставка') ||
       normalized.contains('parcel')) {
@@ -16237,10 +16222,6 @@ String _tariffTitleFor(AppLocalizations l10n, _TariffVisualClass classId) {
   switch (classId) {
     case _TariffVisualClass.economy:
       return l10n.tariffEconomyTitle;
-    case _TariffVisualClass.comfort:
-      return l10n.tariffComfortTitle;
-    case _TariffVisualClass.business:
-      return l10n.tariffBusinessTitle;
     case _TariffVisualClass.delivery:
       return l10n.tariffDeliveryTitle;
   }
