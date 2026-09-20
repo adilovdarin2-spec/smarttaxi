@@ -132,9 +132,14 @@ void main() {
       contains('assets/cars/tariff_business_unbranded_v2.png'),
     );
     expect(pubspec, contains('assets/map/driver_car_topview_white.png'));
-    expect(pubspec, contains('assets/map/marker_my_location_2026.png'));
     expect(pubspec, contains('assets/map/marker_destination_2026.png'));
-    expect(pubspec, contains('assets/map/marker_address_pick_2026.png'));
+    // Метку точки и метку "я здесь" приложение рисует в коде
+    // (_ApprovedMapPickerMarker), а не берёт из PNG. Картинки под них лежали
+    // в сборке мёртвым грузом на 2.6 МБ, и на одной из них осталась буква S
+    // от прежнего названия. Проверка держит их вне списка ассетов, чтобы
+    // они не вернулись.
+    expect(pubspec, isNot(contains('assets/map/marker_my_location_2026.png')));
+    expect(pubspec, isNot(contains('assets/map/marker_address_pick_2026.png')));
   });
 
   test('the brand name is never spelled across two spans', () {
