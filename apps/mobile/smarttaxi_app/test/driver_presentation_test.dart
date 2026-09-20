@@ -144,4 +144,51 @@ void main() {
       }
     }
   }
+
+  // Цена района на главном экране водителя — то самое число, по которому он
+  // решает, брать ли заказ. Пока она не загрузилась, это прочерк: ноль тенге
+  // означал бы, что поездка бесплатная.
+  testWidgets('the line tab shows the region fare, and a dash until it loads',
+      (tester) async {
+    Future<void> pumpStrip(int fareKzt, {bool loading = false}) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildSmartTaxiTheme(),
+        locale: const Locale('ru'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: ListView(
+            children: [
+              DriverTodayStrip(
+                // Свои цифры у поездок есть, чтобы прочерк ниже мог означать
+                // только одно: цена района ещё не известна.
+                stats: const DriverStats(
+                  ordersTotal: 6,
+                  completedOrders: 4,
+                  revenueTotal: 4200,
+                  debt: 0,
+                  balance: 0,
+                ),
+                loading: false,
+                openOrders: 3,
+                regionFareKzt: fareKzt,
+                regionFareLoading: loading,
+              ),
+            ],
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+    }
+
+    await pumpStrip(700);
+    expect(find.text('Цена поездки'), findsOneWidget);
+    expect(find.text('700 ₸'), findsOneWidget);
+
+    await pumpStrip(0);
+    expect(find.text('—'), findsOneWidget);
+    expect(find.text('0 ₸'), findsNothing);
+
+    expect(tester.takeException(), isNull);
+  });
 }
