@@ -331,14 +331,7 @@
   "passengerCtaPickDropoff": "Выбрать адрес назначения",
   "passengerCtaCalculate": "Рассчитать",
   "passengerCtaOrderDelivery": "Оформить доставку",
-  "passengerCtaOrderWithLabel": "Заказать {label}",
-  "@passengerCtaOrderWithLabel": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
+  "passengerCtaOrderRide": "Заказать поездку",
   "passengerCtaOrder": "Заказать",
   "passengerTripsSubtitle": "Активный заказ, статус поездки и детали маршрута",
   "passengerTripsLoadErrorTitle": "Не удалось загрузить историю",

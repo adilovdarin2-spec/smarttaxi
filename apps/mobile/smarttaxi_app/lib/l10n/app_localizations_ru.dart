@@ -797,9 +797,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerCtaOrderDelivery => 'Оформить доставку';
 
   @override
-  String passengerCtaOrderWithLabel(String label) {
-    return 'Заказать $label';
-  }
+  String get passengerCtaOrderRide => 'Заказать поездку';
 
   @override
   String get passengerCtaOrder => 'Заказать';

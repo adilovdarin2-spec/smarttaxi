@@ -803,9 +803,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get passengerCtaOrderDelivery => 'Жеткізуге тапсырыс беру';
 
   @override
-  String passengerCtaOrderWithLabel(String label) {
-    return '$label тапсырыс беру';
-  }
+  String get passengerCtaOrderRide => 'Сапарға тапсырыс беру';
 
   @override
   String get passengerCtaOrder => 'Тапсырыс беру';

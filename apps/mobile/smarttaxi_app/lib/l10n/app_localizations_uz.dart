@@ -804,9 +804,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerCtaOrderDelivery => 'Yetkazib berishga buyurtma berish';
 
   @override
-  String passengerCtaOrderWithLabel(String label) {
-    return '$label buyurtma berish';
-  }
+  String get passengerCtaOrderRide => 'Safarga buyurtma berish';
 
   @override
   String get passengerCtaOrder => 'Buyurtma berish';

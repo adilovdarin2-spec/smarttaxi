@@ -1519,11 +1519,11 @@ abstract class AppLocalizations {
   /// **'Оформить доставку'**
   String get passengerCtaOrderDelivery;
 
-  /// No description provided for @passengerCtaOrderWithLabel.
+  /// No description provided for @passengerCtaOrderRide.
   ///
   /// In ru, this message translates to:
-  /// **'Заказать {label}'**
-  String passengerCtaOrderWithLabel(String label);
+  /// **'Заказать поездку'**
+  String get passengerCtaOrderRide;
 
   /// No description provided for @passengerCtaOrder.
   ///

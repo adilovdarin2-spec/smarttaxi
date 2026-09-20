@@ -745,9 +745,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerCtaOrderDelivery => '下单配送';
 
   @override
-  String passengerCtaOrderWithLabel(String label) {
-    return '叫$label';
-  }
+  String get passengerCtaOrderRide => '叫车';
 
   @override
   String get passengerCtaOrder => '叫车';

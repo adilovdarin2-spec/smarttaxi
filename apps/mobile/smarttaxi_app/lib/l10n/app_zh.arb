@@ -331,14 +331,7 @@
   "passengerCtaPickDropoff": "选择目的地",
   "passengerCtaCalculate": "计算价格",
   "passengerCtaOrderDelivery": "下单配送",
-  "passengerCtaOrderWithLabel": "叫{label}",
-  "@passengerCtaOrderWithLabel": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
+  "passengerCtaOrderRide": "叫车",
   "passengerCtaOrder": "叫车",
   "passengerTripsSubtitle": "当前订单、行程状态与路线详情",
   "passengerTripsLoadErrorTitle": "无法加载历史记录",

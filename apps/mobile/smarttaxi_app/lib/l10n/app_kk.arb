@@ -328,14 +328,7 @@
   "passengerCtaPickDropoff": "Межелі мекенжайды таңдаңыз",
   "passengerCtaCalculate": "Есептеу",
   "passengerCtaOrderDelivery": "Жеткізуге тапсырыс беру",
-  "passengerCtaOrderWithLabel": "{label} тапсырыс беру",
-  "@passengerCtaOrderWithLabel": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
+  "passengerCtaOrderRide": "Сапарға тапсырыс беру",
   "passengerCtaOrder": "Тапсырыс беру",
   "passengerTripsSubtitle": "Белсенді тапсырыс, сапар мәртебесі және маршрут мәліметтері",
   "passengerTripsLoadErrorTitle": "Тарихты жүктеу мүмкін болмады",
