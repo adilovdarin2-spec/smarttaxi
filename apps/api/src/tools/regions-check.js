@@ -107,6 +107,8 @@ await assert.rejects(
   "resolver must reject points outside active regions"
 );
 
+let activeOrdersInRegion = 0;
+
 function createRegionStoreExecutor(initialRows = []) {
   const rows = initialRows.map((row) => ({ ...row }));
   let nextId = 1;
@@ -162,6 +164,12 @@ function createRegionStoreExecutor(initialRows = []) {
         return { rows: [...rows].sort((a, b) => a.name.localeCompare(b.name)) };
       }
 
+      // Closing a town is refused while trips are still running in it. These
+      // fixtures are about the CRUD itself; the guard has its own case below.
+      if (/FROM orders WHERE region_id=\$1 AND status = ANY/i.test(sql)) {
+        return { rows: [{ count: activeOrdersInRegion }] };
+      }
+
       throw new Error(`Unexpected SQL in region behavior test: ${sql}`);
     }
   };
@@ -204,5 +212,49 @@ const reactivated = await setRegionActive(created.id, true, crudExecutor);
 assert.equal(reactivated.region.is_active, true, "admin can toggle region active");
 const activeAfterReactivate = await listActiveRegions(crudExecutor);
 assert.equal(activeAfterReactivate.some((region) => region.id === created.id), true, "reactivated region is returned by active endpoint service");
+
+// Switching a town off is not a flag, it is every car in it stopping at once:
+// assertDriverDispatchReady refuses an inactive region, so a driver there can
+// no longer publish their position or move the trip they are on, and the
+// operator cannot cancel it either (CANCELLED_BY_OPERATOR is unreachable from
+// TRIP_STARTED). Every rider being driven somewhere in that town is left in a
+// car with a frozen map and an order nobody can close.
+{
+  const executor = createRegionStoreExecutor();
+  const region = await createRegion({
+    code: "CLOSE",
+    name: "Закрываемый",
+    boundary: atakentBoundary,
+    centerLat: 40.844435,
+    centerLng: 68.509021,
+    currency: "KZT",
+    isActive: true
+  }, executor);
+
+  activeOrdersInRegion = 2;
+  await assert.rejects(
+    () => setRegionActive(region.id, false, executor),
+    (error) => error.code === "REGION_HAS_ACTIVE_ORDERS" && error.status === 409 &&
+      error.details.activeOrders === 2,
+    "a town with trips running in it cannot be switched off, and the owner is told how many"
+  );
+  const untouched = (await listActiveRegions(executor)).some((item) => item.id === region.id);
+  assert.ok(untouched, "the refused close must not have written anything");
+
+  // Nothing else about the region is held hostage by a running trip — only
+  // closing it is.
+  await updateRegion(region.id, { name: "Атакент (тест)" }, executor);
+
+  // And once the last trip ends it closes normally.
+  activeOrdersInRegion = 0;
+  const closed = await setRegionActive(region.id, false, executor);
+  assert.equal(closed.region.is_active, false);
+
+  // Re-opening is never blocked: there is no trip to protect.
+  activeOrdersInRegion = 5;
+  const reopened = await setRegionActive(region.id, true, executor);
+  assert.equal(reopened.region.is_active, true);
+  activeOrdersInRegion = 0;
+}
 
 console.log("Region foundation checks ok");

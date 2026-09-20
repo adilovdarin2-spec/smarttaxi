@@ -1,4 +1,5 @@
 import { AppError } from "../../common/errors.js";
+import { ACTIVE_ORDER_STATUSES } from "../orders/active-order-statuses.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -128,6 +129,32 @@ function regionUpdateAssignments(data) {
 export async function updateRegion(regionId, data, executor = defaultQuery) {
   const before = (await run(executor, "SELECT * FROM regions WHERE id=$1 FOR UPDATE", [regionId])).rows[0];
   if (!before) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+
+  // Switching a town off is not a flag, it is every car in it stopping at
+  // once. assertDriverDispatchReady refuses an inactive region, so a driver
+  // there can no longer publish their position or move the trip they are on
+  // — and the operator cannot cancel it either, because
+  // CANCELLED_BY_OPERATOR is not reachable from TRIP_STARTED. Every rider
+  // being driven somewhere in that town is left in a car with a frozen map
+  // and an order nobody can close.
+  //
+  // Closing a town is a planned decision, not an emergency, so the owner is
+  // told how many trips are still running and can do it when they are over.
+  if (before.is_active && data.isActive === false) {
+    const running = (await run(
+      executor,
+      "SELECT COUNT(*)::int AS count FROM orders WHERE region_id=$1 AND status = ANY($2::text[])",
+      [regionId, ACTIVE_ORDER_STATUSES]
+    )).rows[0];
+    if (running.count > 0) {
+      throw new AppError(
+        "Trips are still running in this region",
+        409,
+        "REGION_HAS_ACTIVE_ORDERS",
+        { activeOrders: running.count }
+      );
+    }
+  }
 
   const { assignments, values } = regionUpdateAssignments(data);
   if (!assignments.length) throw new AppError("No region fields to update", 400, "REGION_UPDATE_EMPTY");
