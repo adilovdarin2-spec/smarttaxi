@@ -615,7 +615,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerFaqA1.
   ///
   /// In ru, this message translates to:
-  /// **'Выберите точку подачи и адрес назначения на карте, выберите тариф, дождитесь расчёта и нажмите «Заказать».'**
+  /// **'Выберите точку подачи и адрес назначения на карте, выберите тариф — цена уже известна — и нажмите «Заказать».'**
   String get passengerFaqA1;
 
   /// No description provided for @passengerFaqQ2.
@@ -639,7 +639,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerFaqA3.
   ///
   /// In ru, this message translates to:
-  /// **'Цена рассчитывается сервером по маршруту, тарифу, расстоянию и времени поездки.'**
+  /// **'У каждого района одна цена поездки, и своя цена у каждой дороги между районами. Расстояние её не меняет: вы видите сумму до заказа и можете предложить больше или меньше.'**
   String get passengerFaqA3;
 
   /// No description provided for @passengerFaqQ4.
@@ -5224,7 +5224,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverFaqA4.
   ///
   /// In ru, this message translates to:
-  /// **'Клиент может предложить цену выше или ниже расчётной. Такие заказы отмечены бейджем и показываются в списке первыми.'**
+  /// **'Клиент может предложить цену выше или ниже той, что стоит на этом направлении. Такие заказы отмечены бейджем и показываются в списке первыми.'**
   String get driverFaqA4;
 
   /// No description provided for @driverFaqQ5.

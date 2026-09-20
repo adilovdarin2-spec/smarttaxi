@@ -272,7 +272,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerFaqQ1 => '如何叫车?';
 
   @override
-  String get passengerFaqA1 => '在地图上选择上车点和目的地,选择车型,等待计价后点击“叫车”。';
+  String get passengerFaqA1 => '在地图上选择上车点和目的地，选择车型——价格已经确定——然后点击“叫车”。';
 
   @override
   String get passengerFaqQ2 => '为什么服务只在指定地区可用?';
@@ -284,7 +284,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get passengerFaqQ3 => '价格是如何计算的?';
 
   @override
-  String get passengerFaqA3 => '价格由服务器根据路线、车型、距离和行程时间计算得出。';
+  String get passengerFaqA3 =>
+      '每个区有一个统一的行程价格，区与区之间的每条路线也各有价格。距离不会改变它：下单前就能看到金额，也可以提出更高或更低的价格。';
 
   @override
   String get passengerFaqQ4 => '如何成为司机?';
@@ -2677,7 +2678,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverFaqQ4 => '「自主报价」是什么意思?';
 
   @override
-  String get driverFaqA4 => '乘客可以提出高于或低于系统计价的价格。此类订单会带有标记,并优先显示在列表顶部。';
+  String get driverFaqA4 => '乘客可以提出高于或低于该方向既定价格的价格。此类订单会带有标记，并优先显示在列表顶部。';
 
   @override
   String get driverFaqQ5 => '如何更换工作地区?';

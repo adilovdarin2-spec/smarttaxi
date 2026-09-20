@@ -288,7 +288,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerFaqA1 =>
-      'Kartadan olib ketish nuqtasi va manzilni tanlang, tarifni tanlang, hisoblanishini kuting va «Buyurtma berish»ni bosing.';
+      'Kartadan olib ketish nuqtasi va manzilni tanlang, tarifni tanlang — narx allaqachon ma\'lum — va «Buyurtma berish»ni bosing.';
 
   @override
   String get passengerFaqQ2 => 'Nega xizmat faqat tanlangan hududda ishlaydi?';
@@ -302,7 +302,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerFaqA3 =>
-      'Narx server tomonidan marshrut, tarif, masofa va safar vaqtiga qarab hisoblanadi.';
+      'Har bir tumanning bitta safar narxi bor, tumanlar orasidagi har bir yo\'lning esa o\'z narxi bor. Masofa uni o\'zgartirmaydi: summani buyurtmadan oldin ko\'rasiz va ko\'proq yoki kamroq taklif qilishingiz mumkin.';
 
   @override
   String get passengerFaqQ4 => 'Haydovchi bo\'lish uchun nima qilish kerak?';
@@ -2898,7 +2898,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverFaqA4 =>
-      'Mijoz hisoblangan narxdan yuqori yoki past narx taklif qilishi mumkin. Bunday buyurtmalar belgi bilan ko\'rsatilib, ro\'yxatda birinchi bo\'lib chiqadi.';
+      'Mijoz shu yo\'nalishdagi narxdan yuqori yoki past narx taklif qilishi mumkin. Bunday buyurtmalar belgi bilan ko\'rsatilib, ro\'yxatda birinchi bo\'lib chiqadi.';
 
   @override
   String get driverFaqQ5 => 'Ish hududini qanday almashtirish mumkin?';
