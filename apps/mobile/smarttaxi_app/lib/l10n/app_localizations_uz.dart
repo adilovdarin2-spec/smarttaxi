@@ -3488,13 +3488,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get driverGoOnlineButton => 'Liniyaga chiqish';
 
   @override
-  String get driverDemandHigh => 'Yuqori';
-
-  @override
-  String get driverDemandAboveNormal => 'O\'rtachadan yuqori';
-
-  @override
-  String get driverDemandNormal => 'Normal';
+  String get driverRegionFareLabel => 'Safar narxi';
 
   @override
   String get driverTripsTodayLabel => 'Bugungi safarlar';

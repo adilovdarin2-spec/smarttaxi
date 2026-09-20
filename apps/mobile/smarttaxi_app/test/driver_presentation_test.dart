@@ -69,8 +69,8 @@ void main() {
                       stats: null,
                       loading: false,
                       openOrders: 12,
-                      demandLevel: 1.2,
-                      demandLoading: false,
+                      regionFareKzt: 700,
+                      regionFareLoading: false,
                     ),
                     const SizedBox(height: 12),
                     RepaintBoundary(

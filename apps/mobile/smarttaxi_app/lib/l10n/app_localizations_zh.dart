@@ -3231,13 +3231,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverGoOnlineButton => '开始接单';
 
   @override
-  String get driverDemandHigh => '高';
-
-  @override
-  String get driverDemandAboveNormal => '偏高';
-
-  @override
-  String get driverDemandNormal => '正常';
+  String get driverRegionFareLabel => '行程价格';
 
   @override
   String get driverTripsTodayLabel => '今日行程数';

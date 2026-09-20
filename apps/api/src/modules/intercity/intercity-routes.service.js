@@ -76,7 +76,7 @@ export async function createIntercityRoute(input, executor = defaultQuery) {
       max_distance_km, max_duration_min, requires_destination_approval
     )
     VALUES($1,$2,$3,$4,$5,$6,$7)
-    RETURNING *
+    RETURNING id
   `, [
     input.originRegionId,
     input.destinationRegionId,
@@ -86,6 +86,19 @@ export async function createIntercityRoute(input, executor = defaultQuery) {
     input.maxDurationMin,
     input.requiresDestinationApproval ?? true
   ]);
+  return getIntercityRoute(result.rows[0].id, executor);
+}
+
+// Читается так же, как в списке: с названиями регионов. Иначе создание и
+// правка возвращают ту же строку, но без имён, и экран, который покажет
+// ответ вместо перезагрузки списка, нарисует "null → null".
+export async function getIntercityRoute(routeId, executor = defaultQuery) {
+  const result = await run(executor, `
+    SELECT ${ROUTE_SELECT}
+    WHERE ir.id=$1
+    LIMIT 1
+  `, [routeId]);
+  if (!result.rows[0]) throw new AppError("Intercity route not found", 404, "INTERCITY_ROUTE_NOT_FOUND");
   return result.rows[0];
 }
 
@@ -106,10 +119,10 @@ export async function updateIntercityRoute(routeId, input, executor = defaultQue
     UPDATE intercity_routes
     SET ${assignments.join(", ")}, updated_at=NOW()
     WHERE id=$${values.length}
-    RETURNING *
+    RETURNING id
   `, values);
   if (!result.rows[0]) throw new AppError("Intercity route not found", 404, "INTERCITY_ROUTE_NOT_FOUND");
-  return result.rows[0];
+  return getIntercityRoute(routeId, executor);
 }
 
 // A cross-region trip is an explicit product route, not merely two points

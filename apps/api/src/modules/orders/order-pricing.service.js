@@ -49,6 +49,20 @@ function roundCurrency(value) {
 //
 // Distance and duration are still measured and still shown, because a rider
 // wants to know how far it is. They no longer decide what it costs.
+// Ожидание не может стоить дороже самой поездки.
+//
+// Раньше счётчик ожидания шёл рядом с километрами, и 50 ₸ за минуту терялись
+// в общей сумме. Теперь поездка по району стоит 700 ₸ — и двадцать минут
+// ожидания без потолка добавили бы 850 ₸, то есть дороже самой дороги, при
+// том что пассажиру назвали цену заранее. Если человек не выходит так долго,
+// у водителя есть NO_SHOW, а не растущий счётчик.
+export function capWaitingPrice(averagePriceKzt, waitingPrice) {
+  const cap = Number(averagePriceKzt);
+  const charged = Number(waitingPrice || 0);
+  if (!Number.isFinite(cap) || cap <= 0) return roundCurrency(Math.max(0, charged));
+  return roundCurrency(Math.min(Math.max(0, charged), cap));
+}
+
 export function calculatePricingComponents(tariff, { waitingMinutes = 0, includeCancellationFee = false } = {}) {
   const averagePrice = Number(tariff.average_price_kzt);
   if (!Number.isFinite(averagePrice) || averagePrice <= 0) {
@@ -70,7 +84,7 @@ export function calculatePricingComponents(tariff, { waitingMinutes = 0, include
   // Waiting is not part of the road. It is the rider keeping a driver parked,
   // and it is still charged by the minute after the free window.
   const billableWaitingMinutes = Math.max(0, Number(waitingMinutes || 0) - freeWaitingMinutes);
-  const waitingPrice = billableWaitingMinutes * waitingPricePerMinute;
+  const waitingPrice = capWaitingPrice(averagePrice, billableWaitingMinutes * waitingPricePerMinute);
 
   const finalPrice = roundCurrency(averagePrice + waitingPrice + cancellationFee);
   const serviceCommission = roundCurrency(finalPrice * serviceCommissionPercent / 100);
@@ -92,6 +106,7 @@ export function calculatePricingComponents(tariff, { waitingMinutes = 0, include
       waitingMinutes: Number(waitingMinutes || 0),
       billableWaitingMinutes,
       waitingPricePerMinute,
+      maxWaitingPrice: roundCurrency(averagePrice),
       cancellationFee,
       serviceCommissionPercent
     }
@@ -172,6 +187,7 @@ export function buildPricingSnapshot({ region, destinationRegion = region, tarif
     noShowFee: Number(tariff.no_show_fee ?? 0),
     freeWaitingMinutes: Number(tariff.free_waiting_minutes ?? 0),
     waitingPricePerMinute: Number(tariff.waiting_price_per_minute ?? 0),
+    maxWaitingPriceKzt: averagePriceKzt,
     distanceKm,
     durationMin,
     waitingMinutes,

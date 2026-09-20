@@ -185,7 +185,7 @@ class DriverShiftHero extends StatelessWidget {
 }
 
 /// Compact "today at a glance" row — completed trips, nearby open orders and
-/// demand level side by side. Replaces the old 2x2 stat grid (which
+/// what a ride in this region pays. Replaces the old 2x2 stat grid (which
 /// duplicated revenue, now shown directly in [DriverShiftHero], and buried
 /// debt/balance, which belongs on the wallet screen, not the home screen)
 /// and the separate demand-hint card that used to sit above it.
@@ -195,28 +195,21 @@ class DriverTodayStrip extends StatelessWidget {
     required this.stats,
     required this.loading,
     required this.openOrders,
-    required this.demandLevel,
-    required this.demandLoading,
+    required this.regionFareKzt,
+    required this.regionFareLoading,
   });
 
   final DriverStats? stats;
   final bool loading;
   final int openOrders;
-  final double demandLevel;
-  final bool demandLoading;
-
-  // Short enough to fit a third-width mini-stat card at the emphasized
-  // value font size without wrapping or ellipsizing.
-  (String, Color) _demandMeta(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    if (demandLevel >= 1.5) {
-      return (l10n.driverDemandHigh, context.palette.danger);
-    }
-    if (demandLevel > 1.0) {
-      return (l10n.driverDemandAboveNormal, context.palette.brandDeep);
-    }
-    return (l10n.driverDemandNormal, context.palette.textSecondary);
-  }
+  // Цена поездки внутри района: одна и та же для любой поездки по нему.
+  // Раньше здесь висел "спрос", посчитанный из surge * demand — множителей,
+  // которые больше ничего не умножают. Цена умножителей не знает, и водителю
+  // полезнее видеть само число: он решает, брать ли заказ, именно по нему.
+  // 0 означает "цена ещё не загрузилась или не задана" — тогда показываем
+  // прочерк, а не ноль тенге.
+  final int regionFareKzt;
+  final bool regionFareLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -228,7 +221,11 @@ class DriverTodayStrip extends StatelessWidget {
         : current == null
             ? '—'
             : '${current.completedOrders}';
-    final (demandLabel, demandColor) = _demandMeta(context);
+    final fareValue = regionFareLoading && regionFareKzt <= 0
+        ? '···'
+        : regionFareKzt <= 0
+            ? '—'
+            : '$regionFareKzt ₸';
     // One shared card with internal dividers instead of three separately
     // bordered/shadowed mini-cards — the old row cast three shadows side by
     // side, which read as "another box" stacked under the hero card above.
@@ -273,11 +270,11 @@ class DriverTodayStrip extends StatelessWidget {
             _StatDivider(color: palette.border),
             Expanded(
               child: _StatColumn(
-                icon: Icons.trending_up_rounded,
-                label: l10n.driverDemandNearbyLabel,
-                value: demandLabel,
-                tone: demandColor,
-                loading: demandLoading,
+                icon: Icons.local_offer_rounded,
+                label: l10n.driverRegionFareLabel,
+                value: fareValue,
+                tone: palette.brandDeep,
+                loading: regionFareLoading,
               ),
             ),
           ],

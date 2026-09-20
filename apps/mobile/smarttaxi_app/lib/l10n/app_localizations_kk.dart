@@ -3456,13 +3456,7 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverGoOnlineButton => 'Желіге шығу';
 
   @override
-  String get driverDemandHigh => 'Жоғары';
-
-  @override
-  String get driverDemandAboveNormal => 'Жоғарылау';
-
-  @override
-  String get driverDemandNormal => 'Қалыпты';
+  String get driverRegionFareLabel => 'Сапар бағасы';
 
   @override
   String get driverTripsTodayLabel => 'Бүгінгі сапарлар';

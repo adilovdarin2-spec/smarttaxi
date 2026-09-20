@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
-import { calculateOrderPrice, offeredPriceBounds, prepareOrderPricing } from "./order-pricing.service.js";
+import { calculateOrderPrice, capWaitingPrice, offeredPriceBounds, prepareOrderPricing } from "./order-pricing.service.js";
 import {
   acceptOrderForDriver,
   assertDriverCanServeOrder,
@@ -1304,7 +1304,14 @@ async function updateStatus(req, res, next, status) {
         const waitingMinutes = paidWaitingStartedAt
           ? Math.max(0, (now.getTime() - new Date(paidWaitingStartedAt).getTime()) / 60000)
           : 0;
-        const waitingTotal = Math.round(waitingMinutes * Number(existing.waiting_price_per_minute || 0));
+        // Тот же потолок, что и в расчёте цены: ожидание не дороже поездки,
+        // на которую пассажир согласился. Два места считают деньги, и
+        // расходиться им нельзя — иначе предпросмотр обещает одно, а с
+        // человека спишут другое.
+        const waitingTotal = capWaitingPrice(
+          Number(existing.price || 0),
+          Math.round(waitingMinutes * Number(existing.waiting_price_per_minute || 0))
+        );
         extra = ", started_at=NOW(), paid_waiting_started_at=$3, waiting_total=$4";
         extraParams = [paidWaitingStartedAt, waitingTotal];
       }

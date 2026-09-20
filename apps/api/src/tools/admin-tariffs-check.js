@@ -125,6 +125,37 @@ if (hasWebSource) {
   "Тарифы пока не настроены"
 ].forEach(copy => assert(adminApp.includes(copy), `Admin tariff UI missing ${copy}`));
 
+// The road between two towns has its own price, set in its own place. Without
+// this screen the 156 seeded fares would be whatever the migration guessed,
+// with nowhere for the owner to correct them.
+[
+  "getAdminIntercityRoutes",
+  "updateAdminIntercityRoute"
+].forEach(fn => assert(adminApi.includes(`function ${fn}`), `Admin intercity API wrapper missing ${fn}`));
+
+[
+  "function IntercityPage(",
+  "Межгород",
+  "averagePriceKzt",
+  "Цена поездки, ₸",
+  "Направлений пока нет",
+  "Цена направления обновлена"
+].forEach(copy => assert(adminApp.includes(copy), `Admin intercity UI missing ${copy}`));
+
+// The tariff editor must stay a single price. A kilometre field here is how
+// the meter comes back: the form writes straight into the tariff row.
+[
+  "pricePerKm",
+  "pricePerMinute",
+  "surgeMultiplier",
+  "pricePerKmOverride",
+  "minPriceOverride",
+  "baseSurchargeKzt"
+].forEach(token => assert(
+  !adminApp.includes(token),
+  `Admin UI still edits ${token} — the fare is one number, not a meter`
+));
+
 [
   "DRIVER_ORDERS",
   "OPERATOR_TICKETS",

@@ -524,32 +524,32 @@ class TariffOption {
     required this.id,
     required this.name,
     this.description,
-    this.surgeMultiplier = 1,
-    this.demandCoefficient = 1,
+    this.averagePriceKzt = 0,
     this.minimumPrice = 0,
   });
 
   final String id;
   final String name;
   final String? description;
-  // Real, server-computed pricing multipliers (tariffs.routes.js
-  // publicTariff) — the only demand signal the backend actually exposes;
-  // there is no separate spatial "demand zone"/heatmap endpoint.
-  final double surgeMultiplier;
-  final double demandCoefficient;
-  // Floor price for this tariff regardless of distance/time (tariffs.min_price
-  // via publicTariff's minimumPrice) — used as the cheapest-ride reference for
-  // the "balance covers N more rides" estimate, since that has to work
-  // without an active route preview (no pickup/dropoff chosen yet).
+  // Цена поездки по этому тарифу — одна на весь регион (tariffs.routes.js
+  // publicTariff → averagePriceKzt). Ни километры, ни минуты, ни множители
+  // в неё не входят: пассажир видит её до заказа, а дальше сам решает,
+  // предложить больше или меньше.
+  final double averagePriceKzt;
+  // The same number under its older name (publicTariff mirrors it into
+  // minimumPrice) — kept because the "balance covers N more rides" estimate
+  // reads it, and that has to work before any route is chosen.
   final double minimumPrice;
 
   factory TariffOption.fromJson(Map<String, dynamic> json) {
+    final average = _toDouble(
+      json['averagePriceKzt'] ?? json['fixedPriceKzt'] ?? json['minimumPrice'] ?? 0,
+    );
     return TariffOption(
       id: '${json['id']}',
       name: '${json['displayName'] ?? json['name'] ?? 'Тариф'}',
       description: json['description']?.toString(),
-      surgeMultiplier: _toDouble(json['surgeMultiplier'] ?? 1),
-      demandCoefficient: _toDouble(json['demandCoefficient'] ?? 1),
+      averagePriceKzt: average,
       minimumPrice: _toDouble(
         json['minimumPrice'] ?? json['minimum_price'] ?? 0,
       ),

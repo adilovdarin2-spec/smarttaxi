@@ -502,6 +502,20 @@ export async function fetchAdminDriverDocumentFile(documentId) {
   return { blob, mimeType };
 }
 
+// The fare for each road between two towns. One number per direction, so the
+// owner can price Атакент → Шымкент differently from the way back if that is
+// how it actually works.
+export function getAdminIntercityRoutes() {
+  return api("/api/admin/intercity-routes");
+}
+
+export function updateAdminIntercityRoute(routeId, payload) {
+  return api(`/api/admin/intercity-routes/${routeId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getAdminTariffs(regionId) {
   const query = regionId ? `?regionId=${encodeURIComponent(regionId)}` : "";
   return api(`/api/admin/tariffs${query}`);

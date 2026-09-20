@@ -6283,23 +6283,11 @@ abstract class AppLocalizations {
   /// **'Выйти на линию'**
   String get driverGoOnlineButton;
 
-  /// No description provided for @driverDemandHigh.
+  /// No description provided for @driverRegionFareLabel.
   ///
   /// In ru, this message translates to:
-  /// **'Высокий'**
-  String get driverDemandHigh;
-
-  /// No description provided for @driverDemandAboveNormal.
-  ///
-  /// In ru, this message translates to:
-  /// **'Выше'**
-  String get driverDemandAboveNormal;
-
-  /// No description provided for @driverDemandNormal.
-  ///
-  /// In ru, this message translates to:
-  /// **'Норма'**
-  String get driverDemandNormal;
+  /// **'Цена поездки'**
+  String get driverRegionFareLabel;
 
   /// No description provided for @driverTripsTodayLabel.
   ///

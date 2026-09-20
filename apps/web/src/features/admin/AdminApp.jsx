@@ -51,6 +51,7 @@ import {
   getAdminSettings,
   getAdminSupport,
   getAdminTariffAnalytics,
+  getAdminIntercityRoutes,
   getAdminTariffs,
   getToken,
   loginUser,
@@ -71,6 +72,7 @@ import {
   updateAdminDriverRegion,
   updateAdminRegion,
   updateAdminSettings,
+  updateAdminIntercityRoute,
   updateAdminTariff
 } from "../../lib/mvpApi.js";
 import { sessionSnapshotGuard } from "../../lib/browserSession.js";
@@ -89,6 +91,7 @@ const navigation = [
   { key: "applications", label: "Заявки", eyebrow: "Проверка водителей", ownerOnly: true },
   { key: "orders", label: "Заказы", eyebrow: "Поездки клиентов" },
   { key: "tariffs", label: "Тарифы", eyebrow: "Цены по регионам" },
+  { key: "intercity", label: "Межгород", eyebrow: "Цены между регионами" },
   { key: "promoCodes", label: "Промокоды", eyebrow: "Скидки и акции" },
   { key: "recurringBookings", label: "Регулярные поездки", eyebrow: "Постоянные привязки" },
   { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
@@ -364,12 +367,8 @@ function normalizeTariffForm(tariff, defaultRegionId = "") {
     name: tariff?.name || "",
     displayName: tariff?.displayName || tariff?.display_name || "",
     description: tariff?.description || "",
-    basePrice: String(tariff?.basePrice ?? tariff?.base_price ?? ""),
-    pricePerKm: String(tariff?.pricePerKm ?? tariff?.price_per_km ?? ""),
-    pricePerMinute: String(tariff?.pricePerMinute ?? tariff?.price_per_minute ?? ""),
-    minimumPrice: String(tariff?.minimumPrice ?? tariff?.min_price ?? ""),
+    averagePriceKzt: String(tariff?.averagePriceKzt ?? tariff?.average_price_kzt ?? ""),
     serviceCommissionPercent: String(tariff?.serviceCommissionPercent ?? tariff?.service_commission_percent ?? 15),
-    surgeMultiplier: String(tariff?.surgeMultiplier ?? tariff?.surge_multiplier ?? 1),
     freeWaitingMinutes: String(tariff?.freeWaitingMinutes ?? tariff?.free_waiting_minutes ?? 0),
     waitingPricePerMinute: String(tariff?.waitingPricePerMinute ?? tariff?.waiting_price_per_minute ?? 0),
     cancellationFee: String(tariff?.cancellationFee ?? tariff?.cancellation_fee ?? 0),
@@ -413,6 +412,10 @@ export default function AdminApp() {
   const [cancellationStatus, setCancellationStatus] = useState("PENDING");
   const [standActionError, setStandActionError] = useState("");
   const [standBusy, setStandBusy] = useState(false);
+  const [intercityOrigin, setIntercityOrigin] = useState("all");
+  const [intercityQuery, setIntercityQuery] = useState("");
+  const [intercityActionError, setIntercityActionError] = useState("");
+  const [intercityBusy, setIntercityBusy] = useState(false);
   const [roadAlertStatus, setRoadAlertStatus] = useState("ACTIVE");
   const [roadAlertRegion, setRoadAlertRegion] = useState("all");
   const [supportStatus, setSupportStatus] = useState("OPEN");
@@ -502,6 +505,10 @@ export default function AdminApp() {
           drivers: drivers.status === "fulfilled" ? drivers.value.drivers || [] : [],
           regions: regions.status === "fulfilled" ? regions.value.regions || [] : []
         };
+      },
+      intercity: async () => {
+        const routes = await getAdminIntercityRoutes();
+        return { routes: routes.routes || [] };
       },
       tariffs: async () => {
         const selectedRegionId = tariffRegion !== "all" ? tariffRegion : undefined;
@@ -1000,12 +1007,8 @@ export default function AdminApp() {
         name: form.name.trim(),
         displayName: form.displayName.trim(),
         description: form.description.trim(),
-        basePrice: Number(form.basePrice),
-        pricePerKm: Number(form.pricePerKm),
-        pricePerMinute: Number(form.pricePerMinute),
-        minimumPrice: Number(form.minimumPrice),
+        averagePriceKzt: Number(form.averagePriceKzt),
         serviceCommissionPercent: Number(form.serviceCommissionPercent),
-        surgeMultiplier: Number(form.surgeMultiplier),
         freeWaitingMinutes: Number(form.freeWaitingMinutes),
         waitingPricePerMinute: Number(form.waitingPricePerMinute),
         cancellationFee: Number(form.cancellationFee),
@@ -1030,9 +1033,8 @@ export default function AdminApp() {
     return previewAdminTariffPrice({
       regionId: tariff.regionId,
       tariffId: tariff.id,
-      distanceKm: Number(input.distanceKm),
-      durationMin: Number(input.durationMin),
-      waitingMinutes: Number(input.waitingMinutes)
+      waitingMinutes: Number(input.waitingMinutes),
+      includeCancellationFee: Boolean(input.includeCancellationFee)
     });
   }
 
@@ -1093,6 +1095,23 @@ export default function AdminApp() {
       setStandActionError(readError(error));
     } finally {
       setStandBusy(false);
+    }
+  }
+
+  // Цена направления правится прямо в строке, поэтому ошибка нужна рядом со
+  // списком, а не в общем баннере наверху: владелец смотрит на строку, где
+  // только что нажал "Сохранить".
+  async function saveIntercityPrice(routeId, averagePriceKzt) {
+    setIntercityBusy(true);
+    setIntercityActionError("");
+    try {
+      await updateAdminIntercityRoute(routeId, { averagePriceKzt });
+      await loadPage("intercity");
+      setActionState({ loading: false, error: "", message: "Цена направления обновлена" });
+    } catch (error) {
+      setIntercityActionError(readError(error));
+    } finally {
+      setIntercityBusy(false);
     }
   }
 
@@ -1378,6 +1397,13 @@ export default function AdminApp() {
             setStandRegion={setStandRegion}
             standBusy={standBusy}
             standActionError={standActionError}
+            intercityOrigin={intercityOrigin}
+            setIntercityOrigin={setIntercityOrigin}
+            intercityQuery={intercityQuery}
+            setIntercityQuery={setIntercityQuery}
+            intercityBusy={intercityBusy}
+            intercityActionError={intercityActionError}
+            onSaveIntercityPrice={saveIntercityPrice}
             onCreateStand={payload => saveStand(payload, null)}
             onUpdateStand={(standId, payload) => saveStand(payload, standId)}
             onDeleteStand={removeStand}
@@ -1860,6 +1886,7 @@ function AdminPage(props) {
     );
   }
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
+  if (active === "intercity") return <IntercityPage routes={asArray(payload, "routes")} {...props} />;
   if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
   if (active === "stands") {
     return (
@@ -2336,16 +2363,12 @@ function TariffsPage({
               </header>
               {tariff.description && <p>{tariff.description}</p>}
               <div className="admin-card-facts tariff">
-                <InfoLine label="База" value={formatMoney(tariff.basePrice)} />
-                <InfoLine label="За км" value={formatMoney(tariff.pricePerKm)} />
-                <InfoLine label="За минуту" value={formatMoney(tariff.pricePerMinute)} />
-                <InfoLine label="Минимум" value={formatMoney(tariff.minimumPrice)} />
+                <InfoLine label="Цена поездки" value={formatMoney(tariff.averagePriceKzt)} />
                 <InfoLine label="Комиссия сервиса, %" value={formatPercent(tariff.serviceCommissionPercent)} />
-                <InfoLine label="Спрос" value={formatMultiplier(tariff.surgeMultiplier)} />
                 <InfoLine label="Ожидание" value={`${tariff.freeWaitingMinutes || 0} мин бесплатно · ${formatMoney(tariff.waitingPricePerMinute)}/мин`} />
                 <InfoLine label="Сортировка" value={tariff.sortOrder || 0} />
                 <InfoLine label="Заказы" value={metric.orderCount ?? 0} />
-                <InfoLine label="Средняя цена" value={formatOptionalMoney(metric.averageFinalPrice)} />
+                <InfoLine label="Средняя цена по факту" value={formatOptionalMoney(metric.averageFinalPrice)} />
                 <InfoLine label="Комиссия" value={formatMoney(metric.serviceCommissionTotal || 0)} />
                 <InfoLine label="Доход водителя" value={formatMoney(metric.driverEarningTotal || 0)} />
               </div>
@@ -3158,6 +3181,168 @@ const recurringSkipReasonLabels = {
   DRIVER_NOT_READY: "Водитель не готов к выходу на линию",
   DRIVER_BUSY: "Водитель занят другой поездкой"
 };
+
+// What each road between two towns costs.
+//
+// Одна цена на направление. Атакент → Шымкент и обратная дорога — это две
+// отдельные строки, и стоить они могут по-разному, если так и есть на самом
+// деле. Начальные значения посчитаны из расстояния между центрами по старой
+// формуле: это точка отсчёта, а не решение. Сколько стоит дорога, знает
+// владелец, а не километры.
+function IntercityPage({
+  routes,
+  intercityOrigin,
+  setIntercityOrigin,
+  intercityQuery,
+  setIntercityQuery,
+  intercityBusy,
+  intercityActionError,
+  onSaveIntercityPrice
+}) {
+  // Фильтр и поиск держит оболочка: сохранение цены перезагружает страницу
+  // целиком, и локальное состояние сбросило бы владельца к началу списка.
+  const query = intercityQuery;
+  const setQuery = setIntercityQuery;
+  const origin = intercityOrigin;
+  const setOrigin = setIntercityOrigin;
+  const [savingId, setSavingId] = useState("");
+  const [drafts, setDrafts] = useState({});
+  const [localError, setLocalError] = useState("");
+
+  const origins = useMemo(() => {
+    const seen = new Map();
+    routes.forEach(route => {
+      if (route.originRegionId && !seen.has(route.originRegionId)) {
+        seen.set(route.originRegionId, route.originRegionName || route.originRegionCode || route.originRegionId);
+      }
+    });
+    return [...seen.entries()].sort((a, b) => String(a[1]).localeCompare(String(b[1]), "ru"));
+  }, [routes]);
+
+  const needle = query.trim().toLowerCase();
+  const visible = routes.filter(route => {
+    if (origin !== "all" && route.originRegionId !== origin) return false;
+    if (!needle) return true;
+    return `${route.originRegionName || ""} ${route.destinationRegionName || ""}`.toLowerCase().includes(needle);
+  });
+
+  const priceOf = route => {
+    const draft = drafts[route.id];
+    if (draft !== undefined) return draft;
+    return route.averagePriceKzt == null ? "" : String(route.averagePriceKzt);
+  };
+  const isChanged = route => {
+    const draft = drafts[route.id];
+    if (draft === undefined) return false;
+    return Number(draft) !== Number(route.averagePriceKzt);
+  };
+
+  const unpriced = routes.filter(route => !(Number(route.averagePriceKzt) > 0)).length;
+
+  async function save(route) {
+    const value = Number(priceOf(route));
+    if (!Number.isFinite(value) || value < 1) {
+      setLocalError("Цена направления должна быть больше нуля");
+      return;
+    }
+    setLocalError("");
+    setSavingId(route.id);
+    try {
+      await onSaveIntercityPrice(route.id, Math.round(value));
+      setDrafts(current => {
+        const next = { ...current };
+        delete next[route.id];
+        return next;
+      });
+    } finally {
+      setSavingId("");
+    }
+  }
+
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Межгород" subtitle="Одна цена на каждое направление между регионами">
+        <select className="admin-control-select" value={origin} onChange={event => setOrigin(event.target.value)}>
+          <option value="all">Откуда: любой регион</option>
+          {origins.map(([id, name]) => (
+            <option value={id} key={id}>{name}</option>
+          ))}
+        </select>
+        <input
+          className="admin-control-select"
+          type="search"
+          value={query}
+          placeholder="Найти направление"
+          aria-label="Найти направление"
+          onChange={event => setQuery(event.target.value)}
+        />
+      </PageHeader>
+
+      <DataCard
+        title="Как считается цена межгорода"
+        text="Расстояние на цену не влияет: пассажир видит эту сумму ещё до заказа. Он может предложить меньше или больше, водитель — согласиться или назвать свою."
+      >
+        <div className="admin-card-facts">
+          <InfoLine label="Направлений" value={routes.length} />
+          <InfoLine label="Без цены" value={unpriced} />
+        </div>
+        {unpriced > 0 && (
+          <small className="admin-honest-note">
+            По направлениям без цены заказ создать нельзя — клиент увидит ошибку. Проставьте цену или закройте направление.
+          </small>
+        )}
+      </DataCard>
+
+      {(intercityActionError || localError) && (
+        <InlineMessage danger text={intercityActionError || localError} />
+      )}
+
+      {!routes.length ? (
+        <StatePanel
+          title="Направлений пока нет"
+          text="Межгородние направления появляются, когда в системе есть хотя бы два активных региона."
+        />
+      ) : !visible.length ? (
+        <StatePanel title="Ничего не найдено" text="Измените запрос или выберите другой регион отправления." />
+      ) : (
+        <section className="admin-card-grid">
+          {visible.map(route => (
+            <article className="admin-tariff-card" key={route.id}>
+              <header>
+                <div>
+                  <strong>{route.originRegionName} → {route.destinationRegionName}</strong>
+                  <span>Цена в одну сторону, обратное направление настраивается отдельно</span>
+                </div>
+                <Badge tone={route.isActive ? "success" : "muted"}>
+                  {route.isActive ? "Открыто" : "Закрыто"}
+                </Badge>
+              </header>
+              <div className="admin-form-row">
+                <Field
+                  label="Цена поездки, ₸"
+                  type="number"
+                  value={priceOf(route)}
+                  onChange={value => setDrafts(current => ({ ...current, [route.id]: value }))}
+                />
+                <button
+                  type="button"
+                  className="admin-primary-button compact"
+                  disabled={intercityBusy || savingId === route.id || !isChanged(route)}
+                  onClick={() => save(route)}
+                >
+                  {savingId === route.id ? "Сохраняем…" : "Сохранить"}
+                </button>
+              </div>
+              {!(Number(route.averagePriceKzt) > 0) && (
+                <small className="admin-honest-note">Цена не задана — заказы по этому направлению не создаются.</small>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
 
 function RecurringBookingsPage({ bookings, recurringBookingStatus, setRecurringBookingStatus }) {
   return (
@@ -3988,12 +4173,8 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
       if (!form.regionId) throw new Error("Выберите регион");
       if (!form.name.trim()) throw new Error("Введите название тарифа");
       const numericFields = [
-        "basePrice",
-        "pricePerKm",
-        "pricePerMinute",
-        "minimumPrice",
+        "averagePriceKzt",
         "serviceCommissionPercent",
-        "surgeMultiplier",
         "freeWaitingMinutes",
         "waitingPricePerMinute",
         "cancellationFee",
@@ -4004,7 +4185,7 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
         if (!Number.isFinite(value) || value < 0) throw new Error("Проверьте числовые поля");
       });
       if (Number(form.serviceCommissionPercent) > 100) throw new Error("Комиссия должна быть от 0 до 100%");
-      if (Number(form.surgeMultiplier) < 1) throw new Error("Коэффициент спроса должен быть не меньше 1");
+      if (Number(form.averagePriceKzt) < 1) throw new Error("Укажите среднюю цену поездки");
       await onSave(form, tariff);
     } catch (submitError) {
       // Distinguish the client-side validation throws just above (plain
@@ -4036,17 +4217,13 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
           <textarea value={form.description} onChange={event => setField("description", event.target.value)} rows={3} />
         </label>
         <div className="admin-form-row">
-          <Field label="Цена от, ₸" type="number" value={form.basePrice} onChange={value => setField("basePrice", value)} />
-          <Field label="Цена за км" type="number" value={form.pricePerKm} onChange={value => setField("pricePerKm", value)} />
-        </div>
-        <div className="admin-form-row">
-          <Field label="Цена за минуту" type="number" value={form.pricePerMinute} onChange={value => setField("pricePerMinute", value)} />
-          <Field label="Минимальная цена, ₸" type="number" value={form.minimumPrice} onChange={value => setField("minimumPrice", value)} />
-        </div>
-        <div className="admin-form-row">
+          <Field label="Средняя цена поездки, ₸" type="number" value={form.averagePriceKzt} onChange={value => setField("averagePriceKzt", value)} />
           <Field label="Комиссия сервиса, %" type="number" value={form.serviceCommissionPercent} onChange={value => setField("serviceCommissionPercent", value)} />
-          <Field label="Коэффициент спроса" type="number" value={form.surgeMultiplier} onChange={value => setField("surgeMultiplier", value)} />
         </div>
+        <p className="admin-form-hint">
+          Столько стоит поездка по этому тарифу внутри региона. Пассажир может
+          поднять или опустить эту цену сам, а водитель — предложить свою.
+        </p>
         <div className="admin-form-row">
           <Field label="Бесплатное ожидание, мин" type="number" value={form.freeWaitingMinutes} onChange={value => setField("freeWaitingMinutes", value)} />
           <Field label="Ожидание за минуту" type="number" value={form.waitingPricePerMinute} onChange={value => setField("waitingPricePerMinute", value)} />
@@ -4070,7 +4247,7 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
 }
 
 function TariffPreviewPanel({ tariff, onClose, onPreview }) {
-  const [form, setForm] = useState({ distanceKm: "5", durationMin: "14", waitingMinutes: "0" });
+  const [form, setForm] = useState({ waitingMinutes: "0", includeCancellationFee: false });
   const [state, setState] = useState({ loading: false, error: "", result: null });
   const mountedRef = useRef(true);
   useEffect(() => () => { mountedRef.current = false; }, []);
@@ -4109,19 +4286,22 @@ function TariffPreviewPanel({ tariff, onClose, onPreview }) {
         {!analytics.completedOrderCount && (
           <div className="admin-empty-note">
             <strong>По этому тарифу пока нет завершённых заказов</strong>
-            <span>Предпросмотр цены работает отдельно от аналитики и использует текущие правила тарифа.</span>
+            <span>Предпросмотр считает по текущей цене тарифа и не зависит от аналитики.</span>
           </div>
         )}
-        <div className="admin-form-row">
-          <Field label="Расстояние, км" type="number" value={form.distanceKm} onChange={value => setForm(current => ({ ...current, distanceKm: value }))} />
-          <Field label="Время, мин" type="number" value={form.durationMin} onChange={value => setForm(current => ({ ...current, durationMin: value }))} />
-        </div>
         <Field label="Ожидание, мин" type="number" value={form.waitingMinutes} onChange={value => setForm(current => ({ ...current, waitingMinutes: value }))} />
+        <label className="admin-toggle-line">
+          <input
+            type="checkbox"
+            checked={form.includeCancellationFee}
+            onChange={event => setForm(current => ({ ...current, includeCancellationFee: event.target.checked }))}
+          />
+          <span>Считать штраф за отмену</span>
+        </label>
         {state.error && <InlineMessage danger text={state.error} />}
         {preview && (
           <div className="admin-preview-grid">
-            <InfoLine label="Базовый расчёт" value={formatMoney(preview.rawPrice)} />
-            <InfoLine label="После спроса" value={formatMoney(preview.surgePrice)} />
+            <InfoLine label="Цена поездки" value={formatMoney(preview.averagePrice)} />
             <InfoLine label="Ожидание" value={formatMoney(preview.waitingPrice)} />
             <InfoLine label="Итоговая стоимость" value={formatMoney(preview.finalPrice)} />
             <InfoLine label="Комиссия сервиса" value={formatMoney(preview.serviceCommission)} />

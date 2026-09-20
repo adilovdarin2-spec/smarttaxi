@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calculateOrderPrice, calculatePricingComponents, offeredPriceBounds } from "../modules/orders/order-pricing.service.js";
+import { calculateOrderPrice, calculatePricingComponents, capWaitingPrice, offeredPriceBounds } from "../modules/orders/order-pricing.service.js";
 import { calculatePromoDiscount } from "../modules/orders/promo.service.js";
 
 // --- One average fare, not a meter ---
@@ -30,6 +30,36 @@ assert.equal(components.finalPrice, 700);
 assert.equal(components.serviceCommission, 105, "commission is a share of the fare");
 assert.equal(components.driverEarning, 595, "and the rest is the driver's");
 assert.equal(components.formulaParts.averagePriceKzt, 700, "the fare is written down as what it is");
+
+// --- Ожидание не дороже поездки ---
+//
+// Счётчик ожидания остался поминутным, а цена дороги перестала расти — и
+// 50 ₸/мин легко обгоняют саму поездку за 700 ₸. Пассажиру цену назвали
+// заранее, значит ожидание не имеет права её удвоить: за долгое ожидание
+// у водителя есть NO_SHOW.
+const waitingTariff = {
+  average_price_kzt: 700,
+  service_commission_percent: 15,
+  free_waiting_minutes: 3,
+  waiting_price_per_minute: 50
+};
+
+const shortWait = calculatePricingComponents(waitingTariff, { waitingMinutes: 8 });
+assert.equal(shortWait.waitingPrice, 250, "5 платных минут по 50 ₸ считаются как есть");
+assert.equal(shortWait.finalPrice, 950, "и складываются с ценой поездки");
+
+const longWait = calculatePricingComponents(waitingTariff, { waitingMinutes: 40 });
+assert.equal(longWait.waitingPrice, 700, "ожидание упирается в стоимость самой поездки");
+assert.equal(longWait.finalPrice, 1400, "и дороже двойной цены заказ стать не может");
+assert.equal(longWait.formulaParts.maxWaitingPrice, 700, "потолок записан вместе с расчётом");
+assert.equal(longWait.formulaParts.billableWaitingMinutes, 37, "при этом реально прождавшие минуты не подменяются");
+
+// Тот же помощник считает деньги и в билинге (orders.routes.js, TRIP_STARTED),
+// поэтому проверяем его напрямую: предпросмотр и списание обязаны совпадать.
+assert.equal(capWaitingPrice(700, 850), 700, "списание тоже упирается в цену поездки");
+assert.equal(capWaitingPrice(700, 250), 250, "а короткое ожидание проходит целиком");
+assert.equal(capWaitingPrice(0, 850), 850, "без известной цены поездки резать нечего");
+assert.equal(capWaitingPrice(700, -5), 0, "отрицательного ожидания не бывает");
 
 // --- "Своя цена" bidding bounds ---
 // Flat floor/ceiling regardless of the estimated price — a rider can always

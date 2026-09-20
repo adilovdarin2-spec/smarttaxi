@@ -199,7 +199,7 @@ class _DriverShellState extends State<DriverShell> {
   // and is only populated once a driver actually goes online.
   Coordinate? _regionHintPosition;
   List<TariffOption> _regionTariffs = const [];
-  bool _demandHintLoading = false;
+  bool _regionFareLoading = false;
   List<OrderSummary> _orders = const [];
   List<RoadAlert> _roadAlerts = const [];
   OrderSummary? _activeOrder;
@@ -709,7 +709,7 @@ class _DriverShellState extends State<DriverShell> {
       if (regionToSync != null) {
         unawaited(widget.api.selectDriverRegion(regionToSync!));
       }
-      unawaited(_loadDemandHint());
+      unawaited(_loadRegionFare());
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -792,7 +792,7 @@ class _DriverShellState extends State<DriverShell> {
       await widget.api.selectDriverRegion(regionId);
       await _loadOrders();
       await _loadRoadAlerts();
-      unawaited(_loadDemandHint());
+      unawaited(_loadRegionFare());
     } catch (error) {
       if (mounted) {
         setState(
@@ -803,31 +803,36 @@ class _DriverShellState extends State<DriverShell> {
     }
   }
 
-  // Uses the same public /api/tariffs the passenger price screen reads —
-  // there is no dedicated spatial "demand zone" endpoint anywhere in the
-  // backend, only per-tariff surgeMultiplier/demandCoefficient. Taking the
-  // max combined multiplier across the region's active tariffs is an
-  // honest, real signal ("prices are up right now"), not a fabricated one.
-  Future<void> _loadDemandHint() async {
+  // Reads the same public /api/tariffs the passenger price screen reads, so
+  // the number on the driver's home screen is the number the passenger is
+  // quoted — one price per region, not a meter either of them has to guess.
+  Future<void> _loadRegionFare() async {
     final regionId = _regionId;
     if (regionId == null) return;
-    setState(() => _demandHintLoading = true);
+    setState(() => _regionFareLoading = true);
     try {
       final tariffs = await widget.api.getTariffs(regionId);
       if (!mounted) return;
       setState(() => _regionTariffs = tariffs);
     } catch (_) {
-      // Best-effort — a failed demand lookup must not disrupt the line tab.
+      // Best-effort — a failed price lookup must not disrupt the line tab.
     } finally {
-      if (mounted) setState(() => _demandHintLoading = false);
+      if (mounted) setState(() => _regionFareLoading = false);
     }
   }
 
-  double get _demandLevel {
-    if (_regionTariffs.isEmpty) return 1;
-    return _regionTariffs
-        .map((t) => t.surgeMultiplier * t.demandCoefficient)
-        .reduce((a, b) => a > b ? a : b);
+  // The cheapest of the region's tariffs: that is what a plain ride costs,
+  // and the more expensive classes are shown to the passenger as a choice.
+  // 0 means "nothing loaded yet" — the strip draws a dash for that rather
+  // than claiming a ride is free.
+  int get _regionFareKzt {
+    var lowest = 0;
+    for (final tariff in _regionTariffs) {
+      final price = tariff.averagePriceKzt.round();
+      if (price <= 0) continue;
+      if (lowest == 0 || price < lowest) lowest = price;
+    }
+    return lowest;
   }
 
   Future<void> _setOnline(bool nextOnline) async {
@@ -3031,8 +3036,8 @@ class _DriverShellState extends State<DriverShell> {
             stats: stats,
             loading: _driverStatsLoading,
             openOrders: openOrders.length,
-            demandLevel: _demandLevel,
-            demandLoading: _demandHintLoading,
+            regionFareKzt: _regionFareKzt,
+            regionFareLoading: _regionFareLoading,
           ),
           const SizedBox(height: 12),
           // Only worth a banner when there's an actual permission/GPS
@@ -3167,8 +3172,8 @@ class _DriverShellState extends State<DriverShell> {
                       stats: stats,
                       loading: _driverStatsLoading,
                       openOrders: openOrders,
-                      demandLevel: _demandLevel,
-                      demandLoading: _demandHintLoading,
+                      regionFareKzt: _regionFareKzt,
+                      regionFareLoading: _regionFareLoading,
                     ),
                     if (_locationMessage != null) ...[
                       const SizedBox(height: 10),
@@ -3903,10 +3908,6 @@ class _DriverShellState extends State<DriverShell> {
   }
 }
 
-// Level is max(surgeMultiplier * demandCoefficient) across the region's
-// active tariffs — a real server-computed pricing signal, not a spatial
-// heatmap (the backend has no such endpoint). Thresholds are a judgment
-// call, not a server-defined boundary.
 // Explains *why* the line toggle is disabled instead of leaving the driver
 // staring at a greyed-out button. Two independent gates feed this, checked
 // in the same order the backend checks them (assertDriverRegionApproved in

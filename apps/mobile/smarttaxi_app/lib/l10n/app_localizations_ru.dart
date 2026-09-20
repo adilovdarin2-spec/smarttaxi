@@ -3451,13 +3451,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverGoOnlineButton => 'Выйти на линию';
 
   @override
-  String get driverDemandHigh => 'Высокий';
-
-  @override
-  String get driverDemandAboveNormal => 'Выше';
-
-  @override
-  String get driverDemandNormal => 'Норма';
+  String get driverRegionFareLabel => 'Цена поездки';
 
   @override
   String get driverTripsTodayLabel => 'Поездок сегодня';
