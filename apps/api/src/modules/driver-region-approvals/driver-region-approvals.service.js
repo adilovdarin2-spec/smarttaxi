@@ -1,4 +1,5 @@
 import { AppError } from "../../common/errors.js";
+import { ACTIVE_ORDER_STATUSES } from "../orders/active-order-statuses.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -128,6 +129,28 @@ export async function setDriverRegionApproval({ driverId, regionId, status, admi
 
   const region = await getRegion(regionId, executor);
   if (!region) throw new AppError("Region not found", 404, "REGION_NOT_FOUND");
+
+  // Blocking a driver out of a region puts them OFFLINE with no region at
+  // all, and assertDriverDispatchReady then refuses every action on the trip
+  // they are driving — which the operator cannot cancel either, because
+  // CANCELLED_BY_OPERATOR is unreachable from TRIP_STARTED. Same freeze as
+  // blocking the driver outright, and the same answer: say which trip, and
+  // let the owner close it first.
+  if (status === "BLOCKED") {
+    const running = (await run(
+      executor,
+      "SELECT id, short_id, status FROM orders WHERE driver_id=$1 AND region_id=$2 AND status = ANY($3::text[]) LIMIT 1",
+      [driverId, regionId, ACTIVE_ORDER_STATUSES]
+    )).rows[0];
+    if (running) {
+      throw new AppError(
+        "This driver is on a trip in that region right now — close that trip first",
+        409,
+        "DRIVER_HAS_ACTIVE_ORDER",
+        { orderId: running.id, shortId: running.short_id, orderStatus: running.status }
+      );
+    }
+  }
 
   const approval = (await run(executor, `
     INSERT INTO driver_region_approvals(driver_id, region_id, status, approved_by_user_id, blocked_by_user_id, block_reason, approved_at, blocked_at)

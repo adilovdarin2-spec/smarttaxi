@@ -38,6 +38,8 @@ assert.match(driverRoutes, /if \(body\.status === "FREE"\)/, "online transition 
 // they happened to force-refresh.
 assert.match(adminRoutes, /type: "DRIVER_REGION_STATUS"/, "driver region approval/block must notify the driver via notifyUser");
 
+let activeOrderInRegion = null;
+
 function createExecutor() {
   const state = {
     drivers: [
@@ -93,6 +95,13 @@ function createExecutor() {
         driver.last_seen_at = "2026-01-01T00:04:00.000Z";
         return { rows: [driver] };
       }
+      // Blocking a driver out of a region is refused while they are driving a
+      // trip in it. These fixtures are about the approval itself; the guard
+      // has its own case below.
+      if (/FROM orders WHERE driver_id=\$1 AND region_id=\$2 AND status = ANY/i.test(sql)) {
+        return { rows: activeOrderInRegion ? [activeOrderInRegion] : [] };
+      }
+
       throw new Error(`Unexpected SQL in driver approval check: ${sql}`);
     }
   };
@@ -234,5 +243,39 @@ assert.ok(
   !operatorRule[1].includes("TRIP_STARTED"),
   "an operator who can cancel a started trip would make the block refusal unnecessary"
 );
+
+// Blocking a driver out of a region puts them OFFLINE with no region at all,
+// and every action on the trip they are driving is then refused — including
+// by the operator, who cannot cancel from TRIP_STARTED. Same freeze as
+// blocking the driver outright.
+{
+  const executor = createExecutor();
+  const midTrip = executor.state.drivers[0];
+  activeOrderInRegion = { id: "order-1", short_id: "AB12CD34", status: "TRIP_STARTED" };
+  await assert.rejects(
+    () => setDriverRegionApproval(
+      { driverId: midTrip.id, regionId: "region-active", status: "BLOCKED", adminUserId: "admin-1" },
+      executor
+    ),
+    (error) => error.code === "DRIVER_HAS_ACTIVE_ORDER" && error.status === 409 &&
+      error.details.shortId === "AB12CD34",
+    "a driver mid-trip cannot be blocked out of the region they are driving in"
+  );
+
+  // Approving is never refused — there is no trip to protect.
+  activeOrderInRegion = { id: "order-1", short_id: "AB12CD34", status: "TRIP_STARTED" };
+  await setDriverRegionApproval(
+    { driverId: midTrip.id, regionId: "region-active", status: "APPROVED", adminUserId: "admin-1" },
+    executor
+  );
+
+  // And once the trip is over the block goes through.
+  activeOrderInRegion = null;
+  const afterTrip = await setDriverRegionApproval(
+    { driverId: midTrip.id, regionId: "region-active", status: "BLOCKED", adminUserId: "admin-1" },
+    executor
+  );
+  assert.equal(afterTrip.approval.status, "BLOCKED");
+}
 
 console.log("Driver region approval checks ok");
