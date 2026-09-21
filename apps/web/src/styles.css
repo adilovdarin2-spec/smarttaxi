@@ -26310,3 +26310,43 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
       0 2px 8px rgba(16, 25, 46, .05);
   }
 }
+
+/* Палец — не мышь.
+ *
+ * Панель открывают и с телефона, и с планшета на стойке. Компактные
+ * кнопки высотой 38 пикселей рисовались под курсор: на экране межгорода
+ * их 156 штук подряд, и каждая меняет цену направления. Промахнуться по
+ * соседней там стоит денег.
+ *
+ * Правило только для сенсорных экранов: на ПК с мышью всё остаётся как было. */
+@media (pointer: coarse) {
+  .admin-primary-button.compact,
+  .admin-secondary-button.compact,
+  .admin-danger-button.compact {
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 13px;
+  }
+
+  .admin-user-chip-logout {
+    min-height: 44px;
+    padding: 0 14px;
+  }
+
+  .admin-control-select,
+  .admin-field input,
+  .admin-field select,
+  .admin-date-inputs input {
+    min-height: 44px;
+  }
+
+  .admin-segmented-filter button,
+  .admin-region-presets button {
+    min-height: 44px;
+  }
+
+  .admin-modal > header button {
+    height: 44px;
+    min-width: 44px;
+  }
+}
