@@ -11,6 +11,9 @@ const estimateLimiter = rateLimit({ prefix: "maps-estimate", windowMs: 60_000, m
 const searchLimiter = rateLimit({ prefix: "maps-search", windowMs: 60_000, max: 80 });
 const reverseLimiter = rateLimit({ prefix: "maps-reverse", windowMs: 60_000, max: 80 });
 const routeLimiter = rateLimit({ prefix: "maps-route", windowMs: 60_000, max: 80 });
+// Диагностика ходит наружу к маршрутизатору: без ограничителя её можно
+// было звать бесконечно с любого адреса.
+const diagnosticsLimiter = rateLimit({ prefix: "maps-diagnostics", windowMs: 60_000, max: 20 });
 
 const EstimateSchema = z.object({
   pickupText: z.string().trim().max(180).optional().default(""),
@@ -73,7 +76,7 @@ function routeResponse(preview) {
   };
 }
 
-router.get("/diagnostics", async (_req, res, next) => {
+router.get("/diagnostics", diagnosticsLimiter, async (_req, res, next) => {
   try {
     res.json(await buildMapsDiagnostics());
   } catch (error) {

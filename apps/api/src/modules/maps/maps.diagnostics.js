@@ -33,7 +33,43 @@ async function fetchWithTimeout(url, timeoutMs = 1800) {
   }
 }
 
+// Проба маршрутизатора — это настоящий запрос наружу, а не чтение памяти.
+//
+// На проде ROUTING_BASE_URL смотрит на общий демо-сервер OSRM, у которого
+// есть предел вежливости. Диагностику дёргают без входа и без ограничений,
+// health опрашивает платформа, — и каждый такой вызов уходил во внешний
+// сервис. Заблокируют по IP — останутся без цены и без времени подачи все
+// пассажиры сразу, потому что расчёт поездки идёт через тот же OSRM.
+//
+// Держим один ответ на всех в течение окна: сто одновременных проверок
+// здоровья стоят одного запроса наружу, а не ста.
+const PROBE_TTL_MS = 30_000;
+let probeCache = { at: 0, value: null };
+let probeInFlight = null;
+
 export async function checkOsrm() {
+  const now = Date.now();
+  if (probeCache.value && now - probeCache.at < PROBE_TTL_MS) return probeCache.value;
+  // Пока один запрос летит, остальные ждут его, а не шлют свои.
+  if (probeInFlight) return probeInFlight;
+  probeInFlight = probeOsrm()
+    .then((value) => {
+      probeCache = { at: Date.now(), value };
+      return value;
+    })
+    .finally(() => {
+      probeInFlight = null;
+    });
+  return probeInFlight;
+}
+
+// Только для тестов: следующая проверка должна снова сходить наружу.
+export function resetOsrmProbeCache() {
+  probeCache = { at: 0, value: null };
+  probeInFlight = null;
+}
+
+async function probeOsrm() {
   const base = String(env.ROUTING_BASE_URL || env.OSRM_BASE_URL || "").replace(/\/$/, "");
   if (!base) {
     return {
