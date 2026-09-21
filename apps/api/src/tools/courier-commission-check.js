@@ -97,6 +97,29 @@ if (!existsSync(legalPath)) {
     `комиссия считается мимо общего правила — курьерская ставка сюда не дойдёт:\n  ${offenders.join("\n  ")}`
   );
 
+  // --- Второй экземпляр оферты не должен разойтись с первым ---
+  //
+  // Тот же договор лежит дважды: JSON для сайта и legal_content.dart внутри
+  // приложения. Водитель принимает тот, который показан ему в приложении, а
+  // проверки выше читают веб-версию. Разойдутся — и подписанное перестанет
+  // совпадать с проверяемым, причём молча.
+  const mobileLegal = join(root, "..", "..", "mobile", "smarttaxi_app", "lib", "core", "legal", "legal_content.dart");
+  if (existsSync(mobileLegal)) {
+    const mobile = readFileSync(mobileLegal, "utf8").replace(/\n/g, " ");
+    const mobileClauses = [...mobile.matchAll(
+      /Для курьера при наличной оплате комиссия Платформы составляет (\d+) процентов, а при безналичной оплате — (\d+) процент/g
+    )];
+    assert(mobileClauses.length > 0, "в оферте внутри приложения нет правила о комиссии курьера");
+    assert(
+      mobileClauses.every(([, cash, cashless]) => Number(cash) === cashPercent && Number(cashless) === cashlessPercent),
+      `оферта в приложении называет курьеру не ${cashPercent}/${cashlessPercent}, а другие ставки`
+    );
+    assert(
+      mobile.includes(`комиссия Платформы составляет ${taxiPercent} процент`),
+      `оферта в приложении называет водителю не ${taxiPercent} процентов`
+    );
+  }
+
   console.log(
     `Courier commission checks ok: delivery ${cashPercent}% cash / ${cashlessPercent}% cashless, taxi ${taxiPercent}% either way, one rule everywhere`
   );
