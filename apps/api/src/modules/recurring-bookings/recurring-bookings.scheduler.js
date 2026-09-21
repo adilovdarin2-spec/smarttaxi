@@ -3,6 +3,7 @@ import { randomBytes } from "node:crypto";
 import { writeAudit } from "../../common/audit.js";
 import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
 import { emitOrderCreated, isSamePerson } from "../orders/order-dispatch.service.js";
+import { commissionPercentForOrder } from "../orders/order-pricing.service.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { runDistributedJob } from "../../common/distributedJob.js";
@@ -135,7 +136,11 @@ async function createOrderForBooking(booking) {
   }
 
   const tariff = (await query("SELECT * FROM tariffs WHERE region_id=$1 AND name='Economy'", [region.id])).rows[0];
-  const commissionPercent = Number(tariff?.service_commission_percent ?? 0);
+  // Ставка берётся там же, где и для обычного заказа: одна оферта — одно
+  // правило. Регулярный рейс всегда Эконом и всегда наличные, так что
+  // курьерская нулевая ставка сюда не попадает, но считать по-своему здесь
+  // нельзя — иначе правила разойдутся при первой же правке.
+  const commissionPercent = commissionPercentForOrder(tariff, "CASH");
   const serviceCommission = Math.round((booking.price_kzt * commissionPercent) / 100);
 
   const result = await tx(async (dbClient) => {

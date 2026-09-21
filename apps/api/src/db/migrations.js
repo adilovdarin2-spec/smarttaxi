@@ -91,6 +91,11 @@ const statements = [
    )
    UPDATE tariffs SET service_commission_percent=7, updated_at=NOW()
    WHERE EXISTS (SELECT 1 FROM claim) AND service_commission_percent <> 7`,
+  // Существующие строки поправлены выше, но умолчание самой колонки в базах,
+  // созданных раньше, осталось 15: schema.sql видят только новые базы. Тариф,
+  // добавленный без явного процента, молча получал бы ставку, которой нет ни
+  // в оферте, ни в панели.
+  "ALTER TABLE tariffs ALTER COLUMN service_commission_percent SET DEFAULT 7",
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS car_color TEXT",
   `CREATE TABLE IF NOT EXISTS driver_region_approvals (

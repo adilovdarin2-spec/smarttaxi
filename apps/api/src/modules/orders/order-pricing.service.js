@@ -63,7 +63,30 @@ export function capWaitingPrice(averagePriceKzt, waitingPrice) {
   return roundCurrency(Math.min(Math.max(0, charged), cap));
 }
 
-export function calculatePricingComponents(tariff, { waitingMinutes = 0, includeCancellationFee = false } = {}) {
+// Сколько платформа берёт с исполнителя — по оферте, которую он подписал.
+//
+// Оферта разделяет две роли. Водителю такси — 7 процентов с заказа, как ни
+// заплатил пассажир. Курьеру — 0 процентов при наличной оплате и 7 при
+// безналичной: наличные он получает в руки, и платформа денег в этой сделке
+// не держит.
+//
+// Код же брал процент прямо из тарифа и списывал 7 с любой доставки. Курьер
+// подписывал ноль, а в долг ему падала семёрка — и узнавал он об этом уже
+// после рейса.
+export const DELIVERY_TARIFF_NAME = "Delivery";
+// Наличные — это только наличные. Перевод через Kaspi и карта безналичны:
+// оферта называет для них ту же ставку, что и для такси.
+const CASH_PAYMENT_METHOD = "CASH";
+
+export function commissionPercentForOrder(tariff, paymentMethod) {
+  const percent = Number(tariff?.service_commission_percent ?? 0);
+  const isDelivery = String(tariff?.name || "").toUpperCase() === DELIVERY_TARIFF_NAME.toUpperCase();
+  const isCash = String(paymentMethod || "").toUpperCase() === CASH_PAYMENT_METHOD;
+  if (isDelivery && isCash) return 0;
+  return percent;
+}
+
+export function calculatePricingComponents(tariff, { waitingMinutes = 0, includeCancellationFee = false, paymentMethod = null } = {}) {
   const averagePrice = Number(tariff.average_price_kzt);
   if (!Number.isFinite(averagePrice) || averagePrice <= 0) {
     // Better to refuse than to invent a number: a fare nobody set is not a
@@ -79,7 +102,7 @@ export function calculatePricingComponents(tariff, { waitingMinutes = 0, include
   const freeWaitingMinutes = Number(tariff.free_waiting_minutes ?? 0);
   const waitingPricePerMinute = Number(tariff.waiting_price_per_minute ?? 0);
   const cancellationFee = includeCancellationFee ? Number(tariff.cancellation_fee ?? 0) : 0;
-  const serviceCommissionPercent = Number(tariff.service_commission_percent ?? 0);
+  const serviceCommissionPercent = commissionPercentForOrder(tariff, paymentMethod);
 
   // Waiting is not part of the road. It is the rider keeping a driver parked,
   // and it is still charged by the minute after the free window.
@@ -150,7 +173,7 @@ export function offeredPriceBounds(estimatedPrice) {
   return { minAllowed, maxAllowed };
 }
 
-export function buildPricingSnapshot({ region, destinationRegion = region, tariff, distanceKm, durationMin, waitingMinutes = 0, components, intercityRoute = null }) {
+export function buildPricingSnapshot({ region, destinationRegion = region, tariff, distanceKm, durationMin, waitingMinutes = 0, components, intercityRoute = null, paymentMethod = null }) {
   const averagePriceKzt = Number(tariff.average_price_kzt);
   // The old per-kilometre fields are still written down so an order created
   // before the change and one created after can be read side by side. Nothing
@@ -191,7 +214,7 @@ export function buildPricingSnapshot({ region, destinationRegion = region, tarif
     distanceKm,
     durationMin,
     waitingMinutes,
-    serviceCommissionPercent: Number(tariff.service_commission_percent),
+    serviceCommissionPercent: commissionPercentForOrder(tariff, paymentMethod),
     estimatedPrice: components.finalPrice,
     finalPrice: components.finalPrice,
     serviceCommission: components.serviceCommission,
@@ -224,7 +247,7 @@ export async function prepareOrderPricing(input, executor) {
     tariffName: input.tariff || input.tariffName
   }, executor);
   const pricedTariff = intercityTariff(tariff, intercityRoute);
-  const components = calculatePricingComponents(pricedTariff, { distanceKm, durationMin, waitingMinutes });
+  const components = calculatePricingComponents(pricedTariff, { distanceKm, durationMin, waitingMinutes, paymentMethod: input.paymentMethod });
   const estimatedPrice = components.finalPrice;
   const pricingSnapshot = buildPricingSnapshot({
     region: pickupRegion,
@@ -234,7 +257,8 @@ export async function prepareOrderPricing(input, executor) {
     durationMin,
     waitingMinutes,
     components,
-    intercityRoute
+    intercityRoute,
+    paymentMethod: input.paymentMethod
   });
 
   return {

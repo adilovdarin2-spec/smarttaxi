@@ -6,7 +6,7 @@ import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { rateLimit } from "../../common/rateLimit.js";
-import { calculateOrderPrice, capWaitingPrice, offeredPriceBounds, prepareOrderPricing } from "./order-pricing.service.js";
+import { calculateOrderPrice, capWaitingPrice, commissionPercentForOrder, offeredPriceBounds, prepareOrderPricing } from "./order-pricing.service.js";
 import {
   acceptOrderForDriver,
   assertDriverCanServeOrder,
@@ -351,7 +351,7 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         }
         offeredPriceKzt = body.offeredPriceKzt;
         finalPrice = offeredPriceKzt;
-        const commissionPercent = Number(pricing.tariff.service_commission_percent ?? 0);
+        const commissionPercent = commissionPercentForOrder(pricing.tariff, body.paymentMethod);
         serviceCommission = Math.round((finalPrice * commissionPercent) / 100);
       }
 
@@ -377,7 +377,7 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         });
         promoDiscountKzt = calculatePromoDiscount(promo, finalPrice);
         finalPrice -= promoDiscountKzt;
-        const commissionPercent = Number(pricing.tariff.service_commission_percent ?? 0);
+        const commissionPercent = commissionPercentForOrder(pricing.tariff, body.paymentMethod);
         serviceCommission = Math.round((finalPrice * commissionPercent) / 100);
       }
 
@@ -1334,7 +1334,7 @@ async function updateStatus(req, res, next, status) {
         // column for the ledger entry — without this the ledger would keep
         // reporting the pre-waiting estimate forever.
         if (Number(updated.waiting_total) > 0) {
-          const waitingCommission = Math.round(Number(updated.waiting_total) * Number(tariff.service_commission_percent) / 100);
+          const waitingCommission = Math.round(Number(updated.waiting_total) * commissionPercentForOrder(tariff, updated.payment_method) / 100);
           const withWaiting = await client.query(`
             UPDATE orders
             SET price=price+$1,
