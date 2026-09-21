@@ -77,4 +77,39 @@ for (const [name, source] of [["driver accepting", dispatch], ["owner assigning"
   );
 }
 
-console.log("Driver debt ceiling checks ok: one limit, both assignment paths, warning below it");
+// --- Панель владельца называет те же числа, что применяет сервер ---
+//
+// В карточке «Долги водителей» стояли свои 10 000 и 15 000: счёт приходил с
+// сервера, посчитанный по настоящему порогу, а подпись под ним называла два
+// числа, которых нет ни в коде, ни в оферте. Владелец читал про лимит
+// 15 000, пока водителя отключало на 5 000.
+//
+// Теперь оба порога едут в ответе /admin/dashboard вместе со счётом, и
+// панель их просто показывает.
+{
+  const adminRoutes = read("../modules/admin/admin.routes.js");
+  assert.match(adminRoutes, /debtWarningKzt: DRIVER_DEBT_WARNING_KZT/, "панели не с чем показать порог предупреждения");
+  assert.match(adminRoutes, /debtCeilingKzt: DRIVER_DEBT_CEILING_KZT/, "панели не с чем показать потолок долга");
+
+  const adminAppPath = new URL("../../../web/src/features/admin/AdminApp.jsx", import.meta.url);
+  if (existsSync(adminAppPath)) {
+    const adminApp = readFileSync(adminAppPath, "utf8");
+    const offenders = [];
+    adminApp.split("\n").forEach((line, index) => {
+      if (!/долг/i.test(line)) return;
+      // Число с разрядом тысяч рядом со словом «долг» — почти наверняка
+      // вписанный руками порог.
+      const numbers = [...line.matchAll(/[0-9]{1,3}[\s ][0-9]{3}|[0-9]{4,}/g)].map(m => m[0]);
+      if (!numbers.length) return;
+      offenders.push(`AdminApp.jsx:${index + 1} ${numbers.join(", ")}`);
+    });
+    assert.deepEqual(
+      offenders,
+      [],
+      `в панели снова вписаны свои числа долга вместо серверных:
+  ${offenders.join("\n  ")}`
+    );
+  }
+}
+
+console.log("Driver debt ceiling checks ok: one limit, both assignment paths, warning below it, panel quotes the server");

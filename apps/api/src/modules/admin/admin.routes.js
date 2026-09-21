@@ -57,7 +57,7 @@ import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
 
 import { submitDriverApplication, reviewDriverApplication } from './driver-application.service.js';
-import { DRIVER_DEBT_WARNING_KZT } from "../drivers/driver-debt.js";
+import { DRIVER_DEBT_CEILING_KZT, DRIVER_DEBT_WARNING_KZT } from "../drivers/driver-debt.js";
 
 const router = Router();
 
@@ -489,6 +489,12 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
         applications: applications.rows[0],
         attention: {
           highDebtDrivers: highDebtDrivers.rows[0].total,
+          // Пороги едут вместе с числом, которое по ним посчитано. Пока панель
+          // держала свои копии, она показывала счёт по 3 500 и подписывала его
+          // «больше 10 000, лимит 15 000» — числа, которых нет ни в коде, ни в
+          // оферте.
+          debtWarningKzt: DRIVER_DEBT_WARNING_KZT,
+          debtCeilingKzt: DRIVER_DEBT_CEILING_KZT,
           frequentCancelClients: frequentCancelClients.rows[0].total,
           activeRoadAlerts: activeRoadAlerts.rows[0].total,
           lowReviews: lowReviews.rows[0].total

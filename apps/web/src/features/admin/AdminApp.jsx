@@ -75,6 +75,7 @@ import {
   updateAdminIntercityRoute,
   updateAdminTariff
 } from "../../lib/mvpApi.js";
+import { plural } from "../shared/standFormat.mjs";
 import { sessionSnapshotGuard } from "../../lib/browserSession.js";
 import { sanitizeAddressText } from "../../lib/text.js";
 
@@ -1850,16 +1851,19 @@ function buildAdminProblemItems(dashboard, health) {
     {
       key: "high-debt-drivers",
       index: "06",
-      // 15000₸ debt blocks a driver from accepting new orders outright —
-      // this flags them well before that point, while there's still time
-      // to reach out instead of a driver silently discovering the block
-      // mid-shift.
+      // Долг выше потолка закрывает водителю новые заказы. Карточка
+      // предупреждает заранее, пока ещё можно позвонить и попросить
+      // рассчитаться, а не после того, как человек встал посреди смены.
+      //
+      // Оба числа приходят с сервера — теми же, по которым посчитан сам
+      // счёт. Здесь стояли свои копии, 10 000 и 15 000, и панель подписывала
+      // ими счёт, посчитанный совсем по другому порогу.
       tone: Number(attention.highDebtDrivers || 0) > 0 ? "warning" : "success",
       page: "finance",
       title: Number(attention.highDebtDrivers || 0) > 0 ? "Есть водители с высоким долгом" : "Долги водителей в норме",
       text: Number(attention.highDebtDrivers || 0) > 0
-        ? `${Number(attention.highDebtDrivers)} водителей с долгом больше 10 000 ₸ (лимит для блокировки — 15 000 ₸).`
-        : "Ни у одного водителя долг не превышает 10 000 ₸.",
+        ? `${Number(attention.highDebtDrivers)} ${plural(Number(attention.highDebtDrivers), "водитель", "водителя", "водителей")} с долгом больше ${formatMoney(attention.debtWarningKzt)} (лимит для блокировки — ${formatMoney(attention.debtCeilingKzt)}).`
+        : `Ни у одного водителя долг не превышает ${formatMoney(attention.debtWarningKzt)}.`,
       action: "Финансы"
     },
     {
