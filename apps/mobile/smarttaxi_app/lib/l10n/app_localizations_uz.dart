@@ -4651,4 +4651,210 @@ class AppLocalizationsUz extends AppLocalizations {
   String addressKindStreet(String city, String street) {
     return '$city, $street ko\'chasi';
   }
+
+  @override
+  String get apiErrorCannotConfirmOwnAlert =>
+      'O\'z xabaringizni tasdiqlay olmaysiz';
+
+  @override
+  String get apiErrorClientCardNotFound => 'Bu karta allaqachon o\'chirilgan';
+
+  @override
+  String get apiErrorClientNotFound =>
+      'Yo\'lovchi profili topilmadi. Qaytadan kiring';
+
+  @override
+  String get apiErrorPreferenceNotFound => 'Bu sozlama allaqachon tiklangan';
+
+  @override
+  String get apiErrorCoordinatesRequired => 'Kartadan nuqta tanlang';
+
+  @override
+  String get apiErrorInvalidCoordinates =>
+      'Nuqta karta tashqarisida. Boshqasini tanlang';
+
+  @override
+  String get apiErrorDriverIsTheRider =>
+      'Bu sizning o\'z buyurtmangiz — uni ola olmaysiz';
+
+  @override
+  String get apiErrorDriverNotAssigned =>
+      'Buyurtmaga hali haydovchi tayinlanmagan';
+
+  @override
+  String get apiErrorDriverNotFound =>
+      'Haydovchi profili topilmadi. Qaytadan kiring';
+
+  @override
+  String get apiErrorFavoriteAddressNotFound =>
+      'Bu manzil tanlanganlardan o\'chirilgan';
+
+  @override
+  String get apiErrorFileRequired => 'Fayl biriktiring';
+
+  @override
+  String get apiErrorForbiddenRecurringBooking =>
+      'Bu doimiy safar sizniki emas';
+
+  @override
+  String get apiErrorForbiddenStandEntry => 'Navbatdagi bu joy sizniki emas';
+
+  @override
+  String get apiErrorForbiddenStandReservation => 'Bu bron sizniki emas';
+
+  @override
+  String get apiErrorInsufficientCashback =>
+      'Bonuslar butun safarga yetmaydi. Boshqa to\'lov usulini tanlang';
+
+  @override
+  String get apiErrorInvalidPayoutMethod =>
+      'Bunday yechish usuli qo\'llab-quvvatlanmaydi';
+
+  @override
+  String get apiErrorInvalidSmsCode => 'SMS kodi noto\'g\'ri';
+
+  @override
+  String get apiErrorSmsCodeExpired => 'Kod muddati tugadi. Yangisini so\'rang';
+
+  @override
+  String get apiErrorSmsAttemptsExceeded =>
+      'Juda ko\'p urinish. Yangi kodni keyinroq so\'rang';
+
+  @override
+  String get apiErrorNotificationNotFound => 'Bu bildirishnoma o\'chirilgan';
+
+  @override
+  String get apiErrorNoPendingPriceOffer =>
+      'Bu buyurtma bo\'yicha narx taklifi yo\'q';
+
+  @override
+  String get apiErrorQueuedPriceOfferNotFound => 'Bu narx taklifi eskirgan';
+
+  @override
+  String get apiErrorOfferedPriceOutOfBounds =>
+      'Bu narx ruxsat etilgan chegaradan tashqarida. Tavsiya etilgan narxdan tanlang';
+
+  @override
+  String get apiErrorOrderClientMissing =>
+      'Bu buyurtmada baholaydigan odam yo\'q';
+
+  @override
+  String get apiErrorOrderNotAwaitingPayment =>
+      'Bu buyurtma to\'lovni kutmayapti';
+
+  @override
+  String get apiErrorOrderNotPaid => 'Avval safar to\'lovini tasdiqlang';
+
+  @override
+  String get apiErrorPayoutRequestNotFound => 'Bu yechish arizasi yopilgan';
+
+  @override
+  String get apiErrorPayoutRequestNotPending =>
+      'Faqat ko\'rib chiqilmagan arizani bekor qilish mumkin';
+
+  @override
+  String get apiErrorQuickMessageNotAllowed =>
+      'Bu xabar sizning rolingizda mavjud emas';
+
+  @override
+  String get apiErrorRecurringBookingNotFound => 'Bu doimiy safar o\'chirilgan';
+
+  @override
+  String get apiErrorRecurringBookingAlreadyResponded =>
+      'Bu safarga allaqachon javob berilgan';
+
+  @override
+  String get apiErrorRecurringBookingCancelled =>
+      'Bu doimiy safar bekor qilingan';
+
+  @override
+  String get apiErrorRecurringBookingPending =>
+      'Haydovchi bu safarga hali javob bermagan';
+
+  @override
+  String get apiErrorRoadAlertNotFound =>
+      'Yo\'l haqidagi bu xabar o\'chirilgan';
+
+  @override
+  String get apiErrorRoadAlertExpired => 'Yo\'l haqidagi bu xabar eskirgan';
+
+  @override
+  String get apiErrorRoadAlertAlreadyAnswered =>
+      'Siz bu xabarga allaqachon javob bergansiz';
+
+  @override
+  String get apiErrorRoadAlertOutsideRegion =>
+      'Nuqta ish hududingizdan tashqarida';
+
+  @override
+  String get apiErrorStandAlreadyQueued =>
+      'Siz bu to\'xtash joyi navbatida turibsiz';
+
+  @override
+  String get apiErrorStandQueuedElsewhere =>
+      'Siz boshqa to\'xtash joyi navbatidasiz';
+
+  @override
+  String get apiErrorStandEntryNotBoarding =>
+      'Bu mashina hali yo\'lovchi olmayapti';
+
+  @override
+  String get apiErrorStandEntryNotFound => 'Navbatdagi bu joy yopilgan';
+
+  @override
+  String get apiErrorStandHandoverHasSeats =>
+      'Avval band joylarni bo\'shating, keyin navbatni bering';
+
+  @override
+  String get apiErrorStandHandoverOtherStand =>
+      'Bu haydovchi boshqa to\'xtash joyida';
+
+  @override
+  String get apiErrorStandHandoverSelf => 'Navbatni o\'zingizga bera olmaysiz';
+
+  @override
+  String get apiErrorStandInactive => 'Bu to\'xtash joyi yopiq';
+
+  @override
+  String get apiErrorStandNotEnoughSeats => 'Bo\'sh joy yetarli emas';
+
+  @override
+  String get apiErrorStandNoTakenSeats =>
+      'Band joy yo\'q — bo\'shatadigan narsa yo\'q';
+
+  @override
+  String get apiErrorStandSeatsBelowTaken =>
+      'Joylar soni band qilinganidan kam bo\'la olmaydi';
+
+  @override
+  String get apiErrorStandReservationExists =>
+      'Sizda to\'xtash joyida bron qilingan joy bor';
+
+  @override
+  String get apiErrorStandReservationExpired =>
+      'Bron muddati tugadi. Joyni qaytadan bron qiling';
+
+  @override
+  String get apiErrorStandReservationNotFound => 'Bu bron olib tashlangan';
+
+  @override
+  String get apiErrorStandReservationResolved =>
+      'Bu bron bo\'yicha qaror qabul qilingan';
+
+  @override
+  String get apiErrorStandRiderIsTheDriver =>
+      'O\'z mashinangizda joy bron qila olmaysiz';
+
+  @override
+  String get apiErrorSupportMessageNotFound => 'Bu murojaat yopilgan';
+
+  @override
+  String get apiErrorTariffNotFound => 'Bunday tarif yo\'q. Boshqasini tanlang';
+
+  @override
+  String get apiErrorUserNotFound => 'Akkaunt topilmadi. Qaytadan kiring';
+
+  @override
+  String get apiErrorRegionNotFound =>
+      'Bu nuqta hech qaysi ish tumaniga tegishli emas';
 }

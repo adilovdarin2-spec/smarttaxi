@@ -4313,4 +4313,175 @@ class AppLocalizationsZh extends AppLocalizations {
   String addressKindStreet(String city, String street) {
     return '$city，$street街';
   }
+
+  @override
+  String get apiErrorCannotConfirmOwnAlert => '不能确认自己发布的路况';
+
+  @override
+  String get apiErrorClientCardNotFound => '这张卡已被删除';
+
+  @override
+  String get apiErrorClientNotFound => '找不到乘客资料，请重新登录';
+
+  @override
+  String get apiErrorPreferenceNotFound => '该设置已被重置';
+
+  @override
+  String get apiErrorCoordinatesRequired => '请在地图上选择位置';
+
+  @override
+  String get apiErrorInvalidCoordinates => '该位置超出地图范围，请另选一处';
+
+  @override
+  String get apiErrorDriverIsTheRider => '这是您自己下的订单，无法接单';
+
+  @override
+  String get apiErrorDriverNotAssigned => '订单尚未分配司机';
+
+  @override
+  String get apiErrorDriverNotFound => '找不到司机资料，请重新登录';
+
+  @override
+  String get apiErrorFavoriteAddressNotFound => '该地址已从收藏中移除';
+
+  @override
+  String get apiErrorFileRequired => '请上传文件';
+
+  @override
+  String get apiErrorForbiddenRecurringBooking => '这不是您的固定行程';
+
+  @override
+  String get apiErrorForbiddenStandEntry => '这个排队位置不属于您';
+
+  @override
+  String get apiErrorForbiddenStandReservation => '这个预订不属于您';
+
+  @override
+  String get apiErrorInsufficientCashback => '积分不足以支付全程，请选择其他付款方式';
+
+  @override
+  String get apiErrorInvalidPayoutMethod => '不支持这种提现方式';
+
+  @override
+  String get apiErrorInvalidSmsCode => '短信验证码不正确';
+
+  @override
+  String get apiErrorSmsCodeExpired => '验证码已过期，请重新获取';
+
+  @override
+  String get apiErrorSmsAttemptsExceeded => '尝试次数过多，请稍后重新获取验证码';
+
+  @override
+  String get apiErrorNotificationNotFound => '该通知已被删除';
+
+  @override
+  String get apiErrorNoPendingPriceOffer => '该订单没有待处理的报价';
+
+  @override
+  String get apiErrorQueuedPriceOfferNotFound => '该报价已失效';
+
+  @override
+  String get apiErrorOfferedPriceOutOfBounds => '该价格超出允许范围，请选择建议价格';
+
+  @override
+  String get apiErrorOrderClientMissing => '该订单没有可评价的对象';
+
+  @override
+  String get apiErrorOrderNotAwaitingPayment => '该订单当前无需付款';
+
+  @override
+  String get apiErrorOrderNotPaid => '请先确认行程付款';
+
+  @override
+  String get apiErrorPayoutRequestNotFound => '该提现申请已关闭';
+
+  @override
+  String get apiErrorPayoutRequestNotPending => '只能取消尚未处理的申请';
+
+  @override
+  String get apiErrorQuickMessageNotAllowed => '您的身份无法发送此消息';
+
+  @override
+  String get apiErrorRecurringBookingNotFound => '该固定行程已被删除';
+
+  @override
+  String get apiErrorRecurringBookingAlreadyResponded => '该行程已有回复';
+
+  @override
+  String get apiErrorRecurringBookingCancelled => '该固定行程已取消';
+
+  @override
+  String get apiErrorRecurringBookingPending => '司机还没有回复该行程';
+
+  @override
+  String get apiErrorRoadAlertNotFound => '该路况提示已被删除';
+
+  @override
+  String get apiErrorRoadAlertExpired => '该路况提示已过期';
+
+  @override
+  String get apiErrorRoadAlertAlreadyAnswered => '您已经回应过该提示';
+
+  @override
+  String get apiErrorRoadAlertOutsideRegion => '该位置不在您的工作区域内';
+
+  @override
+  String get apiErrorStandAlreadyQueued => '您已在该停车点排队';
+
+  @override
+  String get apiErrorStandQueuedElsewhere => '您已在另一个停车点排队';
+
+  @override
+  String get apiErrorStandEntryNotBoarding => '这辆车还未开始上客';
+
+  @override
+  String get apiErrorStandEntryNotFound => '该排队位置已关闭';
+
+  @override
+  String get apiErrorStandHandoverHasSeats => '请先释放已占座位，再让出排队位置';
+
+  @override
+  String get apiErrorStandHandoverOtherStand => '该司机在另一个停车点';
+
+  @override
+  String get apiErrorStandHandoverSelf => '不能把排队位置让给自己';
+
+  @override
+  String get apiErrorStandInactive => '该停车点已关闭';
+
+  @override
+  String get apiErrorStandNotEnoughSeats => '空座位不够';
+
+  @override
+  String get apiErrorStandNoTakenSeats => '没有已占座位可释放';
+
+  @override
+  String get apiErrorStandSeatsBelowTaken => '座位数不能少于已占用的数量';
+
+  @override
+  String get apiErrorStandReservationExists => '您已在停车点预订了座位';
+
+  @override
+  String get apiErrorStandReservationExpired => '预订已超时，请重新预订座位';
+
+  @override
+  String get apiErrorStandReservationNotFound => '该预订已被取消';
+
+  @override
+  String get apiErrorStandReservationResolved => '该预订已处理完毕';
+
+  @override
+  String get apiErrorStandRiderIsTheDriver => '不能预订自己车上的座位';
+
+  @override
+  String get apiErrorSupportMessageNotFound => '该工单已关闭';
+
+  @override
+  String get apiErrorTariffNotFound => '该车型已不存在，请另选一个';
+
+  @override
+  String get apiErrorUserNotFound => '找不到账户，请重新登录';
+
+  @override
+  String get apiErrorRegionNotFound => '该位置不属于任何服务区域';
 }

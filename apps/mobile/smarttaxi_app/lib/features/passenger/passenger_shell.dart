@@ -46,6 +46,7 @@ import '../../l10n/app_localizations.dart';
 import '../driver/screens/onboarding/driver_application_documents_screen.dart';
 import '../shared/cancellation_reason_sheet.dart';
 import '../shared/models.dart';
+import '../shared/api_error_messages.dart';
 import 'address_subtitle.dart';
 import '../shared/assignment_error.dart';
 import 'screens/stands/passenger_stands_screen.dart';
@@ -20657,6 +20658,11 @@ String _readableError(AppLocalizations l10n, Object error) {
   for (final entry in map.entries) {
     if (message.contains(entry.key)) return entry.value;
   }
+  // До общего "что-то пошло не так" спрашиваем общий справочник кодов:
+  // выше лежат формулировки под контекст этого экрана, здесь -- всё остальное,
+  // что сервер умеет ответить на запросы этого приложения.
+  final shared = apiErrorMessage(apiCode, l10n);
+  if (shared != null) return shared;
   return l10n.errorGenericRequestFailed;
 }
 

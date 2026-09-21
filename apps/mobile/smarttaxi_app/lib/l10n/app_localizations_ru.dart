@@ -4625,4 +4625,210 @@ class AppLocalizationsRu extends AppLocalizations {
   String addressKindStreet(String city, String street) {
     return '$city, улица $street';
   }
+
+  @override
+  String get apiErrorCannotConfirmOwnAlert =>
+      'Своё же сообщение подтвердить нельзя';
+
+  @override
+  String get apiErrorClientCardNotFound => 'Эта карта уже удалена';
+
+  @override
+  String get apiErrorClientNotFound =>
+      'Профиль пассажира не найден. Войдите заново';
+
+  @override
+  String get apiErrorPreferenceNotFound => 'Эта настройка уже сброшена';
+
+  @override
+  String get apiErrorCoordinatesRequired => 'Укажите точку на карте';
+
+  @override
+  String get apiErrorInvalidCoordinates => 'Точка вне карты. Выберите другую';
+
+  @override
+  String get apiErrorDriverIsTheRider =>
+      'Это ваш собственный заказ — взять его нельзя';
+
+  @override
+  String get apiErrorDriverNotAssigned => 'На заказ пока не назначен водитель';
+
+  @override
+  String get apiErrorDriverNotFound =>
+      'Профиль водителя не найден. Войдите заново';
+
+  @override
+  String get apiErrorFavoriteAddressNotFound =>
+      'Этот адрес уже удалён из избранного';
+
+  @override
+  String get apiErrorFileRequired => 'Прикрепите файл';
+
+  @override
+  String get apiErrorForbiddenRecurringBooking =>
+      'Эта постоянная поездка не ваша';
+
+  @override
+  String get apiErrorForbiddenStandEntry => 'Это место в очереди не ваше';
+
+  @override
+  String get apiErrorForbiddenStandReservation => 'Эта бронь не ваша';
+
+  @override
+  String get apiErrorInsufficientCashback =>
+      'Бонусов не хватает на всю поездку. Выберите другой способ оплаты';
+
+  @override
+  String get apiErrorInvalidPayoutMethod =>
+      'Такой способ вывода не поддерживается';
+
+  @override
+  String get apiErrorInvalidSmsCode => 'Неверный код из SMS';
+
+  @override
+  String get apiErrorSmsCodeExpired =>
+      'Срок действия кода истёк. Запросите новый';
+
+  @override
+  String get apiErrorSmsAttemptsExceeded =>
+      'Слишком много попыток. Запросите новый код позже';
+
+  @override
+  String get apiErrorNotificationNotFound => 'Это уведомление уже удалено';
+
+  @override
+  String get apiErrorNoPendingPriceOffer =>
+      'По этому заказу нет предложения цены';
+
+  @override
+  String get apiErrorQueuedPriceOfferNotFound =>
+      'Это предложение цены уже неактуально';
+
+  @override
+  String get apiErrorOfferedPriceOutOfBounds =>
+      'Такая цена вне допустимых границ. Выберите цену из подсказки';
+
+  @override
+  String get apiErrorOrderClientMissing => 'В этом заказе некого оценить';
+
+  @override
+  String get apiErrorOrderNotAwaitingPayment => 'Этот заказ не ждёт оплаты';
+
+  @override
+  String get apiErrorOrderNotPaid => 'Сначала подтвердите оплату поездки';
+
+  @override
+  String get apiErrorPayoutRequestNotFound => 'Эта заявка на вывод уже закрыта';
+
+  @override
+  String get apiErrorPayoutRequestNotPending =>
+      'Отменить можно только заявку, которую ещё не рассмотрели';
+
+  @override
+  String get apiErrorQuickMessageNotAllowed =>
+      'Это сообщение недоступно в вашей роли';
+
+  @override
+  String get apiErrorRecurringBookingNotFound =>
+      'Эта постоянная поездка уже удалена';
+
+  @override
+  String get apiErrorRecurringBookingAlreadyResponded =>
+      'На эту поездку уже ответили';
+
+  @override
+  String get apiErrorRecurringBookingCancelled =>
+      'Эта постоянная поездка отменена';
+
+  @override
+  String get apiErrorRecurringBookingPending =>
+      'Водитель ещё не ответил на эту поездку';
+
+  @override
+  String get apiErrorRoadAlertNotFound => 'Это сообщение о дороге уже удалено';
+
+  @override
+  String get apiErrorRoadAlertExpired =>
+      'Это сообщение о дороге уже неактуально';
+
+  @override
+  String get apiErrorRoadAlertAlreadyAnswered =>
+      'Вы уже ответили на это сообщение';
+
+  @override
+  String get apiErrorRoadAlertOutsideRegion =>
+      'Точка за пределами вашего рабочего региона';
+
+  @override
+  String get apiErrorStandAlreadyQueued =>
+      'Вы уже стоите в очереди на этой стоянке';
+
+  @override
+  String get apiErrorStandQueuedElsewhere =>
+      'Вы уже в очереди на другой стоянке';
+
+  @override
+  String get apiErrorStandEntryNotBoarding =>
+      'Эта машина ещё не набирает пассажиров';
+
+  @override
+  String get apiErrorStandEntryNotFound => 'Это место в очереди уже закрыто';
+
+  @override
+  String get apiErrorStandHandoverHasSeats =>
+      'Сначала освободите занятые места, потом уступайте очередь';
+
+  @override
+  String get apiErrorStandHandoverOtherStand =>
+      'Этот водитель стоит на другой стоянке';
+
+  @override
+  String get apiErrorStandHandoverSelf => 'Уступить очередь самому себе нельзя';
+
+  @override
+  String get apiErrorStandInactive => 'Эта стоянка закрыта';
+
+  @override
+  String get apiErrorStandNotEnoughSeats => 'Свободных мест не хватает';
+
+  @override
+  String get apiErrorStandNoTakenSeats =>
+      'Занятых мест нет — освобождать нечего';
+
+  @override
+  String get apiErrorStandSeatsBelowTaken =>
+      'Мест не может быть меньше, чем уже занято';
+
+  @override
+  String get apiErrorStandReservationExists =>
+      'У вас уже есть бронь места на стоянке';
+
+  @override
+  String get apiErrorStandReservationExpired =>
+      'Время брони истекло. Забронируйте место заново';
+
+  @override
+  String get apiErrorStandReservationNotFound => 'Эта бронь уже снята';
+
+  @override
+  String get apiErrorStandReservationResolved =>
+      'По этой брони уже приняли решение';
+
+  @override
+  String get apiErrorStandRiderIsTheDriver =>
+      'В своей же машине место не забронировать';
+
+  @override
+  String get apiErrorSupportMessageNotFound => 'Это обращение уже закрыто';
+
+  @override
+  String get apiErrorTariffNotFound =>
+      'Такого тарифа больше нет. Выберите другой';
+
+  @override
+  String get apiErrorUserNotFound => 'Аккаунт не найден. Войдите заново';
+
+  @override
+  String get apiErrorRegionNotFound =>
+      'Эта точка не относится ни к одному рабочему району';
 }

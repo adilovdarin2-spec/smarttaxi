@@ -4604,4 +4604,205 @@ class AppLocalizationsKk extends AppLocalizations {
   String addressKindStreet(String city, String street) {
     return '$city, $street көшесі';
   }
+
+  @override
+  String get apiErrorCannotConfirmOwnAlert =>
+      'Өз хабарламаңызды растай алмайсыз';
+
+  @override
+  String get apiErrorClientCardNotFound => 'Бұл карта жойылған';
+
+  @override
+  String get apiErrorClientNotFound =>
+      'Жолаушы профилі табылмады. Қайта кіріңіз';
+
+  @override
+  String get apiErrorPreferenceNotFound => 'Бұл баптау қалпына келтірілген';
+
+  @override
+  String get apiErrorCoordinatesRequired => 'Картадан нүкте таңдаңыз';
+
+  @override
+  String get apiErrorInvalidCoordinates =>
+      'Нүкте карта сыртында. Басқасын таңдаңыз';
+
+  @override
+  String get apiErrorDriverIsTheRider =>
+      'Бұл сіздің өз тапсырысыңыз — оны ала алмайсыз';
+
+  @override
+  String get apiErrorDriverNotAssigned =>
+      'Тапсырысқа әзірге жүргізуші тағайындалмаған';
+
+  @override
+  String get apiErrorDriverNotFound =>
+      'Жүргізуші профилі табылмады. Қайта кіріңіз';
+
+  @override
+  String get apiErrorFavoriteAddressNotFound =>
+      'Бұл мекенжай таңдаулылардан жойылған';
+
+  @override
+  String get apiErrorFileRequired => 'Файл тіркеңіз';
+
+  @override
+  String get apiErrorForbiddenRecurringBooking =>
+      'Бұл тұрақты сапар сіздікі емес';
+
+  @override
+  String get apiErrorForbiddenStandEntry => 'Кезектегі бұл орын сіздікі емес';
+
+  @override
+  String get apiErrorForbiddenStandReservation => 'Бұл брондау сіздікі емес';
+
+  @override
+  String get apiErrorInsufficientCashback =>
+      'Бонус бүкіл сапарға жетпейді. Басқа төлем тәсілін таңдаңыз';
+
+  @override
+  String get apiErrorInvalidPayoutMethod =>
+      'Мұндай шығару тәсілі қолданылмайды';
+
+  @override
+  String get apiErrorInvalidSmsCode => 'SMS коды қате';
+
+  @override
+  String get apiErrorSmsCodeExpired => 'Кодтың мерзімі өтті. Жаңасын сұраңыз';
+
+  @override
+  String get apiErrorSmsAttemptsExceeded =>
+      'Тым көп әрекет. Жаңа кодты кейінірек сұраңыз';
+
+  @override
+  String get apiErrorNotificationNotFound => 'Бұл хабарлама жойылған';
+
+  @override
+  String get apiErrorNoPendingPriceOffer =>
+      'Бұл тапсырыс бойынша баға ұсынысы жоқ';
+
+  @override
+  String get apiErrorQueuedPriceOfferNotFound => 'Бұл баға ұсынысы ескірген';
+
+  @override
+  String get apiErrorOfferedPriceOutOfBounds =>
+      'Бұл баға рұқсат етілген шектен тыс. Ұсынылған бағадан таңдаңыз';
+
+  @override
+  String get apiErrorOrderClientMissing => 'Бұл тапсырыста бағалайтын адам жоқ';
+
+  @override
+  String get apiErrorOrderNotAwaitingPayment =>
+      'Бұл тапсырыс төлемді күтіп тұрған жоқ';
+
+  @override
+  String get apiErrorOrderNotPaid => 'Алдымен сапар төлемін растаңыз';
+
+  @override
+  String get apiErrorPayoutRequestNotFound => 'Бұл шығару өтінімі жабылған';
+
+  @override
+  String get apiErrorPayoutRequestNotPending =>
+      'Тек қаралмаған өтінімді ғана болдырмауға болады';
+
+  @override
+  String get apiErrorQuickMessageNotAllowed =>
+      'Бұл хабарлама сіздің рөліңізде қолжетімсіз';
+
+  @override
+  String get apiErrorRecurringBookingNotFound => 'Бұл тұрақты сапар жойылған';
+
+  @override
+  String get apiErrorRecurringBookingAlreadyResponded =>
+      'Бұл сапарға жауап берілген';
+
+  @override
+  String get apiErrorRecurringBookingCancelled =>
+      'Бұл тұрақты сапар тоқтатылған';
+
+  @override
+  String get apiErrorRecurringBookingPending =>
+      'Жүргізуші бұл сапарға әлі жауап берген жоқ';
+
+  @override
+  String get apiErrorRoadAlertNotFound => 'Жол туралы бұл хабарлама жойылған';
+
+  @override
+  String get apiErrorRoadAlertExpired => 'Жол туралы бұл хабарлама ескірген';
+
+  @override
+  String get apiErrorRoadAlertAlreadyAnswered =>
+      'Сіз бұл хабарламаға жауап бердіңіз';
+
+  @override
+  String get apiErrorRoadAlertOutsideRegion => 'Нүкте жұмыс аймағыңыздан тыс';
+
+  @override
+  String get apiErrorStandAlreadyQueued => 'Сіз бұл тұрақтың кезегінде тұрсыз';
+
+  @override
+  String get apiErrorStandQueuedElsewhere =>
+      'Сіз басқа тұрақтың кезегінде тұрсыз';
+
+  @override
+  String get apiErrorStandEntryNotBoarding => 'Бұл көлік әлі жолаушы алмайды';
+
+  @override
+  String get apiErrorStandEntryNotFound => 'Кезектегі бұл орын жабылған';
+
+  @override
+  String get apiErrorStandHandoverHasSeats =>
+      'Алдымен алынған орындарды босатыңыз, содан кейін кезекті беріңіз';
+
+  @override
+  String get apiErrorStandHandoverOtherStand =>
+      'Бұл жүргізуші басқа тұрақта тұр';
+
+  @override
+  String get apiErrorStandHandoverSelf => 'Кезекті өзіңізге бере алмайсыз';
+
+  @override
+  String get apiErrorStandInactive => 'Бұл тұрақ жабық';
+
+  @override
+  String get apiErrorStandNotEnoughSeats => 'Бос орын жетпейді';
+
+  @override
+  String get apiErrorStandNoTakenSeats =>
+      'Алынған орын жоқ — босататын ештеңе жоқ';
+
+  @override
+  String get apiErrorStandSeatsBelowTaken =>
+      'Орын саны алынғаннан аз бола алмайды';
+
+  @override
+  String get apiErrorStandReservationExists =>
+      'Сізде тұрақта брондалған орын бар';
+
+  @override
+  String get apiErrorStandReservationExpired =>
+      'Брондау уақыты өтті. Орынды қайта брондаңыз';
+
+  @override
+  String get apiErrorStandReservationNotFound => 'Бұл брондау алынып тасталған';
+
+  @override
+  String get apiErrorStandReservationResolved =>
+      'Бұл брондау бойынша шешім қабылданған';
+
+  @override
+  String get apiErrorStandRiderIsTheDriver =>
+      'Өз көлігіңізде орын брондай алмайсыз';
+
+  @override
+  String get apiErrorSupportMessageNotFound => 'Бұл өтініш жабылған';
+
+  @override
+  String get apiErrorTariffNotFound => 'Мұндай тариф жоқ. Басқасын таңдаңыз';
+
+  @override
+  String get apiErrorUserNotFound => 'Аккаунт табылмады. Қайта кіріңіз';
+
+  @override
+  String get apiErrorRegionNotFound =>
+      'Бұл нүкте ешқандай жұмыс ауданына жатпайды';
 }

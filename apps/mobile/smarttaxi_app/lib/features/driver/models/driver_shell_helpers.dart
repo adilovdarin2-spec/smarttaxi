@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../shared/models.dart';
 import '../../shared/assignment_error.dart';
+import '../../shared/api_error_messages.dart';
 
 /// Legacy source statuses remain supported alongside the current lifecycle.
 String? driverRoutePhaseForStatus(String? status) {
@@ -397,5 +398,10 @@ String readableError(AppLocalizations l10n, Object error) {
   for (final entry in map.entries) {
     if (message.contains(entry.key)) return entry.value;
   }
+  // Выше -- формулировки под водительский контекст, здесь -- всё остальное,
+  // что сервер умеет ответить: очередь на стоянке, брони мест, вывод денег,
+  // сообщения о дороге. Без этого водитель видел "что-то пошло не так".
+  final shared = apiErrorMessage(code, l10n);
+  if (shared != null) return shared;
   return l10n.errorGenericRequestFailed;
 }

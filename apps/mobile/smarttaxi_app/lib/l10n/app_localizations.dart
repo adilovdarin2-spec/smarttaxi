@@ -8226,6 +8226,348 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'{city}, улица {street}'**
   String addressKindStreet(String city, String street);
+
+  /// No description provided for @apiErrorCannotConfirmOwnAlert.
+  ///
+  /// In ru, this message translates to:
+  /// **'Своё же сообщение подтвердить нельзя'**
+  String get apiErrorCannotConfirmOwnAlert;
+
+  /// No description provided for @apiErrorClientCardNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта карта уже удалена'**
+  String get apiErrorClientCardNotFound;
+
+  /// No description provided for @apiErrorClientNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Профиль пассажира не найден. Войдите заново'**
+  String get apiErrorClientNotFound;
+
+  /// No description provided for @apiErrorPreferenceNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта настройка уже сброшена'**
+  String get apiErrorPreferenceNotFound;
+
+  /// No description provided for @apiErrorCoordinatesRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Укажите точку на карте'**
+  String get apiErrorCoordinatesRequired;
+
+  /// No description provided for @apiErrorInvalidCoordinates.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка вне карты. Выберите другую'**
+  String get apiErrorInvalidCoordinates;
+
+  /// No description provided for @apiErrorDriverIsTheRider.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это ваш собственный заказ — взять его нельзя'**
+  String get apiErrorDriverIsTheRider;
+
+  /// No description provided for @apiErrorDriverNotAssigned.
+  ///
+  /// In ru, this message translates to:
+  /// **'На заказ пока не назначен водитель'**
+  String get apiErrorDriverNotAssigned;
+
+  /// No description provided for @apiErrorDriverNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Профиль водителя не найден. Войдите заново'**
+  String get apiErrorDriverNotFound;
+
+  /// No description provided for @apiErrorFavoriteAddressNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот адрес уже удалён из избранного'**
+  String get apiErrorFavoriteAddressNotFound;
+
+  /// No description provided for @apiErrorFileRequired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Прикрепите файл'**
+  String get apiErrorFileRequired;
+
+  /// No description provided for @apiErrorForbiddenRecurringBooking.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта постоянная поездка не ваша'**
+  String get apiErrorForbiddenRecurringBooking;
+
+  /// No description provided for @apiErrorForbiddenStandEntry.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это место в очереди не ваше'**
+  String get apiErrorForbiddenStandEntry;
+
+  /// No description provided for @apiErrorForbiddenStandReservation.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта бронь не ваша'**
+  String get apiErrorForbiddenStandReservation;
+
+  /// No description provided for @apiErrorInsufficientCashback.
+  ///
+  /// In ru, this message translates to:
+  /// **'Бонусов не хватает на всю поездку. Выберите другой способ оплаты'**
+  String get apiErrorInsufficientCashback;
+
+  /// No description provided for @apiErrorInvalidPayoutMethod.
+  ///
+  /// In ru, this message translates to:
+  /// **'Такой способ вывода не поддерживается'**
+  String get apiErrorInvalidPayoutMethod;
+
+  /// No description provided for @apiErrorInvalidSmsCode.
+  ///
+  /// In ru, this message translates to:
+  /// **'Неверный код из SMS'**
+  String get apiErrorInvalidSmsCode;
+
+  /// No description provided for @apiErrorSmsCodeExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Срок действия кода истёк. Запросите новый'**
+  String get apiErrorSmsCodeExpired;
+
+  /// No description provided for @apiErrorSmsAttemptsExceeded.
+  ///
+  /// In ru, this message translates to:
+  /// **'Слишком много попыток. Запросите новый код позже'**
+  String get apiErrorSmsAttemptsExceeded;
+
+  /// No description provided for @apiErrorNotificationNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это уведомление уже удалено'**
+  String get apiErrorNotificationNotFound;
+
+  /// No description provided for @apiErrorNoPendingPriceOffer.
+  ///
+  /// In ru, this message translates to:
+  /// **'По этому заказу нет предложения цены'**
+  String get apiErrorNoPendingPriceOffer;
+
+  /// No description provided for @apiErrorQueuedPriceOfferNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это предложение цены уже неактуально'**
+  String get apiErrorQueuedPriceOfferNotFound;
+
+  /// No description provided for @apiErrorOfferedPriceOutOfBounds.
+  ///
+  /// In ru, this message translates to:
+  /// **'Такая цена вне допустимых границ. Выберите цену из подсказки'**
+  String get apiErrorOfferedPriceOutOfBounds;
+
+  /// No description provided for @apiErrorOrderClientMissing.
+  ///
+  /// In ru, this message translates to:
+  /// **'В этом заказе некого оценить'**
+  String get apiErrorOrderClientMissing;
+
+  /// No description provided for @apiErrorOrderNotAwaitingPayment.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот заказ не ждёт оплаты'**
+  String get apiErrorOrderNotAwaitingPayment;
+
+  /// No description provided for @apiErrorOrderNotPaid.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сначала подтвердите оплату поездки'**
+  String get apiErrorOrderNotPaid;
+
+  /// No description provided for @apiErrorPayoutRequestNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта заявка на вывод уже закрыта'**
+  String get apiErrorPayoutRequestNotFound;
+
+  /// No description provided for @apiErrorPayoutRequestNotPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отменить можно только заявку, которую ещё не рассмотрели'**
+  String get apiErrorPayoutRequestNotPending;
+
+  /// No description provided for @apiErrorQuickMessageNotAllowed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это сообщение недоступно в вашей роли'**
+  String get apiErrorQuickMessageNotAllowed;
+
+  /// No description provided for @apiErrorRecurringBookingNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта постоянная поездка уже удалена'**
+  String get apiErrorRecurringBookingNotFound;
+
+  /// No description provided for @apiErrorRecurringBookingAlreadyResponded.
+  ///
+  /// In ru, this message translates to:
+  /// **'На эту поездку уже ответили'**
+  String get apiErrorRecurringBookingAlreadyResponded;
+
+  /// No description provided for @apiErrorRecurringBookingCancelled.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта постоянная поездка отменена'**
+  String get apiErrorRecurringBookingCancelled;
+
+  /// No description provided for @apiErrorRecurringBookingPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Водитель ещё не ответил на эту поездку'**
+  String get apiErrorRecurringBookingPending;
+
+  /// No description provided for @apiErrorRoadAlertNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это сообщение о дороге уже удалено'**
+  String get apiErrorRoadAlertNotFound;
+
+  /// No description provided for @apiErrorRoadAlertExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это сообщение о дороге уже неактуально'**
+  String get apiErrorRoadAlertExpired;
+
+  /// No description provided for @apiErrorRoadAlertAlreadyAnswered.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже ответили на это сообщение'**
+  String get apiErrorRoadAlertAlreadyAnswered;
+
+  /// No description provided for @apiErrorRoadAlertOutsideRegion.
+  ///
+  /// In ru, this message translates to:
+  /// **'Точка за пределами вашего рабочего региона'**
+  String get apiErrorRoadAlertOutsideRegion;
+
+  /// No description provided for @apiErrorStandAlreadyQueued.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже стоите в очереди на этой стоянке'**
+  String get apiErrorStandAlreadyQueued;
+
+  /// No description provided for @apiErrorStandQueuedElsewhere.
+  ///
+  /// In ru, this message translates to:
+  /// **'Вы уже в очереди на другой стоянке'**
+  String get apiErrorStandQueuedElsewhere;
+
+  /// No description provided for @apiErrorStandEntryNotBoarding.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта машина ещё не набирает пассажиров'**
+  String get apiErrorStandEntryNotBoarding;
+
+  /// No description provided for @apiErrorStandEntryNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это место в очереди уже закрыто'**
+  String get apiErrorStandEntryNotFound;
+
+  /// No description provided for @apiErrorStandHandoverHasSeats.
+  ///
+  /// In ru, this message translates to:
+  /// **'Сначала освободите занятые места, потом уступайте очередь'**
+  String get apiErrorStandHandoverHasSeats;
+
+  /// No description provided for @apiErrorStandHandoverOtherStand.
+  ///
+  /// In ru, this message translates to:
+  /// **'Этот водитель стоит на другой стоянке'**
+  String get apiErrorStandHandoverOtherStand;
+
+  /// No description provided for @apiErrorStandHandoverSelf.
+  ///
+  /// In ru, this message translates to:
+  /// **'Уступить очередь самому себе нельзя'**
+  String get apiErrorStandHandoverSelf;
+
+  /// No description provided for @apiErrorStandInactive.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта стоянка закрыта'**
+  String get apiErrorStandInactive;
+
+  /// No description provided for @apiErrorStandNotEnoughSeats.
+  ///
+  /// In ru, this message translates to:
+  /// **'Свободных мест не хватает'**
+  String get apiErrorStandNotEnoughSeats;
+
+  /// No description provided for @apiErrorStandNoTakenSeats.
+  ///
+  /// In ru, this message translates to:
+  /// **'Занятых мест нет — освобождать нечего'**
+  String get apiErrorStandNoTakenSeats;
+
+  /// No description provided for @apiErrorStandSeatsBelowTaken.
+  ///
+  /// In ru, this message translates to:
+  /// **'Мест не может быть меньше, чем уже занято'**
+  String get apiErrorStandSeatsBelowTaken;
+
+  /// No description provided for @apiErrorStandReservationExists.
+  ///
+  /// In ru, this message translates to:
+  /// **'У вас уже есть бронь места на стоянке'**
+  String get apiErrorStandReservationExists;
+
+  /// No description provided for @apiErrorStandReservationExpired.
+  ///
+  /// In ru, this message translates to:
+  /// **'Время брони истекло. Забронируйте место заново'**
+  String get apiErrorStandReservationExpired;
+
+  /// No description provided for @apiErrorStandReservationNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта бронь уже снята'**
+  String get apiErrorStandReservationNotFound;
+
+  /// No description provided for @apiErrorStandReservationResolved.
+  ///
+  /// In ru, this message translates to:
+  /// **'По этой брони уже приняли решение'**
+  String get apiErrorStandReservationResolved;
+
+  /// No description provided for @apiErrorStandRiderIsTheDriver.
+  ///
+  /// In ru, this message translates to:
+  /// **'В своей же машине место не забронировать'**
+  String get apiErrorStandRiderIsTheDriver;
+
+  /// No description provided for @apiErrorSupportMessageNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Это обращение уже закрыто'**
+  String get apiErrorSupportMessageNotFound;
+
+  /// No description provided for @apiErrorTariffNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Такого тарифа больше нет. Выберите другой'**
+  String get apiErrorTariffNotFound;
+
+  /// No description provided for @apiErrorUserNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Аккаунт не найден. Войдите заново'**
+  String get apiErrorUserNotFound;
+
+  /// No description provided for @apiErrorRegionNotFound.
+  ///
+  /// In ru, this message translates to:
+  /// **'Эта точка не относится ни к одному рабочему району'**
+  String get apiErrorRegionNotFound;
 }
 
 class _AppLocalizationsDelegate
