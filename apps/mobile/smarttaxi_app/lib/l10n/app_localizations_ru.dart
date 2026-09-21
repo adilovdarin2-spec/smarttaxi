@@ -1509,6 +1509,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get errorTariffInactive => 'Этот тариф временно недоступен';
 
   @override
+  String get errorPriceNotConfigured =>
+      'Цена на это направление ещё не задана. Выберите другой тариф или попробуйте позже';
+
+  @override
   String get errorTariffRegionMismatch =>
       'Тариф недоступен для выбранного региона';
 
@@ -2304,6 +2308,14 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get smsConfirmFailed =>
       'Не удалось подтвердить код. Попробуйте ещё раз.';
+
+  @override
+  String get smsUnavailable =>
+      'Отправка SMS пока не подключена, и регистрация временно недоступна. Дело не в вашем интернете.';
+
+  @override
+  String get smsSendFailed =>
+      'Не удалось отправить SMS. Попробуйте ещё раз через минуту.';
 
   @override
   String get invalidPhoneOrPassword => 'Неверный номер или пароль';

@@ -1515,6 +1515,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get errorTariffInactive => 'Бұл тариф уақытша қолжетімсіз';
 
   @override
+  String get errorPriceNotConfigured =>
+      'Бұл бағытқа баға әлі қойылмаған. Басқа тарифті таңдаңыз немесе кейінірек көріңіз';
+
+  @override
   String get errorTariffRegionMismatch =>
       'Тариф таңдалған аймақ үшін қолжетімсіз';
 
@@ -2312,6 +2316,14 @@ class AppLocalizationsKk extends AppLocalizations {
   @override
   String get smsConfirmFailed =>
       'Кодты растау мүмкін болмады. Қайталап көріңіз.';
+
+  @override
+  String get smsUnavailable =>
+      'SMS жіберу әлі қосылмаған, сондықтан тіркелу уақытша қолжетімсіз. Мәселе сіздің интернетіңізде емес.';
+
+  @override
+  String get smsSendFailed =>
+      'SMS жіберілмеді. Бір минуттан кейін қайта көріңіз.';
 
   @override
   String get invalidPhoneOrPassword => 'Нөмір немесе құпия сөз қате';

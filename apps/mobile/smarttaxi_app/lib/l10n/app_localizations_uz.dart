@@ -1523,6 +1523,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get errorTariffInactive => 'Bu tarif vaqtincha mavjud emas';
 
   @override
+  String get errorPriceNotConfigured =>
+      'Bu yo\'nalish uchun narx hali belgilanmagan. Boshqa tarifni tanlang yoki keyinroq urinib ko\'ring';
+
+  @override
   String get errorTariffRegionMismatch =>
       'Tarif tanlangan hudud uchun mavjud emas';
 
@@ -2326,6 +2330,14 @@ class AppLocalizationsUz extends AppLocalizations {
   @override
   String get smsConfirmFailed =>
       'Kodni tasdiqlab bo\'lmadi. Qayta urinib ko\'ring.';
+
+  @override
+  String get smsUnavailable =>
+      'SMS yuborish hali ulanmagan, shuning uchun ro\'yxatdan o\'tish vaqtincha ishlamaydi. Gap sizning internetingizda emas.';
+
+  @override
+  String get smsSendFailed =>
+      'SMS yuborib bo\'lmadi. Bir daqiqadan keyin qayta urinib ko\'ring.';
 
   @override
   String get invalidPhoneOrPassword => 'Raqam yoki parol noto\'g\'ri';

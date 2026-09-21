@@ -1413,6 +1413,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get errorTariffInactive => '该车型暂时不可用';
 
   @override
+  String get errorPriceNotConfigured => '这个方向的价格还没有设定。请选择其他车型或稍后再试';
+
+  @override
   String get errorTariffRegionMismatch => '该车型在所选地区不可用';
 
   @override
@@ -2146,6 +2149,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get smsConfirmFailed => '验证码确认失败,请重试。';
+
+  @override
+  String get smsUnavailable => '短信发送尚未开通，注册暂时不可用。不是您的网络问题。';
+
+  @override
+  String get smsSendFailed => '短信发送失败。请一分钟后重试。';
 
   @override
   String get invalidPhoneOrPassword => '手机号或密码错误';

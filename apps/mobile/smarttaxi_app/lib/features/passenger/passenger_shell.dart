@@ -20601,6 +20601,11 @@ String _readableError(AppLocalizations l10n, Object error) {
       'DROPOFF_REGION_INACTIVE': l10n.errorDropoffRegionInactive,
       'INTERCITY_NOT_SUPPORTED': l10n.errorIntercityNotSupported,
       'INTERCITY_ROUTE_UNAVAILABLE': l10n.errorIntercityNotSupported,
+      // Цены у тарифа или направления может не быть: владелец открыл
+      // новый регион или добавил дорогу и ещё не проставил цену.
+      // Сервер честно отказывает вместо того, чтобы выдумать сумму, и
+      // пассажиру нужна причина, а не общее "что-то пошло не так".
+      'PRICE_NOT_CONFIGURED': l10n.errorPriceNotConfigured,
       'TARIFF_INACTIVE': l10n.errorTariffInactive,
       'TARIFF_REGION_MISMATCH': l10n.errorTariffRegionMismatch,
       'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,
@@ -20643,6 +20648,7 @@ String _readableError(AppLocalizations l10n, Object error) {
     'DROPOFF_REGION_INACTIVE': l10n.errorDropoffRegionInactive,
     'INTERCITY_NOT_SUPPORTED': l10n.errorIntercityNotSupported,
     'INTERCITY_ROUTE_UNAVAILABLE': l10n.errorIntercityNotSupported,
+    'PRICE_NOT_CONFIGURED': l10n.errorPriceNotConfigured,
     'TARIFF_INACTIVE': l10n.errorTariffInactive,
     'TARIFF_REGION_MISMATCH': l10n.errorTariffRegionMismatch,
     'ROUTE_UNAVAILABLE': l10n.errorRouteUnavailable,

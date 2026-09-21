@@ -1901,6 +1901,8 @@ enum _AuthMessageKind {
   repeatPasswordLabel,
   passwordsMismatch,
   invalidSmsCode,
+  smsUnavailable,
+  smsSendFailed,
   serverUnavailable,
   smsConfirmFailed,
   invalidPhoneOrPassword,
@@ -1937,6 +1939,10 @@ String _resolveAuthMessage(_AuthMessageKind kind, AppLocalizations l10n) {
       return l10n.passwordsMismatch;
     case _AuthMessageKind.invalidSmsCode:
       return l10n.invalidSmsCode;
+    case _AuthMessageKind.smsUnavailable:
+      return l10n.smsUnavailable;
+    case _AuthMessageKind.smsSendFailed:
+      return l10n.smsSendFailed;
     case _AuthMessageKind.serverUnavailable:
       return l10n.serverUnavailable;
     case _AuthMessageKind.smsConfirmFailed:
@@ -2298,7 +2304,39 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
     });
   }
 
+  // Код ошибки берётся из тела ответа, а не из error.toString().
+  //
+  // toString() у DioException всегда содержит слово "DioException", и любая
+  // ошибка, которую не узнали выше, доезжала до ветки "сеть" и
+  // превращалась в "Сервер недоступен. Проверьте интернет". Именно это
+  // сейчас видит каждый, кто пытается зарегистрироваться: SMS на боевом
+  // сервере не подключены, сервер отвечает 503 SMS_PROVIDER_NOT_CONFIGURED, а
+  // человеку говорят проверить свой интернет, с которым всё в порядке.
+  String? _authErrorCode(Object error) {
+    if (error is DioException) {
+      final data = error.response?.data;
+      if (data is Map) {
+        final code = data['error']?.toString();
+        if (code != null && code.isNotEmpty) return code;
+      }
+    }
+    return null;
+  }
+
+  _AuthMessageKind? _smsDeliveryError(Object error) {
+    final code = _authErrorCode(error);
+    if (code == 'SMS_PROVIDER_NOT_CONFIGURED') {
+      return _AuthMessageKind.smsUnavailable;
+    }
+    if (code == 'SMS_DELIVERY_FAILED' || code == 'SMS_DELIVERY_TIMEOUT') {
+      return _AuthMessageKind.smsSendFailed;
+    }
+    return null;
+  }
+
   _AuthMessageKind _smsAuthError(Object error) {
+    final delivery = _smsDeliveryError(error);
+    if (delivery != null) return delivery;
     final message = error.toString();
     if (message.contains('SMS') ||
         message.contains('CODE') ||
@@ -2323,6 +2361,8 @@ class _PhotoAuthScreenState extends State<_PhotoAuthScreen> {
   }
 
   _AuthMessageKind _photoAuthError(Object error) {
+    final delivery = _smsDeliveryError(error);
+    if (delivery != null) return delivery;
     final message = error.toString();
     // A blocked driver is a valid account with a valid password. Check the
     // explicit backend code before the generic HTTP status so a 403 never

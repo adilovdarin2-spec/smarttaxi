@@ -206,6 +206,38 @@ void main() {
     expect(api, contains('await _authStore.saveToken(token)'));
   });
 
+  test('a failure to send the SMS says so instead of blaming the network', () {
+    final main = _read('lib/main.dart');
+    final ru = _read('lib/l10n/app_ru.arb');
+
+    // Код ошибки читается из тела ответа. error.toString() у DioException всегда
+    // содержит слово "DioException", и любая неузнанная ошибка доезжала
+    // до ветки "сеть". На боевом сервере SMS не подключены, и каждому,
+    // кто пытался зарегистрироваться, говорили проверить свой интернет.
+    expect(main, contains('String? _authErrorCode(Object error)'));
+    expect(main, contains("data['error']?.toString()"));
+    expect(main, contains("code == 'SMS_PROVIDER_NOT_CONFIGURED'"));
+    expect(main, contains("code == 'SMS_DELIVERY_FAILED'"));
+    expect(main, contains("code == 'SMS_DELIVERY_TIMEOUT'"));
+
+    // Оба обработчика ошибок спрашивают код первым делом: первый запрос
+    // кода падает ещё на экране телефона, повторная отправка -- на экране кода.
+    expect(
+      RegExp(r'final delivery = _smsDeliveryError\(error\);')
+          .allMatches(main)
+          .length,
+      2,
+    );
+
+    expect(main, contains('l10n.smsUnavailable'));
+    expect(main, contains('l10n.smsSendFailed'));
+    expect(
+      ru,
+      contains(
+          '"smsUnavailable": "Отправка SMS пока не подключена, и регистрация временно недоступна. Дело не в вашем интернете."'),
+    );
+  });
+
   test('login and register forms are phone-only', () {
     final main = _read('lib/main.dart');
     final authArb = _read('lib/l10n/app_ru.arb');

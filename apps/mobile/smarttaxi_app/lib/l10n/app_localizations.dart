@@ -2779,6 +2779,12 @@ abstract class AppLocalizations {
   /// **'Этот тариф временно недоступен'**
   String get errorTariffInactive;
 
+  /// No description provided for @errorPriceNotConfigured.
+  ///
+  /// In ru, this message translates to:
+  /// **'Цена на это направление ещё не задана. Выберите другой тариф или попробуйте позже'**
+  String get errorPriceNotConfigured;
+
   /// No description provided for @errorTariffRegionMismatch.
   ///
   /// In ru, this message translates to:
@@ -4188,6 +4194,18 @@ abstract class AppLocalizations {
   /// In ru, this message translates to:
   /// **'Не удалось подтвердить код. Попробуйте ещё раз.'**
   String get smsConfirmFailed;
+
+  /// No description provided for @smsUnavailable.
+  ///
+  /// In ru, this message translates to:
+  /// **'Отправка SMS пока не подключена, и регистрация временно недоступна. Дело не в вашем интернете.'**
+  String get smsUnavailable;
+
+  /// No description provided for @smsSendFailed.
+  ///
+  /// In ru, this message translates to:
+  /// **'Не удалось отправить SMS. Попробуйте ещё раз через минуту.'**
+  String get smsSendFailed;
 
   /// No description provided for @invalidPhoneOrPassword.
   ///
