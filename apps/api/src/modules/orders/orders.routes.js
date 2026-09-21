@@ -762,8 +762,7 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
     emitOrderUpdated(req.io, order, "order.rated");
     if (driverAutoBlocked) {
       notifyOrderDriver(order, {
-        title: "Аккаунт временно заблокирован",
-        body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку BaiSapar.",
+        key: "accountBlockedRating",
         type: "DRIVER_AUTO_BLOCKED"
       }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     }
@@ -861,8 +860,8 @@ router.post("/:id/accept", requireAuth, requireRole("DRIVER"), async (req, res, 
     await announceStandRelease(req.io, standRelease);
     emitOrderUpdated(req.io, order, "order_accepted");
     notifyOrderClient(order, {
-      title: "Водитель найден",
-      body: order.driver_name ? `${order.driver_name} едет за вами` : "Водитель уже в пути к вам",
+      key: order.driver_name ? "driverFoundNamed" : "driverFound",
+      params: { name: order.driver_name },
       type: "DRIVER_FOUND"
     }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     res.json({ order: publicOrderResponse(order) });
@@ -915,8 +914,8 @@ router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ 
     if (outcome.isPrimary) {
       emitOrderUpdated(req.io, outcome.row, "order.driver_price_offer");
       notifyOrderClient(outcome.row, {
-        title: "Водитель предложил свою цену",
-        body: `Новая цена поездки: ${outcome.row.driver_offer_price_kzt} ₸`,
+        key: "driverOfferedPrice",
+        params: { price: outcome.row.driver_offer_price_kzt },
         type: "DRIVER_PRICE_OFFER"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     } else {
@@ -935,8 +934,8 @@ router.post("/:id/price-offer", requireAuth, requireRole("DRIVER"), rateLimit({ 
         req.io.to(orderRoom(id)).emit("order.driver_price_offer_queued", { orderId: id, offer: queuedOffer });
       }
       notifyOrderClient(outcome.row, {
-        title: "Ещё один водитель предложил цену",
-        body: `Новое предложение: ${outcome.queued.price_kzt} ₸`,
+        key: "anotherDriverOfferedPrice",
+        params: { price: outcome.queued.price_kzt },
         type: "DRIVER_PRICE_OFFER_QUEUED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     }
@@ -989,14 +988,13 @@ router.post("/:id/price-offers/queue/:queueId/promote", requireAuth, requireRole
     emitOrderUpdated(req.io, order, "order.driver_price_offer");
     if (previousDriverId) {
       notifyOrderDriver({ driver_id: previousDriverId }, {
-        title: "Клиент отклонил вашу цену",
-        body: "Можете предложить другую цену или взять другой заказ",
+        key: "clientDeclinedYourPrice",
         type: "DRIVER_PRICE_OFFER_DECLINED"
       }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     }
     notifyOrderDriver({ driver_id: order.driver_offer_by_driver_id }, {
-      title: "Клиент выбрал вашу цену",
-      body: `Клиент готов принять вашу цену: ${order.driver_offer_price_kzt} ₸`,
+      key: "clientChoseYourPrice",
+      params: { price: order.driver_offer_price_kzt },
       type: "DRIVER_PRICE_OFFER_PROMOTED"
     }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     res.json({ order: publicOrderResponse(order) });
@@ -1032,8 +1030,8 @@ router.post("/:id/price-offer/respond", requireAuth, requireRole("CLIENT"), rate
     await announceStandRelease(req.io, standRelease);
     if (offerDriverId) {
       notifyOrderDriver({ driver_id: offerDriverId }, body.accept
-        ? { title: "Клиент принял вашу цену", body: "Поездка назначена вам", type: "DRIVER_PRICE_OFFER_ACCEPTED" }
-        : { title: "Клиент отклонил вашу цену", body: "Можете предложить другую цену или взять другой заказ", type: "DRIVER_PRICE_OFFER_DECLINED" }
+        ? { key: "clientAcceptedYourPrice", type: "DRIVER_PRICE_OFFER_ACCEPTED" }
+        : { key: "clientDeclinedYourPrice", type: "DRIVER_PRICE_OFFER_DECLINED" }
       ).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     }
     res.json({ order: publicOrderResponse(order) });
@@ -1076,8 +1074,8 @@ router.post("/:id/price-offer/counter", requireAuth, requireRole("CLIENT"), rate
     });
     emitOrderUpdated(req.io, order.row, "order.client_counter_offer");
     notifyOrderDriver({ driver_id: order.driverId }, {
-      title: "Клиент предложил свою цену",
-      body: `Новая цена поездки: ${order.row.driver_offer_price_kzt} ₸`,
+      key: "clientOfferedPrice",
+      params: { price: order.row.driver_offer_price_kzt },
       type: "CLIENT_COUNTER_OFFER"
     }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
     res.status(201).json({ order: publicOrderResponse(order.row) });
@@ -1114,8 +1112,8 @@ router.post("/:id/price-offer/driver-respond", requireAuth, requireRole("DRIVER"
     emitOrderUpdated(req.io, order, body.accept ? "order.client_counter_offer_accepted" : "order.client_counter_offer_declined");
     await announceStandRelease(req.io, standRelease);
     notifyOrderClient(order, body.accept
-      ? { title: "Водитель принял вашу цену", body: "Водитель уже едет к вам", type: "CLIENT_COUNTER_OFFER_ACCEPTED" }
-      : { title: "Водитель отклонил вашу цену", body: "Можете предложить другую цену", type: "CLIENT_COUNTER_OFFER_DECLINED" }
+      ? { key: "driverAcceptedYourPrice", type: "CLIENT_COUNTER_OFFER_ACCEPTED" }
+      : { key: "driverDeclinedYourPrice", type: "CLIENT_COUNTER_OFFER_DECLINED" }
     ).catch((error) => console.error("[push] notifyOrderClient failed", error));
     res.json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
@@ -1239,8 +1237,8 @@ router.post("/:id/assign-driver", requireAuth, requireRole("OWNER"), async (req,
     });
     emitOrderUpdated(req.io, order, "order_assigned");
     notifyOrderClient(order, {
-      title: "Водитель найден",
-      body: order.driver_name ? `${order.driver_name} едет за вами` : "Водитель уже в пути к вам",
+      key: order.driver_name ? "driverFoundNamed" : "driverFound",
+      params: { name: order.driver_name },
       type: "DRIVER_FOUND"
     }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     res.json({ order: publicOrderResponse(order) });
@@ -1518,15 +1516,14 @@ async function updateStatus(req, res, next, status) {
     emitOrderUpdated(req.io, order);
     if (status === "DRIVER_ARRIVED") {
       notifyOrderClient(order, {
-        title: "Водитель приехал",
-        body: "Ваш водитель на месте и ждёт вас",
+        key: "driverArrived",
         type: "DRIVER_ARRIVED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     }
     if (status === "TRIP_COMPLETED") {
       notifyOrderClient(order, {
-        title: "Поездка завершена",
-        body: order.price ? `Стоимость поездки: ${order.price} ₸` : "Спасибо, что выбрали BaiSapar",
+        key: order.price ? "tripCompleted" : "tripCompletedNoPrice",
+        params: { price: order.price },
         type: "TRIP_COMPLETED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     }
@@ -1540,22 +1537,22 @@ async function updateStatus(req, res, next, status) {
     // whichever status transition actually did the crediting.
     if (cashbackEarned > 0) {
       notifyOrderClient(order, {
-        title: "Начислен кешбэк",
-        body: `+${cashbackEarned} ₸ за поездку — спишется на следующей оплате`,
+        key: "cashbackEarned",
+        params: { amount: cashbackEarned },
         type: "CASHBACK_EARNED"
       }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     }
     if (referralBonusResult?.referredUserId) {
       notifyUser(referralBonusResult.referredUserId, {
-        title: "Бонус за приглашение",
-        body: `+${referralBonusResult.bonus} ₸ начислено на баланс`,
+        key: "referralBonusCredited",
+        params: { amount: referralBonusResult.bonus },
         type: "REFERRAL_BONUS"
       }).catch((error) => console.error("[push] notifyUser failed", error));
     }
     if (referralBonusResult?.referrerUserId) {
       notifyUser(referralBonusResult.referrerUserId, {
-        title: "Бонус за приглашение",
-        body: `+${referralBonusResult.bonus} ₸ — приглашённый друг совершил первую поездку`,
+        key: "referralFriendFirstTrip",
+        params: { amount: referralBonusResult.bonus },
         type: "REFERRAL_BONUS"
       }).catch((error) => console.error("[push] notifyUser failed", error));
     }
@@ -1673,8 +1670,7 @@ router.post("/:id/cancel", requireAuth, requireRole("DRIVER", "OWNER"), async (r
     }
     emitOrderUpdated(req.io, order, "order_driver_cancelled");
     notifyOrderClient(order, {
-      title: "Водитель сменился",
-      body: "Водитель отменил поездку — ищем для вас другого",
+      key: "driverChanged",
       type: "DRIVER_CANCELLED"
     }).catch((error) => console.error("[push] notifyOrderClient failed", error));
     res.json({ order: publicOrderResponse(order) });

@@ -96,22 +96,22 @@ async function settleOrderIfPaymentConfirmed(order, payment, req) {
   // updateStatus() waits until its own tx() returns before notifying.
   if (settlement?.cashbackCredited > 0) {
     notifyOrderClient(updated, {
-      title: "Начислен кешбэк",
-      body: `+${settlement.cashbackCredited} ₸ за поездку — спишется на следующей оплате`,
+      key: "cashbackEarned",
+      params: { amount: settlement.cashbackCredited },
       type: "CASHBACK_EARNED"
     }).catch((error) => console.error("[push] notifyOrderClient failed", error));
   }
   if (settlement?.referralBonusResult?.referredUserId) {
     notifyUser(settlement.referralBonusResult.referredUserId, {
-      title: "Бонус за приглашение",
-      body: `+${settlement.referralBonusResult.bonus} ₸ начислено на баланс`,
+      key: "referralBonusCredited",
+      params: { amount: settlement.referralBonusResult.bonus },
       type: "REFERRAL_BONUS"
     }).catch((error) => console.error("[push] notifyUser failed", error));
   }
   if (settlement?.referralBonusResult?.referrerUserId) {
     notifyUser(settlement.referralBonusResult.referrerUserId, {
-      title: "Бонус за приглашение",
-      body: `+${settlement.referralBonusResult.bonus} ₸ — приглашённый друг совершил первую поездку`,
+      key: "referralFriendFirstTrip",
+      params: { amount: settlement.referralBonusResult.bonus },
       type: "REFERRAL_BONUS"
     }).catch((error) => console.error("[push] notifyUser failed", error));
   }

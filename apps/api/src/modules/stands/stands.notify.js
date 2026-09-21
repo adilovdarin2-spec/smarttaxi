@@ -42,8 +42,8 @@ export async function notifyPromotedDrivers(io, promotedEntryIds, standId) {
     if (!row.user_id) continue;
     io?.to(`user:${row.user_id}`).emit("stand_turn_started", { standId, entryId: row.id });
     notifyUser(row.user_id, {
-      title: "Ваша очередь",
-      body: `Вы первый на стоянке «${row.stand_name}». Можно набирать пассажиров.`,
+      key: "standYourTurn",
+      params: { stand: row.stand_name },
       type: "STAND_TURN_STARTED",
       data: { standId, entryId: row.id }
     }).catch((error) => console.error("[push] stand promotion failed", error));
@@ -88,19 +88,13 @@ export async function notifyDroppedDrivers(io, expiredEntries) {
 /// Riders whose seat is gone. Told what actually happened and what is left to
 /// do about it: a rider whose car drove off can pick another one at the same
 /// stand, but a rider whose stand was closed has nothing there to pick.
-const SEAT_LOST_COPY = {
-  STAND_CLOSED: {
-    title: "Стоянка закрыта",
-    body: "Стоянку закрыли, бронь снята. Закажите машину обычным заказом."
-  },
-  DEFAULT: {
-    title: "Бронь на стоянке снята",
-    body: "Машина уехала. Выберите другую машину на стоянке."
-  }
+const SEAT_LOST_KEY = {
+  STAND_CLOSED: "standClosed",
+  DEFAULT: "standReservationCancelled"
 };
 
 export async function notifyStrandedRiders(io, reservations, { reason } = {}) {
-  const copy = SEAT_LOST_COPY[reason] || SEAT_LOST_COPY.DEFAULT;
+  const key = SEAT_LOST_KEY[reason] || SEAT_LOST_KEY.DEFAULT;
   for (const reservation of reservations || []) {
     if (!reservation.client_id) continue;
     const row = (await query("SELECT user_id FROM clients WHERE id=$1", [reservation.client_id])).rows[0];
@@ -111,8 +105,7 @@ export async function notifyStrandedRiders(io, reservations, { reason } = {}) {
       reason: reason || null
     });
     notifyUser(row.user_id, {
-      title: copy.title,
-      body: copy.body,
+      key,
       type: "STAND_RESERVATION_CANCELLED",
       data: { standId: reservation.stand_id, reservationId: reservation.id, reason: reason || null }
     }).catch((error) => console.error("[push] stand stranded rider failed", error));

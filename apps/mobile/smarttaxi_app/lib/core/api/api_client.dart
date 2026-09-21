@@ -110,6 +110,13 @@ class ApiClient {
     return response.data ?? {};
   }
 
+  // На каком языке присылать уведомления. Push показывает операционная
+  // система, часто когда приложение закрыто, — перевести его здесь нельзя,
+  // поэтому язык уезжает на сервер заранее.
+  Future<void> reportLocale(String locale) async {
+    await _dio.post<dynamic>('/api/auth/me/locale', data: {'locale': locale});
+  }
+
   Future<Map<String, dynamic>> sendAuthSms(String phone,
       {String purpose = 'REGISTER'}) async {
     final response = await _dio.post<Map<String, dynamic>>(

@@ -63,8 +63,7 @@ router.post("/", requireAuth, requireRole("CLIENT", "DRIVER"), async (req, res, 
       const order = (await query("SELECT driver_id FROM orders WHERE id=$1", [created.order_id])).rows[0];
       if (order?.driver_id) {
         notifyOrderDriver({ driver_id: order.driver_id }, {
-          title: "Пассажир забыл вещь в машине",
-          body: "Проверьте салон — клиент оставил заявку в поддержку",
+          key: "lostItem",
           type: "LOST_ITEM",
           data: { supportMessageId: created.id }
         }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
@@ -166,8 +165,8 @@ adminSupportRouter.patch("/:id/respond", requireAuth, requireRole("OWNER", "FINA
     // SOS/LOST_ITEM notifications above -- a push failure must never fail
     // the admin's response itself.
     notifyUser(existing.user_id, {
-      title: "Ответ от поддержки",
-      body: body.response,
+      key: "supportReply",
+      params: { text: body.response },
       type: "SUPPORT_REPLY",
       data: { supportMessageId: params.id }
     }).catch((error) => console.error("[push] support reply notify failed", error));

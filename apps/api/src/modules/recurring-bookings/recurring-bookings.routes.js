@@ -126,8 +126,8 @@ router.post("/", requireAuth, requireRole("CLIENT"), async (req, res, next) => {
 
     if (driver.user_id) {
       notifyUser(driver.user_id, {
-        title: "Новый регулярный маршрут",
-        body: `Клиент предлагает регулярную поездку: ${body.pickupText} → ${body.dropoffText}`,
+        key: "recurringNew",
+        params: { from: body.pickupText, to: body.dropoffText },
         type: "RECURRING_BOOKING_REQUEST",
         data: { recurringBookingId: row.id }
       }).catch((error) => console.error("[push] notifyUser failed", error));
@@ -169,8 +169,8 @@ router.post("/:id/respond", requireAuth, requireRole("DRIVER"), async (req, res,
     const clientRow = (await query("SELECT user_id FROM clients WHERE id=$1", [booking.client_id])).rows[0];
     if (clientRow?.user_id) {
       notifyUser(clientRow.user_id, body.accept
-        ? { title: "Водитель принял маршрут", body: "Регулярная поездка активирована", type: "RECURRING_BOOKING_ACCEPTED", data: { recurringBookingId: booking.id } }
-        : { title: "Водитель отклонил маршрут", body: "Попробуйте предложить маршрут другому водителю", type: "RECURRING_BOOKING_DECLINED", data: { recurringBookingId: booking.id } }
+        ? { key: "recurringAccepted", type: "RECURRING_BOOKING_ACCEPTED", data: { recurringBookingId: booking.id } }
+        : { key: "recurringDeclined", type: "RECURRING_BOOKING_DECLINED", data: { recurringBookingId: booking.id } }
       ).catch((error) => console.error("[push] notifyUser failed", error));
     }
 

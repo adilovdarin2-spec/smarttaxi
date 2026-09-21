@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS users (
   -- migrations.js's "Single active session per account" entry for the
   -- full rationale.
   session_version UUID NOT NULL DEFAULT uuid_generate_v4(),
+  -- Язык, на котором человеку пишут уведомления. Push показывает
+  -- операционная система, часто когда приложение закрыто, — перевести
+  -- его на клиенте нельзя, поэтому язык хранится здесь.
+  locale TEXT NOT NULL DEFAULT 'ru' CHECK (locale IN ('ru','kk','uz','zh')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

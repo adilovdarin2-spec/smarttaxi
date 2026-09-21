@@ -40,7 +40,7 @@ async function recordSkip(bookingId, reason) {
   const clientRow = (await query("SELECT user_id FROM clients WHERE id=$1", [updated.client_id])).rows[0];
   if (clientRow?.user_id) {
     notifyUser(clientRow.user_id, {
-      title: "Регулярная поездка сегодня не состоится",
+      key: "recurringNoDriver",
       body: "Не удалось найти свободного водителя по вашему регулярному маршруту. Мы попробуем снова в следующий раз по расписанию.",
       type: "RECURRING_BOOKING_SKIPPED",
       data: { recurringBookingId: bookingId, reason }
@@ -224,13 +224,13 @@ async function createOrderForBooking(booking) {
 
   emitOrderCreated(global.io, fullOrder);
   notifyOrderClient(fullOrder, {
-    title: "Регулярная поездка началась",
-    body: `Водитель ${fullOrder.driver_name || ""} едет по вашему регулярному маршруту`.trim(),
+    key: "recurringStarted",
+    params: { name: fullOrder.driver_name || "" },
     type: "RECURRING_BOOKING_ORDER_CREATED"
   }).catch((error) => console.error("[push] notifyOrderClient failed", error));
   notifyOrderDriver(fullOrder, {
-    title: "Регулярная поездка",
-    body: `${fullOrder.pickup_text} → ${fullOrder.dropoff_text}`,
+    key: "recurringRoute",
+    params: { from: fullOrder.pickup_text, to: fullOrder.dropoff_text },
     type: "RECURRING_BOOKING_ORDER_CREATED"
   }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
 }

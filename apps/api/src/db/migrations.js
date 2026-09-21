@@ -68,6 +68,15 @@ const statements = [
   // выполнять её каждый раз, владелец больше никогда не сможет изменить
   // комиссию из панели: следующий деплой вернёт её обратно. Отметка о
   // выполнении делает правку однократной.
+  // Язык человека. Пуш показывает операционная система, часто когда
+  // приложение закрыто, — перевести его на клиенте нельзя. Без этой
+  // колонки сервер не знает, на каком языке писать, и пишет по-русски всем.
+  "ALTER TABLE users ADD COLUMN IF NOT EXISTS locale TEXT NOT NULL DEFAULT 'ru'",
+  `DO $$
+   BEGIN
+     ALTER TABLE users ADD CONSTRAINT users_locale_check CHECK (locale IN ('ru','kk','uz','zh'));
+   EXCEPTION WHEN duplicate_object THEN NULL;
+   END $$`,
   `CREATE TABLE IF NOT EXISTS schema_one_time_changes (
     name TEXT PRIMARY KEY,
     applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

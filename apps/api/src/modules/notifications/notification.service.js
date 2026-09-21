@@ -1,12 +1,29 @@
 import { query } from "../../db/pool.js";
 import { sendPushToTokens } from "./push.service.js";
+import { notificationMessage } from "./notification-messages.js";
 
 // Always writes the in-app notification row (backs the mobile "Уведомления"
 // screen) and, separately, best-effort sends a push to every device token
 // registered for that user. A push failure/no-op never blocks the in-app
 // notification from being created.
-export async function notifyUser(userId, { title, body, type = "ORDER_STATUS", orderId = null, data = {} }) {
+// Текст называется ключом, а не передаётся строкой: язык получателя
+// известен только здесь, когда его уже можно прочитать из users.locale. Старый
+// вызов с title/body продолжает работать: так передают текст, написанный
+// живым человеком — причину блокировки, ответ поддержки, — его не переводят.
+export async function notifyUser(userId, { key, params = {}, title, body, type = "ORDER_STATUS", orderId = null, data = {} }) {
   if (!userId) return;
+  if (key) {
+    const locale = (await query("SELECT locale FROM users WHERE id=$1", [userId])).rows[0]?.locale;
+    const text = notificationMessage(key, locale, params);
+    if (text) {
+      title = text.title;
+      // Явный body побеждает: так передают причину, которую владелец
+      // написал своими словами. Заголовок при этом всё равно на языке
+      // получателя — иначе половина уведомления оставалась бы русской.
+      if (!body) body = text.body;
+    }
+  }
+  if (!title) return;
   await query(
     `INSERT INTO notifications(user_id, title, body, type, order_id) VALUES($1,$2,$3,$4,$5)`,
     [userId, title, body, type, orderId]
@@ -96,14 +113,14 @@ async function resolveUserId(table, id) {
   return row?.user_id || null;
 }
 
-export async function notifyOrderClient(order, { title, body, type = "ORDER_STATUS", data = {} }) {
+export async function notifyOrderClient(order, { key, params, title, body, type = "ORDER_STATUS", data = {} }) {
   const userId = await resolveUserId("clients", order.client_id);
   if (!userId) return;
-  await notifyUser(userId, { title, body, type, orderId: order.id, data });
+  await notifyUser(userId, { key, params, title, body, type, orderId: order.id, data });
 }
 
-export async function notifyOrderDriver(order, { title, body, type = "ORDER_STATUS", data = {} }) {
+export async function notifyOrderDriver(order, { key, params, title, body, type = "ORDER_STATUS", data = {} }) {
   const userId = await resolveUserId("drivers", order.driver_id);
   if (!userId) return;
-  await notifyUser(userId, { title, body, type, orderId: order.id, data });
+  await notifyUser(userId, { key, params, title, body, type, orderId: order.id, data });
 }

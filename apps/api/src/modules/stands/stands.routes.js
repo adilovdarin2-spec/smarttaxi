@@ -192,8 +192,8 @@ router.post(
           reservation: publicReservation({ ...reservation, client_name: rider.name, client_phone: rider.phone })
         });
         notifyUser(targetUserId, {
-          title: "Бронь места на стоянке",
-          body: `${rider.name}: ${body.seats} мест(о). Подтвердите в приложении.`,
+          key: "standSeatRequest",
+          params: { name: rider.name, seats: body.seats },
           type: "STAND_SEAT_RESERVED",
           data: { standId, entryId, reservationId: reservation.id }
         }).catch((error) => console.error("[push] stand reservation failed", error));
@@ -418,8 +418,8 @@ driverStandsRouter.post("/entries/:entryId/handover", async (req, res, next) => 
     const targetUserId = await driverUserId(body.toDriverId);
     if (targetUserId) {
       notifyUser(targetUserId, {
-        title: "Вам передали очередь",
-        body: `${driver.name} уступил вам место на стоянке «${result.stand.name}».`,
+        key: "standTurnHandedOver",
+        params: { name: driver.name, stand: result.stand.name },
         type: "STAND_TURN_RECEIVED",
         data: { standId: result.standId }
       }).catch((error) => console.error("[push] stand handover failed", error));

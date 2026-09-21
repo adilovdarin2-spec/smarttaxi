@@ -137,6 +137,15 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
   void setLocale(Locale locale) {
     setState(() => _locale = locale);
     unawaited(widget.authStore.saveLocale(locale.languageCode));
+    // Сервер пишет уведомления на том языке, который знает о человеке.
+    // Ошибка здесь ничего не должна ломать: язык уйдёт при следующем входе.
+    unawaited(_reportLocale(locale.languageCode));
+  }
+
+  Future<void> _reportLocale(String code) async {
+    try {
+      await widget.api.reportLocale(code);
+    } catch (_) {}
   }
 
   void setThemeMode(ThemeMode mode) {
@@ -294,6 +303,11 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
       await _saveUserFromPayload(me);
       final savedMode = await widget.authStore.readMode();
       if (!mounted) return;
+      // Язык мог смениться, пока человек был не в системе, или это вообще
+      // первый вход — сообщаем текущий при каждом запуске сессии.
+      unawaited(_reportLocale(
+          (_locale ?? Localizations.maybeLocaleOf(context) ?? const Locale('ru'))
+              .languageCode));
       final actingRole = _userRole(me['user']);
       if (savedMode == 'driver') {
         if (actingRole != 'DRIVER') {

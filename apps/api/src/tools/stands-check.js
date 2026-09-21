@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { NOTIFICATION_MESSAGES } from "../modules/notifications/notification-messages.js";
 import { readFileSync } from "node:fs";
 import {
   OUT_OF_RANGE_GRACE_MINUTES,
@@ -488,11 +489,34 @@ const notify = read("../modules/stands/stands.notify.js");
 for (const reason of ["LEFT_AREA", "STAND_CLOSED", "NO_SIGNAL"]) {
   assert.ok(notify.includes(`${reason}:`), `a place lost to ${reason} needs its own wording`);
 }
-assert.ok(notify.includes("SEAT_LOST_COPY"), "a seat lost to a closed stand needs its own wording");
+// Текст переехал в справочник уведомлений: он должен быть на языке
+// пассажира, а его язык известен только там. Разница между двумя случаями
+// осталась: закрытая стоянка и уехавшая машина — это разные ключи.
+assert.ok(notify.includes("SEAT_LOST_KEY"), "a seat lost to a closed stand needs its own wording");
 assert.ok(
-  notify.includes("Закажите машину обычным заказом"),
-  "a rider at a closed stand must be pointed somewhere that still exists"
+  notify.includes('STAND_CLOSED: "standClosed"') &&
+    notify.includes('DEFAULT: "standReservationCancelled"'),
+  "the two ways of losing a seat must stay two different messages"
 );
+// Сам текст теперь в справочнике уведомлений — и на всех четырёх языках он
+// должен по-прежнему говорить, куда человеку деваться: на закрытой стоянке
+// выбирать уже нечего, а уехавшая машина оставляет соседние.
+{
+  const closed = NOTIFICATION_MESSAGES.standClosed;
+  const cancelled = NOTIFICATION_MESSAGES.standReservationCancelled;
+  for (const locale of ["ru", "kk", "uz", "zh"]) {
+    assert.ok(closed[locale].body.trim(), `standClosed без текста на ${locale}`);
+    assert.notEqual(
+      closed[locale].body,
+      cancelled[locale].body,
+      `на ${locale} закрытая стоянка и уехавшая машина говорят одно и то же`
+    );
+  }
+  assert.ok(
+    closed.ru.body.includes("Закажите машину обычным заказом"),
+    "a rider at a closed stand must be pointed somewhere that still exists"
+  );
+}
 // The sweeper writes NO_SIGNAL, so that is the key the wording must be under.
 assert.ok(service.includes("'NO_SIGNAL'"), "the sweeper's reason and the notice's key must match");
 

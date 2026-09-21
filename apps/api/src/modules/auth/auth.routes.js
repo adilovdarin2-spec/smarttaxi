@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { randomInt } from "node:crypto";
 import { z } from "zod";
 import { query } from "../../db/pool.js";
+import { normalizeLocale } from "../notifications/notification-messages.js";
 import { signToken, requireAuth, rotateSessionVersion } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit, publicUser } from "../../common/audit.js";
@@ -331,6 +332,20 @@ router.post("/mode/passenger", requireAuth, rateLimit({ prefix: "auth-mode-passe
 router.post("/mode/driver", requireAuth, rateLimit({ prefix: "auth-mode-driver", windowMs: 60_000, max: 20 }), async (req, res, next) => {
   try {
     res.json(await issueModeToken(req.user.id, "DRIVER"));
+  } catch (e) { next(e); }
+});
+
+// На каком языке писать этому человеку.
+//
+// Push показывает операционная система, часто когда приложение закрыто, — значит
+// язык нужно знать заранее, а не в момент запроса. Приложение сообщает его
+// при входе и при смене языка; неизвестный код тихо становится русским.
+router.post("/me/locale", requireAuth, rateLimit({ prefix: "auth-locale", windowMs: 60_000, max: 30 }), async (req, res, next) => {
+  try {
+    const body = z.object({ locale: z.string().trim().min(2).max(16) }).parse(req.body);
+    const locale = normalizeLocale(body.locale);
+    await query("UPDATE users SET locale=$1 WHERE id=$2", [locale, req.user.id]);
+    res.json({ locale });
   } catch (e) { next(e); }
 });
 

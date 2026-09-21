@@ -1536,15 +1536,11 @@ router.patch("/drivers/:id/regions", requireAuth, requireRole("OWNER"), async (r
     // approve/reject; this endpoint gates the same "can I go online" funnel
     // one step further and had silently never grown the same call.
     if (result.driver?.user_id) {
+      // Причину блокировки пишет владелец своими словами — её не переводят,
+      // остальное собирается на языке водителя.
       const notifyByStatus = {
-        APPROVED: {
-          title: "Регион одобрен",
-          body: `Вам одобрен доступ к региону «${result.region.name}» — можно выходить на линию`
-        },
-        BLOCKED: {
-          title: "Регион заблокирован",
-          body: body.reason || `Доступ к региону «${result.region.name}» заблокирован`
-        }
+        APPROVED: { key: "regionApproved", params: { region: result.region.name } },
+        BLOCKED: { key: "regionBlocked", params: { region: result.region.name }, body: body.reason }
       }[body.status];
       notifyUser(result.driver.user_id, { ...notifyByStatus, type: "DRIVER_REGION_STATUS" })
         .catch((error) => console.error("[push] notifyUser failed", error));
@@ -1818,8 +1814,8 @@ router.patch("/driver-documents/:id", requireAuth, requireRole("OWNER"), async (
       const driverUser = (await query("SELECT user_id FROM drivers WHERE id=$1", [document.driver_id])).rows[0];
       if (driverUser?.user_id) {
         const notifyByStatus = {
-          APPROVED: { title: "Документ проверен", body: "Ваш документ прошёл проверку" },
-          REJECTED: { title: "Документ отклонён", body: body.reason || "Документ отклонён. Загрузите его заново" }
+          APPROVED: { key: "documentApproved" },
+          REJECTED: { key: "documentRejected", body: body.reason }
         }[body.status];
         notifyUser(driverUser.user_id, { ...notifyByStatus, type: "DRIVER_DOCUMENT_STATUS" })
           .catch((error) => console.error("[push] notifyUser failed", error));
@@ -1909,9 +1905,9 @@ router.patch("/payout-requests/:id", requireAuth, requireRole("OWNER", "FINANCE"
     });
 
     const notifyByStatus = {
-      APPROVED: { title: "Выплата одобрена", body: `Заявка на ${result.payoutRequest.amountKzt} ₸ одобрена и готовится к переводу` },
-      PAID: { title: "Выплата отправлена", body: `${result.payoutRequest.amountKzt} ₸ переведены на ваш счёт` },
-      REJECTED: { title: "Выплата отклонена", body: body.reason || "Заявка на выплату отклонена. Подробности уточните в поддержке" }
+      APPROVED: { key: "payoutApproved", params: { amount: result.payoutRequest.amountKzt } },
+      PAID: { key: "payoutPaid", params: { amount: result.payoutRequest.amountKzt } },
+      REJECTED: { key: "payoutRejected", body: body.reason }
     }[body.status];
     if (result.driverUserId && notifyByStatus) {
       notifyUser(result.driverUserId, { ...notifyByStatus, type: "DRIVER_PAYOUT_STATUS" })
