@@ -1,3 +1,7 @@
+// Лимит берётся из одного места: число здесь разошлось бы с боевым при первом
+// же его изменении — ровно та двойная запись лимита, от которой предостерегает
+// сам driver-debt.js.
+import { DRIVER_DEBT_CEILING_KZT } from "../modules/drivers/driver-debt.js";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -328,7 +332,7 @@ const snapshot = order => ({ driverId: order.driver_offer_by_driver_id,
 // BOTH acceptance paths, not only when creating the original offer.
 for (const counter of [false, true]) {
   for (const [code, arrange] of [
-    ['DRIVER_DEBT_LIMIT', state => { state.drivers[0].debt = 15001; }],
+    ['DRIVER_DEBT_LIMIT', state => { state.drivers[0].debt = DRIVER_DEBT_CEILING_KZT + 1; }],
     ['ORDER_REGION_MISMATCH', state => { state.orders[0].region_id = 'region-b'; }],
     ['DRIVER_PREVIOUSLY_CANCELLED_ORDER', state => { state.orders[0].last_cancelled_by_driver_id = 'driver-1'; }],
     ['DRIVER_BLOCKED_BY_CLIENT', state => { state.preferences.push({ client_id: 'client-1', driver_id: 'driver-1', type: 'BLOCKED' }); }],
@@ -346,7 +350,7 @@ for (const counter of [false, true]) {
     assert.deepEqual(executor.state, before, 'A rejected price acceptance cannot mutate order/driver state');
   }
   const executor = createExecutor();
-  executor.state.drivers[0].debt = 15000;
+  executor.state.drivers[0].debt = DRIVER_DEBT_CEILING_KZT;
   await submitDriverPriceOffer({ orderId: 'order-1', userId: 'driver-user-1', priceKzt: 500, executor });
   if (counter) await submitClientCounterOffer({ orderId: 'order-1', clientUserId: 'client-user-1', priceKzt: 400, expectedOffer: snapshot(executor.state.orders[0]), executor });
   const result = counter

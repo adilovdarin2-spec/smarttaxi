@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { DRIVER_DEBT_CEILING_KZT } from "../modules/drivers/driver-debt.js";
 
 const url = new URL(process.env.STAND_QA_DATABASE_URL || 'about:blank');
 assert.ok(['postgres:', 'postgresql:'].includes(url.protocol) && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname));
@@ -95,7 +96,7 @@ try {
   const otherRegion = (await query('SELECT id FROM regions WHERE is_active=true AND id<>$1 LIMIT 1', [region.id])).rows[0];
   assert.ok(otherRegion);
   const policies = [
-    ['debt limit', 'DRIVER_DEBT_LIMIT', () => query('UPDATE drivers SET debt=15001 WHERE id=$1', [driver.id])],
+    ['debt limit', 'DRIVER_DEBT_LIMIT', () => query('UPDATE drivers SET debt=$2 WHERE id=$1', [driver.id, DRIVER_DEBT_CEILING_KZT + 1])],
     ['region changed after offer', 'ORDER_REGION_MISMATCH', async () => {
       await query("INSERT INTO driver_region_approvals(driver_id,region_id,status) VALUES($1,$2,'APPROVED')", [driver.id, otherRegion.id]);
       await query('UPDATE drivers SET current_region_id=$2 WHERE id=$1', [driver.id, otherRegion.id]);

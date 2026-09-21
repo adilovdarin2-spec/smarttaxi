@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(path, import.meta.url), "utf8");
 
@@ -17,6 +17,29 @@ assert.equal(isOverDebtCeiling(DRIVER_DEBT_CEILING_KZT + 1), true);
 assert.equal(isOverDebtCeiling("0"), false, "debt arrives from pg as a string");
 assert.equal(isOverDebtCeiling(`${DRIVER_DEBT_CEILING_KZT + 1}`), true);
 assert.equal(isOverDebtCeiling(null), false, "a driver with no debt row owes nothing");
+
+// Лимит совпадает с офертой, которую водитель принимает.
+//
+// В коде стояло 15000, в оферте — 5 000: втрое больше обещанного, и узнать
+// настоящее число водителю было неоткуда — в приложении лимит нигде не показан.
+// Проверка читает число из самой оферты, поэтому разойтись они больше не могут:
+// меняете одно — придётся поменять и второе.
+{
+  const legalPath = new URL("../../../web/src/legal/legal-content.json", import.meta.url);
+  if (existsSync(legalPath)) {
+    const legal = readFileSync(legalPath, "utf8");
+    const promised = [...legal.matchAll(/задолженности[^.]{0,120}?(\d[\d\s]{2,8})\s*тенге/g)]
+      .map(match => Number(match[1].replace(/\s/g, "")))
+      .filter(value => value > 0);
+    assert.ok(promised.length > 0, "в оферте не найден лимит задолженности");
+    const limit = Math.max(...promised);
+    assert.equal(
+      DRIVER_DEBT_CEILING_KZT,
+      limit,
+      `оферта обещает лимит ${limit} ₸, а код останавливает на ${DRIVER_DEBT_CEILING_KZT} ₸`
+    );
+  }
+}
 
 // The warning has to come before the cut-off, or the dashboard is telling the
 // owner about drivers who have already been stopped.
