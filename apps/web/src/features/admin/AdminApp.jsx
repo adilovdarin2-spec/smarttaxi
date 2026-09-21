@@ -368,7 +368,10 @@ function normalizeTariffForm(tariff, defaultRegionId = "") {
     displayName: tariff?.displayName || tariff?.display_name || "",
     description: tariff?.description || "",
     averagePriceKzt: String(tariff?.averagePriceKzt ?? tariff?.average_price_kzt ?? ""),
-    serviceCommissionPercent: String(tariff?.serviceCommissionPercent ?? tariff?.service_commission_percent ?? 15),
+    // 7, как в оферте. Здесь оставалось 15 от старой комиссии: новый тариф,
+    // созданный из панели, тихо уходил бы с втрое большей комиссией, чем подписано.
+    serviceCommissionPercent: String(tariff?.serviceCommissionPercent ?? tariff?.service_commission_percent ?? 7),
+    cashbackPercent: String(tariff?.cashbackPercent ?? tariff?.cashback_percent ?? 0),
     freeWaitingMinutes: String(tariff?.freeWaitingMinutes ?? tariff?.free_waiting_minutes ?? 0),
     waitingPricePerMinute: String(tariff?.waitingPricePerMinute ?? tariff?.waiting_price_per_minute ?? 0),
     cancellationFee: String(tariff?.cancellationFee ?? tariff?.cancellation_fee ?? 0),
@@ -1012,6 +1015,7 @@ export default function AdminApp() {
         description: form.description.trim(),
         averagePriceKzt: Number(form.averagePriceKzt),
         serviceCommissionPercent: Number(form.serviceCommissionPercent),
+        cashbackPercent: Number(form.cashbackPercent),
         freeWaitingMinutes: Number(form.freeWaitingMinutes),
         waitingPricePerMinute: Number(form.waitingPricePerMinute),
         cancellationFee: Number(form.cancellationFee),
@@ -3932,6 +3936,7 @@ function SettingsPage({ settings, regions = [], onSave, canEdit, onSendBroadcast
         defaultCommissionPercent: settings.defaultCommissionPercent ?? 0,
         supportPhone: settings.supportPhone || "",
         sosPhone: settings.sosPhone || "",
+        referralBonusKzt: settings.referralBonusKzt ?? 0,
         autoApproveDrivers: false
       });
     }
@@ -3960,6 +3965,7 @@ function SettingsPage({ settings, regions = [], onSave, canEdit, onSendBroadcast
         defaultCommissionPercent: Number(form.defaultCommissionPercent),
         supportPhone: form.supportPhone.trim(),
         sosPhone: form.sosPhone.trim(),
+        referralBonusKzt: Number(form.referralBonusKzt),
         autoApproveDrivers: form.autoApproveDrivers
       });
     } finally {
@@ -4015,8 +4021,22 @@ function SettingsPage({ settings, regions = [], onSave, canEdit, onSendBroadcast
               <span>Экстренный номер</span>
               <input value={form.sosPhone} onChange={event => setField("sosPhone", event.target.value)} disabled={!canEdit} />
             </label>
-            <div />
+            <label className="admin-field">
+              <span>Бонус за приглашение, ₸</span>
+              <input
+                type="number"
+                min="0"
+                step="50"
+                value={form.referralBonusKzt}
+                onChange={event => setField("referralBonusKzt", event.target.value)}
+                disabled={!canEdit}
+              />
+            </label>
           </div>
+          <p className="admin-settings-note">
+            Бонус начисляется пригласившему после первой поездки друга и тратится
+            на следующие поездки. Ноль отключает программу приглашений.
+          </p>
           <p className="admin-settings-note">Заявки водителей одобряет владелец после проверки данных, с явным выбором региона допуска.</p>
           <p className="admin-settings-note">
             Заказы всегда распределяются одинаково: система уведомляет всех
@@ -4178,6 +4198,7 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
       const numericFields = [
         "averagePriceKzt",
         "serviceCommissionPercent",
+        "cashbackPercent",
         "freeWaitingMinutes",
         "waitingPricePerMinute",
         "cancellationFee",
@@ -4226,6 +4247,15 @@ function TariffEditor({ tariff, regions, onClose, onSave, busy }) {
         <p className="admin-form-hint">
           Столько стоит поездка по этому тарифу внутри региона. Пассажир может
           поднять или опустить эту цену сам, а водитель — предложить свою.
+        </p>
+        <div className="admin-form-row">
+          <Field label="Кешбэк за поездку, %" type="number" value={form.cashbackPercent} onChange={value => setField("cashbackPercent", value)} />
+          <div />
+        </div>
+        <p className="admin-form-hint">
+          Процент от цены возвращается пассажиру на баланс и тратится на следующие
+          поездки. Ноль — кешбэка нет, хотя приложение показывает баланс и обещает
+          «кешбэк за ваши поездки».
         </p>
         <div className="admin-form-row">
           <Field label="Бесплатное ожидание, мин" type="number" value={form.freeWaitingMinutes} onChange={value => setField("freeWaitingMinutes", value)} />

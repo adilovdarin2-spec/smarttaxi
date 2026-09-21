@@ -214,6 +214,37 @@ assert.match(
   "Цена направления обновлена"
 ].forEach(copy => assert(adminApp.includes(copy), `Admin intercity UI missing ${copy}`));
 
+// Денежные рычаги, которые сервер умеет, а панель должна давать крутить.
+//
+// Кешбэк и бонус за приглашение работали на сервере, но полей для них в
+// панели не было: кешбэк стоял на нуле везде, хотя приложение обещает
+// «кешбэк за ваши поездки», а каждое приглашение стоило 500 ₸ без способа это
+// увидеть или выключить иначе как через базу.
+[
+  "cashbackPercent",
+  "Кешбэк за поездку, %",
+  "referralBonusKzt",
+  "Бонус за приглашение, ₸"
+].forEach(field => assert(
+  adminApp.includes(field),
+  `владелец не может настроить ${field} из панели`
+));
+
+// Новый тариф предлагает ту же комиссию, что названа в оферте. Здесь оставалось 15
+// от старой комиссии — тариф, созданный из панели, тихо уходил бы с комиссией
+// втрое больше подписанной.
+{
+  const legal = readFileSync(join(root, "..", "..", "web", "src", "legal", "legal-content.json"), "utf8");
+  const offerPercent = Number(
+    /комиссия Платформы составляет (\d+) процент/.exec(legal.replace(/составляет 0 процент/g, ""))?.[1]
+  );
+  assert(offerPercent > 0, "в оферте не найдена комиссия");
+  assert(
+    adminApp.includes(`service_commission_percent ?? ${offerPercent})`),
+    `форма нового тарифа должна предлагать ${offerPercent}% — столько названо в оферте`
+  );
+}
+
 // The tariff editor must stay a single price. A kilometre field here is how
 // the meter comes back: the form writes straight into the tariff row.
 [
