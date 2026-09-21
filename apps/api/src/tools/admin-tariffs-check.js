@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -270,6 +270,41 @@ assert.match(
 ].forEach(token => assert(!adminApp.includes(token), `Admin tariff UI contains forbidden token ${token}`));
 } else {
   console.warn("Admin tariff web-source checks skipped: apps/web is not present in this runtime image");
+}
+
+// --- Удалённый тариф не должен вернуться через клиентский код ---
+//
+// В сервисе два тарифа: Эконом и Доставка. Комфорт и Бизнес убраны вместе с
+// их ценами. В apps/web оставался файл-сирота, который никто не подключал, а
+// внутри лежал готовый прайс на оба удалённых тарифа — такое однажды
+// импортируют обратно, и пассажир увидит тариф, которого нет, по ценам,
+// которых никто не назначал.
+//
+// Подписи вроде `Comfort: "Комфорт"` — не прайс: если сервер вдруг вернёт
+// старую строку, её лучше показать по-человечески. Ловим именно цены.
+if (hasWebSource) {
+  const webSrc = join(root, "..", "..", "web", "src");
+  const priced = [];
+  const walkWeb = (dir) => {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) { walkWeb(full); continue; }
+      if (!/\.(js|jsx)$/.test(full)) continue;
+      const src = readFileSync(full, "utf8");
+      for (const line of src.split("\n")) {
+        if (!/(Comfort|Business|Комфорт|Бизнес)/.test(line)) continue;
+        if (!/(price_per_km|pricePerKm|min_price|minPrice|base_price|basePrice)/.test(line)) continue;
+        priced.push(`${full.replace(webSrc, "apps/web/src")}: ${line.trim().slice(0, 80)}`);
+      }
+    }
+  };
+  walkWeb(webSrc);
+  assert.deepEqual(
+    priced,
+    [],
+    `в вебе снова заведены цены удалённых тарифов:
+  ${priced.join("\n  ")}`
+  );
 }
 
 console.log("Admin tariff management checks ok");
