@@ -4774,10 +4774,34 @@ function PremiumAuthFlow({
   );
 }
 
+// Часы над входом показывают то же время, что и часы человека.
+//
+// Здесь стояло «9:41» — время из рекламных макетов Apple. На широком экране
+// приложение нарисовано внутри рамки телефона, и полоса состояния читается
+// как часть этой рамки. А вот на настоящем телефоне рамки нет: страница и
+// есть приложение, и наше «9:41» висело прямо под настоящими часами
+// системы. Человек в семь вечера видел девять утра — и первое, что сообщал
+// ему сервис, было неправдой.
+//
+// На телефоне полосу прячет styles.css: настоящая уже есть сверху. В рамке
+// на большом экране она остаётся, но время в ней настоящее.
 function AuthStatusBar() {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    // Просыпаемся ровно на смене минуты, а не каждую секунду.
+    let timer = null;
+    const tick = () => {
+      const current = new Date();
+      setNow(current);
+      timer = setTimeout(tick, (60 - current.getSeconds()) * 1000);
+    };
+    timer = setTimeout(tick, (60 - new Date().getSeconds()) * 1000);
+    return () => clearTimeout(timer);
+  }, []);
+  const time = `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
   return (
     <div className="auth-status-bar" aria-hidden="true">
-      <span>9:41</span>
+      <span>{time}</span>
       <span className="auth-status-icons"><i /><i /><i /></span>
     </div>
   );
