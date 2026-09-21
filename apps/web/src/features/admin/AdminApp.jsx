@@ -803,6 +803,9 @@ export default function AdminApp() {
         regions: payload.regions || []
       };
     }
+    // Межгород: без этой ветки верхний поиск на странице просто ничего
+    // не делал: владелец печатает и смотрит на неизменные 156 направлений.
+    if (payload.routes) return { ...payload, routes: filter(payload.routes) };
     if (payload.logs) return { ...payload, logs: filter(payload.logs) };
     if (payload.messages) return { ...payload, messages: filter(payload.messages) };
     if (payload.promoCodes) return { ...payload, promoCodes: filter(payload.promoCodes), regions: payload.regions || [] };
