@@ -899,6 +899,16 @@ const statements = [
     ALTER TABLE recurring_bookings ADD CONSTRAINT recurring_bookings_last_skip_reason_check CHECK (last_skip_reason IS NULL OR last_skip_reason IN ('CLIENT_MISSING','DRIVER_MISSING','ROUTE_UNAVAILABLE','DRIVER_OUT_OF_REGION','DRIVER_NOT_READY','DRIVER_BUSY'));
   EXCEPTION WHEN duplicate_object THEN NULL;
   END $$`,
+  // Долг выше потолка закрывает водителю новые наличные заказы. Регулярный
+  // рейс раздавал их мимо этой проверки, потому что назначает водителя сам.
+  // У пропуска теперь своя причина: её видно и владельцу в панели, и водителю
+  // у себя, иначе «водитель не готов» ничего никому не объясняет.
+  "ALTER TABLE recurring_bookings DROP CONSTRAINT IF EXISTS recurring_bookings_last_skip_reason_check",
+  `ALTER TABLE recurring_bookings ADD CONSTRAINT recurring_bookings_last_skip_reason_check
+     CHECK (last_skip_reason IS NULL OR last_skip_reason = ANY (ARRAY[
+       'CLIENT_MISSING','DRIVER_MISSING','ROUTE_UNAVAILABLE',
+       'DRIVER_OUT_OF_REGION','DRIVER_NOT_READY','DRIVER_BUSY','DRIVER_DEBT_LIMIT'
+     ]))`,
 
   // --- Driver wallet top-up requests ---
   // Mirrors client_topup_requests exactly (same PENDING-until-real-Kaspi-Pay

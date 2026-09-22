@@ -3220,7 +3220,8 @@ const recurringSkipReasonLabels = {
   ROUTE_UNAVAILABLE: "Не удалось определить маршрут",
   DRIVER_OUT_OF_REGION: "Водитель не в регионе поездки",
   DRIVER_NOT_READY: "Водитель не готов к выходу на линию",
-  DRIVER_BUSY: "Водитель занят другой поездкой"
+  DRIVER_BUSY: "Водитель занят другой поездкой",
+  DRIVER_DEBT_LIMIT: "У водителя долг выше лимита"
 };
 
 // What each road between two towns costs.

@@ -66,6 +66,28 @@ for (const path of [
   );
 }
 
+// Третий путь: регулярный рейс назначает водителя сам, без его участия и без
+// участия владельца. Проверка готовности к линии смотрит блокировку и район, но
+// не долг, — и без отдельной проверки здесь потолок для таких водителей просто
+// не существовал: они возили за наличные дальше, а долг рос.
+{
+  const scheduler = read("../modules/recurring-bookings/recurring-bookings.scheduler.js");
+  assert.ok(
+    scheduler.includes('from "../drivers/driver-debt.js"'),
+    "регулярный рейс должен брать правило долга из того же места, что и остальные"
+  );
+  assert.match(
+    scheduler,
+    /isOverDebtCeiling\(driver\.debt\)/,
+    "регулярный рейс раздаёт наличные заказы мимо долгового потолка"
+  );
+  assert.match(
+    scheduler,
+    /recordSkip\(booking\.id, "DRIVER_DEBT_LIMIT"\)/,
+    "причина пропуска должна называться: «водитель не готов» ничего не объясняет ни владельцу, ни водителю"
+  );
+}
+
 // Both paths that can put a driver on an order enforce it.
 const dispatch = read("../modules/orders/order-dispatch.service.js");
 const routes = read("../modules/orders/orders.routes.js");

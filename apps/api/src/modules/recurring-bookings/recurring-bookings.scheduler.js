@@ -4,6 +4,7 @@ import { writeAudit } from "../../common/audit.js";
 import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
 import { emitOrderCreated, isSamePerson } from "../orders/order-dispatch.service.js";
 import { commissionPercentForOrder } from "../orders/order-pricing.service.js";
+import { isOverDebtCeiling } from "../drivers/driver-debt.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
 import { runDistributedJob } from "../../common/distributedJob.js";
@@ -42,7 +43,6 @@ async function recordSkip(bookingId, reason) {
   if (clientRow?.user_id) {
     notifyUser(clientRow.user_id, {
       key: "recurringNoDriver",
-      body: "Не удалось найти свободного водителя по вашему регулярному маршруту. Мы попробуем снова в следующий раз по расписанию.",
       type: "RECURRING_BOOKING_SKIPPED",
       data: { recurringBookingId: bookingId, reason }
     }).catch((error) => console.error("[push] notifyUser failed", error));
@@ -111,6 +111,16 @@ async function createOrderForBooking(booking) {
   } catch (error) {
     console.warn(`[recurring-bookings] driver ${driver.id} not dispatch-ready for booking ${booking.id}: ${error.message}`);
     await recordSkip(booking.id, "DRIVER_NOT_READY");
+    return;
+  }
+  // Долг выше потолка закрывает водителю новые наличные заказы — и в
+  // приложении, и когда владелец назначает вручную. Регулярный рейс назначает
+  // сам, поэтому здесь нужна та же проверка: без неё водитель с долгом
+  // продолжал возить за наличные, долг рос дальше, а потолок для него просто
+  // не существовал. Регулярный рейс всегда оплачивается наличными.
+  if (isOverDebtCeiling(driver.debt)) {
+    console.warn(`[recurring-bookings] driver ${driver.id} is over the debt ceiling for booking ${booking.id}`);
+    await recordSkip(booking.id, "DRIVER_DEBT_LIMIT");
     return;
   }
   if (driver.status !== "FREE") {

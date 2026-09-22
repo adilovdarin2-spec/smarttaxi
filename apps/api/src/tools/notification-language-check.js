@@ -90,6 +90,33 @@ assert.deepEqual(
   `уведомление написано по-русски мимо справочника:\n  ${offenders.join("\n  ")}`
 );
 
+// --- Русский текст не перекрывает переведённый ---
+//
+// Слова живого человека передаются как body и не переводятся — на это правило
+// выше и рассчитано. Но русский литерал рядом с ключом — другое дело:
+// заголовок приходил на языке человека, а текст под ним по-русски. Так было у
+// пропуска регулярной поездки: в справочнике четыре языка, а вызов подставлял
+// русский поверх них.
+const overrides = [];
+for (const file of walk(join(root, "modules"))) {
+  if (file.includes("notification-messages.js")) continue;
+  const src = readFileSync(file, "utf8");
+  const lines = src.split("\n");
+  lines.forEach((line, index) => {
+    if (!/^\s*key:\s*"/.test(line)) return;
+    // Тело, вписанное литералом в тех же нескольких строках, что и ключ.
+    const nearby = lines.slice(index, index + 6).join("\n");
+    const literalBody = /body:\s*"[^"]*[А-Яа-яЁё][^"]*"/.exec(nearby);
+    if (!literalBody) return;
+    overrides.push(`${file.replace(root, "")}:${index + 1} ${literalBody[0].slice(0, 60)}`);
+  });
+}
+assert.deepEqual(
+  overrides,
+  [],
+  `русский текст перекрывает перевод из справочника — заголовок придёт на языке человека, а текст нет:\n  ${overrides.join("\n  ")}`
+);
+
 // --- Язык действительно хранится и приходит с клиента ---
 const schema = readFileSync(join(root, "db", "schema.sql"), "utf8");
 const migrations = readFileSync(join(root, "db", "migrations.js"), "utf8");
