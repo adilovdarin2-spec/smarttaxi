@@ -21,7 +21,7 @@ assert.match(auth, /sessionVersion:\s*user\.session_version/, "signToken must em
 assert.match(auth, /export async function rotateSessionVersion/, "rotateSessionVersion must be exported for auth.routes.js to call on login/reset/logout");
 assert.match(auth, /UPDATE users SET session_version=uuid_generate_v4\(\) WHERE id=\$1/, "rotateSessionVersion must actually rotate the column, not just read it");
 assert.match(auth, /export async function requireAuth/, "requireAuth must be async now that it looks up session_version in the DB on every request");
-assert.match(auth, /SELECT session_version FROM users WHERE id=\$1/, "requireAuth must look up the current session_version, not trust the token alone");
+assert.match(auth, /SELECT session_version, is_active FROM users WHERE id=\$1/, "requireAuth must look up the current session_version and the account switch, not trust the token alone");
 assert.match(auth, /current\.session_version !== decoded\.sessionVersion/, "requireAuth must reject a token whose embedded session_version is stale");
 assert.match(auth, /"SESSION_SUPERSEDED"/, "requireAuth must use a distinct error code so clients can tell a superseded session apart from a plain invalid/expired token");
 

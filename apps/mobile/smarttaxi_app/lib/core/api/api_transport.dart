@@ -10,6 +10,10 @@ const Set<String> _deadTokenCodes = {
   'INVALID_TOKEN',
   'TOKEN_EXPIRED',
   'UNAUTHORIZED',
+  // Аккаунт выключили, пока приложение было открыто. Токен после этого мёртв
+  // так же, как и после входа с другого устройства: держать человека на
+  // экране, где ни один запрос не проходит, незачем.
+  'ACCOUNT_DISABLED',
 };
 
 /// Transport recovery must not replay actions or affect a replacement session.

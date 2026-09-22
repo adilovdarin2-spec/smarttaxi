@@ -24,7 +24,9 @@ export function clearToken(){ removeSessionToken(); }
 
 // A 401 carrying one of these means the credential itself is finished, as
 // opposed to a permission problem on one endpoint.
-const DEAD_TOKEN_CODES = new Set(["SESSION_SUPERSEDED", "INVALID_TOKEN", "TOKEN_EXPIRED", "UNAUTHORIZED"]);
+// ACCOUNT_DISABLED — аккаунт выключили, пока страница была открыта. Токен
+// после этого мёртв так же, как после входа с другого устройства.
+const DEAD_TOKEN_CODES = new Set(["SESSION_SUPERSEDED", "INVALID_TOKEN", "TOKEN_EXPIRED", "UNAUTHORIZED", "ACCOUNT_DISABLED"]);
 export { subscribeSessionChanges };
 export async function api(path, options = {}) {
   const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;

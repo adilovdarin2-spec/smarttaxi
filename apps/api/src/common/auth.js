@@ -42,9 +42,18 @@ export async function requireAuth(req, _res, next) {
     return next(new AppError("Invalid token", 401, "INVALID_TOKEN"));
   }
   try {
-    const current = (await query("SELECT session_version FROM users WHERE id=$1", [decoded.id])).rows[0];
+    const current = (await query("SELECT session_version, is_active FROM users WHERE id=$1", [decoded.id])).rows[0];
     if (!current || current.session_version !== decoded.sessionVersion) {
       return next(new AppError("This account was signed in on another device", 401, "SESSION_SUPERSEDED"));
+    }
+    // Выключенный аккаунт выключен и для уже выданного токена.
+    //
+    // Вход отказывает неактивному пользователю, но токен живёт год, и проверка
+    // на входе его не касается: выключив аккаунт, человека получили бы
+    // работающим до следующего года. Сегодня выключателем никто не пользуется —
+    // именно поэтому дыру и не видно, пока кто-нибудь не нажмёт.
+    if (current.is_active === false) {
+      return next(new AppError("This account is disabled", 401, "ACCOUNT_DISABLED"));
     }
     req.user = decoded;
     next();
