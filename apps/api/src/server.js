@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { Server } from "socket.io";
 import jwt from "jsonwebtoken";
 import { env } from "./config/env.js";
+import { accountTokenState } from "./common/auth.js";
 import { connectRedis, redis } from "./db/redis.js";
 import { attachSocketRedisAdapter, closeSocketRedisAdapter } from "./realtime/socket-redis-adapter.js";
 import { query, pool } from "./db/pool.js";
@@ -98,9 +99,11 @@ async function authenticateSocketToken(token) {
     return null;
   }
   try {
-    const current = (await query("SELECT session_version FROM users WHERE id=$1", [decoded.id])).rows[0];
-    if (!current || current.session_version !== decoded.sessionVersion) return null;
-    return decoded;
+    // То же правило, что и на каждом HTTP-запросе, из одного места: пока их
+    // было два, они разошлись — запрос научился смотреть на выключатель
+    // аккаунта, а сокет остался на версии сессии.
+    const state = await accountTokenState(decoded);
+    return state.ok ? decoded : null;
   } catch {
     return null;
   }

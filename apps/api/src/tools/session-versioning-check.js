@@ -55,7 +55,10 @@ assert.match(logoutBody, /rotateSessionVersion\(req\.user\.id\)/, "/logout must 
 // already-open socket (driver location, order/dispatch events) working
 // indefinitely, undermining the whole point of session_version.
 assert.match(server, /async function authenticateSocketToken/, "server.js must validate session_version for socket connections too, not just HTTP");
-assert.match(server, /current\.session_version !== decoded\.sessionVersion/, "authenticateSocketToken must reject a socket token whose session_version is stale, same check as requireAuth");
+// Правило одно на оба входа, а не переписано здесь во второй раз: пока их
+// было два, они успели разойтись — проверка запроса научилась смотреть на
+// выключатель аккаунта, а сокет остался на одной версии сессии.
+assert.match(server, /accountTokenState\(decoded\)/, "authenticateSocketToken must use the same rule as requireAuth, not restate it");
 assert.match(server, /io\.use\(async \(socket, next\) => \{\s*socket\.user = await authenticateSocketToken/, "the io.use handshake middleware must go through authenticateSocketToken, not raw jwt.verify");
 assert.match(server, /setInterval\(async \(\) => \{/, "server.js must periodically re-validate already-connected sockets, since io.use only runs once at connect time and a shift-long driver socket could otherwise outlive a revoked session indefinitely");
 assert.match(server, /if \(!stillValid\) socket\.disconnect\(true\);/, "the periodic sweep must actually disconnect a socket whose session was superseded, not just detect it");

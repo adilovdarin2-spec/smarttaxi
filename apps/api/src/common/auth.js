@@ -31,6 +31,27 @@ export async function rotateSessionVersion(userId, executor = query) {
   return result.rows[0];
 }
 
+// Годен ли этот токен для этого аккаунта прямо сейчас.
+//
+// Одно определение на два входа: HTTP и сокет. Пока их было два, они успели
+// разойтись — проверка запроса научилась смотреть на выключатель аккаунта, а
+// сокет остался на одной версии сессии, и выключенный аккаунт продолжал бы
+// получать живые события: заказы, координаты водителей, очереди на стоянках.
+//
+// Возвращает null, если токен больше не годен, иначе — причину отказа словами
+// вызывающему решать, что с ней делать.
+export async function accountTokenState(decoded) {
+  if (!decoded?.id) return { ok: false, code: "UNAUTHORIZED" };
+  const current = (await query("SELECT session_version, is_active FROM users WHERE id=$1", [decoded.id])).rows[0];
+  if (!current || current.session_version !== decoded.sessionVersion) {
+    return { ok: false, code: "SESSION_SUPERSEDED" };
+  }
+  // Выключенный аккаунт выключен и для уже выданного токена: вход его не
+  // пускает, а токен живёт год.
+  if (current.is_active === false) return { ok: false, code: "ACCOUNT_DISABLED" };
+  return { ok: true };
+}
+
 export async function requireAuth(req, _res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
@@ -42,18 +63,12 @@ export async function requireAuth(req, _res, next) {
     return next(new AppError("Invalid token", 401, "INVALID_TOKEN"));
   }
   try {
-    const current = (await query("SELECT session_version, is_active FROM users WHERE id=$1", [decoded.id])).rows[0];
-    if (!current || current.session_version !== decoded.sessionVersion) {
-      return next(new AppError("This account was signed in on another device", 401, "SESSION_SUPERSEDED"));
-    }
-    // Выключенный аккаунт выключен и для уже выданного токена.
-    //
-    // Вход отказывает неактивному пользователю, но токен живёт год, и проверка
-    // на входе его не касается: выключив аккаунт, человека получили бы
-    // работающим до следующего года. Сегодня выключателем никто не пользуется —
-    // именно поэтому дыру и не видно, пока кто-нибудь не нажмёт.
-    if (current.is_active === false) {
-      return next(new AppError("This account is disabled", 401, "ACCOUNT_DISABLED"));
+    const state = await accountTokenState(decoded);
+    if (!state.ok) {
+      const message = state.code === "ACCOUNT_DISABLED"
+        ? "This account is disabled"
+        : "This account was signed in on another device";
+      return next(new AppError(message, 401, state.code));
     }
     req.user = decoded;
     next();
