@@ -68,7 +68,7 @@ export function publicRegion(region) {
     centerLat: Number(region.center_lat),
     centerLng: Number(region.center_lng),
     currency: region.currency,
-    supportPhone: region.support_phone,
+    supportPhone: region.support_phone || null,
     boundary: region.boundary,
     createdAt: region.created_at,
     updatedAt: region.updated_at
@@ -92,8 +92,8 @@ export async function listRegions(executor = defaultQuery) {
 
 export async function createRegion(data, executor = defaultQuery) {
   const result = await run(executor, `
-    INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, is_active)
-    VALUES($1,$2,$3::jsonb,$4,$5,$6,$7)
+    INSERT INTO regions(code, name, boundary, center_lat, center_lng, currency, support_phone, is_active)
+    VALUES($1,$2,$3::jsonb,$4,$5,$6,$7,$8)
     RETURNING *
   `, [
     data.code,
@@ -102,6 +102,7 @@ export async function createRegion(data, executor = defaultQuery) {
     data.centerLat,
     data.centerLng,
     data.currency || "KZT",
+    data.supportPhone || "",
     data.isActive ?? true
   ]);
   return result.rows[0];
@@ -115,6 +116,7 @@ function regionUpdateAssignments(data) {
     centerLat: "center_lat",
     centerLng: "center_lng",
     currency: "currency",
+    supportPhone: "support_phone",
     isActive: "is_active"
   };
   const entries = Object.entries(data);

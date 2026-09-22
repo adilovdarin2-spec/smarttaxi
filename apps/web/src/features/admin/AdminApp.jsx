@@ -271,6 +271,7 @@ function normalizeRegionForm(region) {
     centerLat: String(region?.centerLat ?? region?.center_lat ?? preset.centerLat),
     centerLng: String(region?.centerLng ?? region?.center_lng ?? preset.centerLng),
     boundary: JSON.stringify(region?.boundary || preset.boundary, null, 2),
+    supportPhone: region?.supportPhone || region?.support_phone || "",
     isActive: isActiveRegion(region)
   };
 }
@@ -908,6 +909,7 @@ export default function AdminApp() {
         centerLat: Number(form.centerLat),
         centerLng: Number(form.centerLng),
         boundary,
+        supportPhone: form.supportPhone.trim(),
         isActive: form.isActive
       };
       if (existing?.id) await updateAdminRegion(existing.id, payload);
@@ -4408,6 +4410,12 @@ function RegionEditor({ region, onClose, onSave, busy }) {
         <Field label="Название" value={form.name} onChange={value => setField("name", value)} />
         <Field label="Код" value={form.code} onChange={value => setField("code", value.toUpperCase())} />
         <Field label="Валюта" value={form.currency} onChange={value => setField("currency", value.toUpperCase())} />
+        <Field
+          label="Телефон поддержки района"
+          value={form.supportPhone}
+          onChange={value => setField("supportPhone", value)}
+          hint="Пусто — люди увидят общий номер сервиса из Настроек"
+        />
         <div className="admin-form-row">
           <Field label="Широта центра" value={form.centerLat} onChange={value => setField("centerLat", value)} />
           <Field label="Долгота центра" value={form.centerLng} onChange={value => setField("centerLng", value)} />

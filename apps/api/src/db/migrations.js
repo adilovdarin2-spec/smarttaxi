@@ -95,8 +95,22 @@ const statements = [
   // созданных раньше, осталось 15: schema.sql видят только новые базы. Тариф,
   // добавленный без явного процента, молча получал бы ставку, которой нет ни
   // в оферте, ни в панели.
+  // Кешбэк включён: 0,8 процента с поездки. Поездка за 400 ₸ возвращает
+  // пассажиру 3 ₸, за 1 000 ₸ — 8 ₸. Один раз: дальше ставка живёт в панели,
+  // и следующий деплой не отменит решение владельца.
+  `WITH claim AS (
+     INSERT INTO schema_one_time_changes(name) VALUES ('cashback_0_8_percent')
+     ON CONFLICT (name) DO NOTHING
+     RETURNING name
+   )
+   UPDATE tariffs SET cashback_percent=0.8, updated_at=NOW()
+   WHERE EXISTS (SELECT 1 FROM claim) AND cashback_percent = 0`,
+  "ALTER TABLE tariffs ALTER COLUMN cashback_percent SET DEFAULT 0.8",
   "ALTER TABLE tariffs ALTER COLUMN service_commission_percent SET DEFAULT 7",
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
+  // Телефон поддержки у каждого района свой: publicRegion его уже отдавал,
+  // а колонки под него не было, и поле молча исчезало из ответа.
+  "ALTER TABLE regions ADD COLUMN IF NOT EXISTS support_phone TEXT NOT NULL DEFAULT ''",
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS car_color TEXT",
   `CREATE TABLE IF NOT EXISTS driver_region_approvals (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -195,8 +209,8 @@ const statements = [
    FROM regions r
    CROSS JOIN (
      VALUES
-      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0,1,3,50,0,10,true),
-      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
+      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0.8,1,3,50,0,10,true),
+      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0.8,1,3,50,0,30,true)
    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
    WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
    ON CONFLICT (region_id, name) DO NOTHING`,

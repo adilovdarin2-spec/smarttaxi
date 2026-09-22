@@ -125,7 +125,8 @@ function createRegionStoreExecutor(initialRows = []) {
           center_lat: params[3],
           center_lng: params[4],
           currency: params[5],
-          is_active: params[6],
+          support_phone: params[6],
+          is_active: params[7],
           created_at: "2026-01-01T00:00:00.000Z",
           updated_at: "2026-01-01T00:00:00.000Z"
         };
@@ -150,6 +151,7 @@ function createRegionStoreExecutor(initialRows = []) {
           if (assignment.startsWith("center_lat=")) row.center_lat = params[index];
           if (assignment.startsWith("center_lng=")) row.center_lng = params[index];
           if (assignment.startsWith("currency=")) row.currency = params[index];
+          if (assignment.startsWith("support_phone=")) row.support_phone = params[index];
           if (assignment.startsWith("is_active=")) row.is_active = params[index];
         });
         row.updated_at = "2026-01-01T00:01:00.000Z";

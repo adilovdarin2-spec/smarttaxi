@@ -1421,7 +1421,11 @@ async function updateStatus(req, res, next, status) {
         // another round of bonuses from the same stored value.
         const cashback = Number(updated.cashback_used) > 0
           ? 0
-          : Math.round(updated.price * Number(tariff.cashback_percent) / 100 / 10) * 10;
+          // Считаем до тенге, а не до десятков. Округление до десятков съедало
+          // весь кешбэк на коротких поездках: при ставке 0,8 процента поездка
+          // за 400 ₸ даёт 3,2 ₸ — старая формула превращала это в ноль, и
+          // человек не получал ничего, хотя в тарифе стояла ненулевая ставка.
+          : Math.round(updated.price * Number(tariff.cashback_percent) / 100);
         cashbackEarned = cashback;
         await client.query("UPDATE orders SET cashback_earned=$1 WHERE id=$2", [cashback, updated.id]);
         // Crediting the client's cashback and the driver's balance/debt here

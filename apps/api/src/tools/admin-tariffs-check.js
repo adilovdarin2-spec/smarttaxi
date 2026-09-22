@@ -144,7 +144,8 @@ if (hasWebSource && existsSync(legalPath)) {
   );
   [schema, migrations].forEach((source, index) => {
     const where = index === 0 ? "schema.sql" : "migrations.js";
-    const rows = [...source.matchAll(/\('(Economy|Comfort|Business|Delivery)',[^)]*?,(\d+),\d+,\d+,\d+,\d+,\d+,\d+,(?:true|false)\)/g)];
+    // Ставки — не обязательно целые: кешбэк 0,8 процента тоже число.
+    const rows = [...source.matchAll(/\('(Economy|Comfort|Business|Delivery)',[^)]*?,([\d.]+),[\d.]+,[\d.]+,[\d.]+,[\d.]+,[\d.]+,[\d.]+,(?:true|false)\)/g)];
     // Два тарифа: поездка и посылка. Комфорта и Бизнеса в сервисе нет.
     assert.deepEqual(
       rows.map(([, name]) => name).sort(),

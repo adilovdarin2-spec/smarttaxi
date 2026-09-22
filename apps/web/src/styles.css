@@ -26362,3 +26362,11 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
     display: none;
   }
 }
+
+/* Подсказка под полем: что будет, если оставить его пустым. */
+.admin-field-hint {
+  margin-top: 6px;
+  color: #5A6172;
+  font-size: 12px;
+  line-height: 1.4;
+}

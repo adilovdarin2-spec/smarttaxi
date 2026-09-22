@@ -32,11 +32,12 @@ export function SegmentedFilter({ value, onChange, items }) {
   );
 }
 
-export function Field({ label, value, onChange, type = "text" }) {
+export function Field({ label, value, onChange, type = "text", hint = null }) {
   return (
     <label className="admin-field">
       <span>{label}</span>
       <input type={type} value={value} onChange={event => onChange(event.target.value)} />
+      {hint ? <small className="admin-field-hint">{hint}</small> : null}
     </label>
   );
 }

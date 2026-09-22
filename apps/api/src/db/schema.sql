@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS regions (
   center_lat NUMERIC(10,6) NOT NULL,
   center_lng NUMERIC(10,6) NOT NULL,
   currency TEXT NOT NULL DEFAULT 'KZT',
+  -- Свой номер поддержки у каждого района: в Жетысае трубку берёт не тот, кто
+  -- в Мырзакенте. Пусто — значит общий номер сервиса.
+  support_phone TEXT NOT NULL DEFAULT '',
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -176,7 +179,7 @@ CREATE TABLE IF NOT EXISTS tariffs (
   price_per_minute INTEGER NOT NULL,
   min_price INTEGER NOT NULL,
   service_commission_percent NUMERIC(5,2) NOT NULL DEFAULT 7,
-  cashback_percent NUMERIC(5,2) NOT NULL DEFAULT 2,
+  cashback_percent NUMERIC(5,2) NOT NULL DEFAULT 0.8,
   surge_multiplier NUMERIC(6,2) NOT NULL DEFAULT 1,
   included_km NUMERIC(8,2) NOT NULL DEFAULT 0,
   included_minutes INTEGER NOT NULL DEFAULT 0,
@@ -661,8 +664,8 @@ SELECT r.id, seed.name, seed.display_name, seed.description, seed.base_price, se
 FROM regions r
 CROSS JOIN (
   VALUES
-    ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0,1,3,50,0,10,true),
-    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
+    ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0.8,1,3,50,0,10,true),
+    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0.8,1,3,50,0,30,true)
 ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
 WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
 ON CONFLICT (region_id, name) DO NOTHING;

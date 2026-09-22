@@ -96,6 +96,9 @@ const RegionCreate = z.object({
   centerLat: z.coerce.number().min(-90).max(90),
   centerLng: z.coerce.number().min(-180).max(180),
   currency: z.string().trim().min(2).max(8).default("KZT"),
+  // Пусто — значит район пользуется общим номером сервиса. Поэтому здесь
+  // разрешена пустая строка, а не только телефон длиной от трёх символов.
+  supportPhone: z.string().trim().max(32).optional(),
   isActive: z.boolean().default(true)
 });
 

@@ -87,4 +87,35 @@ assert.equal(
   "a discount must never make the ride free — at most orderPrice - 1"
 );
 
+// --- Кешбэк считается до тенге, а не до десятков ---
+//
+// Формула округляла начисление до десятков тенге. При ставке меньше процента
+// это ломалось в обе стороны: поездка за 400 ₸ давала ровно ноль, а за 700 ₸ —
+// десятку вместо положенных шести. Ставка в тарифе стояла ненулевая, а человек
+// получал не её.
+{
+  const { readFileSync } = await import("node:fs");
+  const ordersSource = readFileSync(new URL("../modules/orders/orders.routes.js", import.meta.url), "utf8");
+  const formula = /cashback_percent\)\s*\/\s*100([^;]*);/.exec(ordersSource);
+  assert(formula, "формула кешбэка исчезла из завершения заказа");
+  assert(
+    !/\/\s*10\s*\)?\s*\*\s*10/.test(formula[1]),
+    "кешбэк снова округляется до десятков — на коротких поездках это ноль"
+  );
+
+  // И ставка в посевах не нулевая: иначе начисление выключено, а владелец об
+  // этом узнает только по отсутствию жалоб.
+  const schema = readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8");
+  const seeded = [...schema.matchAll(/\('(?:Economy|Delivery)',[^)]*?,7,([\d.]+),/g)].map(m => Number(m[1]));
+  assert(seeded.length >= 2, "в посевах не найдены ставки кешбэка");
+  assert(seeded.every(rate => rate > 0), `кешбэк выключен в посевах: ${seeded.join(", ")}`);
+
+  // Ровно то, что обещано владельцу: 400 ₸ -> 3, 700 ₸ -> 6, 1000 ₸ -> 8.
+  const rate = seeded[0];
+  const earn = (price) => Math.round(price * rate / 100);
+  assert.equal(earn(400), 3, `поездка за 400 ₸ должна возвращать 3 ₸, а даёт ${earn(400)}`);
+  assert.equal(earn(700), 6, `поездка за 700 ₸ должна возвращать 6 ₸, а даёт ${earn(700)}`);
+  assert.equal(earn(1000), 8, `поездка за 1000 ₸ должна возвращать 8 ₸, а даёт ${earn(1000)}`);
+}
+
 console.log("Pricing/bidding/promo checks ok");
