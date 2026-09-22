@@ -8341,6 +8341,18 @@ abstract class AppLocalizations {
   /// **'Слишком много попыток. Запросите новый код позже'**
   String get apiErrorSmsAttemptsExceeded;
 
+  /// No description provided for @apiErrorSmsCodeTooSoon.
+  ///
+  /// In ru, this message translates to:
+  /// **'Код уже отправлен. Подождите минуту и попробуйте снова'**
+  String get apiErrorSmsCodeTooSoon;
+
+  /// No description provided for @apiErrorSmsDailyLimit.
+  ///
+  /// In ru, this message translates to:
+  /// **'На сегодня кодов для этого номера больше нет. Попробуйте завтра'**
+  String get apiErrorSmsDailyLimit;
+
   /// No description provided for @apiErrorNotificationNotFound.
   ///
   /// In ru, this message translates to:

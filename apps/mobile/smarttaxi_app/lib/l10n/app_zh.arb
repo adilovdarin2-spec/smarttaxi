@@ -1923,6 +1923,8 @@
   "apiErrorInvalidSmsCode": "短信验证码不正确",
   "apiErrorSmsCodeExpired": "验证码已过期，请重新获取",
   "apiErrorSmsAttemptsExceeded": "尝试次数过多，请稍后重新获取验证码",
+  "apiErrorSmsCodeTooSoon": "验证码已发送。请等待一分钟后重试",
+  "apiErrorSmsDailyLimit": "该号码今天的验证码已用完，请明天再试",
   "apiErrorNotificationNotFound": "该通知已被删除",
   "apiErrorNoPendingPriceOffer": "该订单没有待处理的报价",
   "apiErrorQueuedPriceOfferNotFound": "该报价已失效",

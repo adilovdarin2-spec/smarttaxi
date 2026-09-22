@@ -1923,6 +1923,8 @@
   "apiErrorInvalidSmsCode": "SMS kodi noto'g'ri",
   "apiErrorSmsCodeExpired": "Kod muddati tugadi. Yangisini so'rang",
   "apiErrorSmsAttemptsExceeded": "Juda ko'p urinish. Yangi kodni keyinroq so'rang",
+  "apiErrorSmsCodeTooSoon": "Kod yuborildi. Bir daqiqa kutib, qayta urinib ko'ring",
+  "apiErrorSmsDailyLimit": "Bugunga bu raqam uchun kodlar tugadi. Ertaga urinib ko'ring",
   "apiErrorNotificationNotFound": "Bu bildirishnoma o'chirilgan",
   "apiErrorNoPendingPriceOffer": "Bu buyurtma bo'yicha narx taklifi yo'q",
   "apiErrorQueuedPriceOfferNotFound": "Bu narx taklifi eskirgan",

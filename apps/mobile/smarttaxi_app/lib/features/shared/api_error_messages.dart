@@ -55,6 +55,8 @@ String? apiErrorMessage(String? code, AppLocalizations l10n) {
     'ROAD_ALERT_OUTSIDE_REGION': l10n.apiErrorRoadAlertOutsideRegion,
     'SMS_CODE_ATTEMPTS_EXCEEDED': l10n.apiErrorSmsAttemptsExceeded,
     'SMS_CODE_EXPIRED': l10n.apiErrorSmsCodeExpired,
+    'SMS_CODE_TOO_SOON': l10n.apiErrorSmsCodeTooSoon,
+    'SMS_DAILY_LIMIT_REACHED': l10n.apiErrorSmsDailyLimit,
     'STAND_ALREADY_QUEUED': l10n.apiErrorStandAlreadyQueued,
     'STAND_ENTRY_NOT_BOARDING': l10n.apiErrorStandEntryNotBoarding,
     'STAND_ENTRY_NOT_FOUND': l10n.apiErrorStandEntryNotFound,

@@ -4674,6 +4674,14 @@ class AppLocalizationsKk extends AppLocalizations {
       'Тым көп әрекет. Жаңа кодты кейінірек сұраңыз';
 
   @override
+  String get apiErrorSmsCodeTooSoon =>
+      'Код жіберілді. Бір минут күтіп, қайта көріңіз';
+
+  @override
+  String get apiErrorSmsDailyLimit =>
+      'Бүгінге бұл нөмірге код бітті. Ертең көріңіз';
+
+  @override
   String get apiErrorNotificationNotFound => 'Бұл хабарлама жойылған';
 
   @override

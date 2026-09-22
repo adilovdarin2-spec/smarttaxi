@@ -210,10 +210,47 @@ router.post("/phone/check", rateLimit({ prefix: "auth-phone-check", windowMs: 60
   } catch (e) { next(e); }
 });
 
+// Ограничитель выше считает запросы по адресу — он защищает сервер. Номер он
+// не защищает: адрес у мобильного интернета меняется сам по себе, а с
+// десятка устройств потолок в шесть штук в минуту не значит ничего.
+//
+// Без защиты самого номера получается две беды сразу. Человеку, которому
+// кто-то решил насолить, можно слать коды всю ночь — он их не заказывал и
+// выключить не может. И за каждое такое сообщение платит владелец: шесть
+// в минуту с одного адреса — это триста шестьдесят в час, а адресов может
+// быть сколько угодно. Кончится баланс у оператора — зарегистрироваться не
+// сможет уже никто.
+//
+// Поэтому у номера свои пределы, и считаются они в базе: она одна на все
+// серверы, а память процесса — нет.
+const SMS_RESEND_COOLDOWN_SECONDS = 60;
+const SMS_DAILY_LIMIT_PER_PHONE = 10;
+
+async function assertSmsAllowedForPhone(phone) {
+  const stats = (await query(`
+    SELECT
+      COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '24 hours')::int AS last_day,
+      COALESCE(EXTRACT(EPOCH FROM (NOW() - MAX(created_at))), 1e9)::int AS since_last
+    FROM auth_sms_codes
+    WHERE phone = $1
+  `, [phone])).rows[0];
+
+  if (stats.since_last < SMS_RESEND_COOLDOWN_SECONDS) {
+    const retryAfterSeconds = SMS_RESEND_COOLDOWN_SECONDS - stats.since_last;
+    throw new AppError("Code was just sent to this number", 429, "SMS_CODE_TOO_SOON", { retryAfterSeconds });
+  }
+  if (stats.last_day >= SMS_DAILY_LIMIT_PER_PHONE) {
+    throw new AppError("Too many codes for this number today", 429, "SMS_DAILY_LIMIT_REACHED", {
+      limit: SMS_DAILY_LIMIT_PER_PHONE
+    });
+  }
+}
+
 router.post("/sms/send", rateLimit({ prefix: "auth-sms-send", windowMs: 60_000, max: 6 }), async (req, res, next) => {
   try {
     const body = SmsSendSchema.parse(req.body);
     const { phone } = normalizePhone(body.phone);
+    await assertSmsAllowedForPhone(phone);
     const code = smsCode();
     const codeHash = await bcrypt.hash(code, 10);
     const inserted = await query(`

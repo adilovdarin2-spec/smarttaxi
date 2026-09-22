@@ -4721,6 +4721,14 @@ class AppLocalizationsUz extends AppLocalizations {
       'Juda ko\'p urinish. Yangi kodni keyinroq so\'rang';
 
   @override
+  String get apiErrorSmsCodeTooSoon =>
+      'Kod yuborildi. Bir daqiqa kutib, qayta urinib ko\'ring';
+
+  @override
+  String get apiErrorSmsDailyLimit =>
+      'Bugunga bu raqam uchun kodlar tugadi. Ertaga urinib ko\'ring';
+
+  @override
   String get apiErrorNotificationNotFound => 'Bu bildirishnoma o\'chirilgan';
 
   @override

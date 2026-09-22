@@ -4372,6 +4372,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiErrorSmsAttemptsExceeded => '尝试次数过多，请稍后重新获取验证码';
 
   @override
+  String get apiErrorSmsCodeTooSoon => '验证码已发送。请等待一分钟后重试';
+
+  @override
+  String get apiErrorSmsDailyLimit => '该号码今天的验证码已用完，请明天再试';
+
+  @override
   String get apiErrorNotificationNotFound => '该通知已被删除';
 
   @override

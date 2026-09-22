@@ -1920,6 +1920,8 @@
   "apiErrorInvalidSmsCode": "SMS коды қате",
   "apiErrorSmsCodeExpired": "Кодтың мерзімі өтті. Жаңасын сұраңыз",
   "apiErrorSmsAttemptsExceeded": "Тым көп әрекет. Жаңа кодты кейінірек сұраңыз",
+  "apiErrorSmsCodeTooSoon": "Код жіберілді. Бір минут күтіп, қайта көріңіз",
+  "apiErrorSmsDailyLimit": "Бүгінге бұл нөмірге код бітті. Ертең көріңіз",
   "apiErrorNotificationNotFound": "Бұл хабарлама жойылған",
   "apiErrorNoPendingPriceOffer": "Бұл тапсырыс бойынша баға ұсынысы жоқ",
   "apiErrorQueuedPriceOfferNotFound": "Бұл баға ұсынысы ескірген",

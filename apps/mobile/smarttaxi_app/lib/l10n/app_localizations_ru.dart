@@ -4694,6 +4694,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Слишком много попыток. Запросите новый код позже';
 
   @override
+  String get apiErrorSmsCodeTooSoon =>
+      'Код уже отправлен. Подождите минуту и попробуйте снова';
+
+  @override
+  String get apiErrorSmsDailyLimit =>
+      'На сегодня кодов для этого номера больше нет. Попробуйте завтра';
+
+  @override
   String get apiErrorNotificationNotFound => 'Это уведомление уже удалено';
 
   @override

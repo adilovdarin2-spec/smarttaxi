@@ -2087,6 +2087,8 @@
   "apiErrorInvalidSmsCode": "Неверный код из SMS",
   "apiErrorSmsCodeExpired": "Срок действия кода истёк. Запросите новый",
   "apiErrorSmsAttemptsExceeded": "Слишком много попыток. Запросите новый код позже",
+  "apiErrorSmsCodeTooSoon": "Код уже отправлен. Подождите минуту и попробуйте снова",
+  "apiErrorSmsDailyLimit": "На сегодня кодов для этого номера больше нет. Попробуйте завтра",
   "apiErrorNotificationNotFound": "Это уведомление уже удалено",
   "apiErrorNoPendingPriceOffer": "По этому заказу нет предложения цены",
   "apiErrorQueuedPriceOfferNotFound": "Это предложение цены уже неактуально",
