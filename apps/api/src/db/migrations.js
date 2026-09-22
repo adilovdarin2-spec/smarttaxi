@@ -105,7 +105,18 @@ const statements = [
    )
    UPDATE tariffs SET cashback_percent=0.8, updated_at=NOW()
    WHERE EXISTS (SELECT 1 FROM claim) AND cashback_percent = 0`,
-  "ALTER TABLE tariffs ALTER COLUMN cashback_percent SET DEFAULT 0.8",
+  "ALTER TABLE tariffs ALTER COLUMN cashback_percent SET DEFAULT 1",
+  // Ставка поднята с 0,8 до 1 процента: число круглое, его легко назвать
+  // вслух, и при поездке за 700 ₸ человек получает 7 ₸ вместо 6. Трогаем
+  // только те тарифы, где стоит ровно прежние 0,8 — если владелец уже
+  // поставил своё число в панели, оно остаётся.
+  `WITH claim AS (
+     INSERT INTO schema_one_time_changes(name) VALUES ('cashback_1_percent')
+     ON CONFLICT (name) DO NOTHING
+     RETURNING name
+   )
+   UPDATE tariffs SET cashback_percent=1, updated_at=NOW()
+   WHERE EXISTS (SELECT 1 FROM claim) AND cashback_percent = 0.8`,
   // Когда водитель был на линии. Без этого «заработок в час» не из чего
   // считать: в drivers лежит только текущий статус, истории нет.
   //
@@ -229,8 +240,8 @@ const statements = [
    FROM regions r
    CROSS JOIN (
      VALUES
-      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,0.8,1,3,50,0,10,true),
-      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0.8,1,3,50,0,30,true)
+      ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,1,1,3,50,0,10,true),
+      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,1,1,3,50,0,30,true)
    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
    WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
    ON CONFLICT (region_id, name) DO NOTHING`,
