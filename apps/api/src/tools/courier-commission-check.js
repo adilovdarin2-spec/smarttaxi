@@ -99,11 +99,11 @@ if (!existsSync(legalPath)) {
 
   // --- Второй экземпляр оферты не должен разойтись с первым ---
   //
-  // Тот же договор лежит дважды: JSON для сайта и legal_content.dart внутри
-  // приложения. Водитель принимает тот, который показан ему в приложении, а
-  // проверки выше читают веб-версию. Разойдутся — и подписанное перестанет
-  // совпадать с проверяемым, причём молча.
-  const mobileLegal = join(root, "..", "..", "mobile", "smarttaxi_app", "lib", "core", "legal", "legal_content.dart");
+  // Проверки выше читают JSON для сайта. Водитель принимает то, что показано
+  // ему в приложении, — legal_content.g.dart. Файл выводится из того же JSON
+  // (legal-single-source-check следит, чтобы он не отстал), но ставка — деньги,
+  // и убедиться, что она дошла до экрана водителя, стоит отдельно.
+  const mobileLegal = join(root, "..", "..", "mobile", "smarttaxi_app", "lib", "core", "legal", "legal_content.g.dart");
   if (existsSync(mobileLegal)) {
     const mobile = readFileSync(mobileLegal, "utf8").replace(/\n/g, " ");
     const mobileClauses = [...mobile.matchAll(
