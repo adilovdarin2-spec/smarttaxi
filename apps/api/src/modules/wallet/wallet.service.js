@@ -125,6 +125,10 @@ export async function getWalletSummary(driverId, executor = defaultQuery) {
     debtKzt: Number(driver.debt || 0),
     pendingPayoutKzt: Number(pending.pending || 0),
     minPayoutKzt: MIN_PAYOUT_KZT,
+    // Приложение хранило своё «500 ₸» рядом с этим числом. Сегодня они
+    // совпадают, а после правки на сервере водителю говорили бы одно, а
+    // отказывали бы по другому.
+    minTopupKzt: MIN_TOPUP_KZT,
     currency: "KZT"
   };
 }

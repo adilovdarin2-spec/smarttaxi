@@ -9,6 +9,7 @@ class WalletSummary {
     required this.debtKzt,
     required this.pendingPayoutKzt,
     required this.minPayoutKzt,
+    required this.minTopupKzt,
     required this.currency,
   });
 
@@ -16,6 +17,7 @@ class WalletSummary {
   final int debtKzt;
   final int pendingPayoutKzt;
   final int minPayoutKzt;
+  final int minTopupKzt;
   final String currency;
 
   factory WalletSummary.fromJson(Map<String, dynamic> json) {
@@ -24,6 +26,7 @@ class WalletSummary {
       debtKzt: _intOf(json['debtKzt']),
       pendingPayoutKzt: _intOf(json['pendingPayoutKzt']),
       minPayoutKzt: _intOf(json['minPayoutKzt'] ?? 3000),
+      minTopupKzt: _intOf(json['minTopupKzt'] ?? 500),
       currency: '${json['currency'] ?? 'KZT'}',
     );
   }

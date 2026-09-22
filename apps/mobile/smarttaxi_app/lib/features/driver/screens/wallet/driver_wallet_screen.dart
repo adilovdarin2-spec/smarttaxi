@@ -143,7 +143,10 @@ class _DriverWalletScreenState extends State<DriverWalletScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (context) => DriverTopupRequestSheet(api: widget.api),
+      builder: (context) => DriverTopupRequestSheet(
+        api: widget.api,
+        minTopupKzt: _summary?.minTopupKzt ?? 500,
+      ),
     );
     if (created == true) unawaited(_load());
   }

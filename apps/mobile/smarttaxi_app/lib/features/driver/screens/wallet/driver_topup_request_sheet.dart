@@ -8,9 +8,18 @@ import '../../models/driver_shell_helpers.dart';
 import '../../widgets/driver_common_widgets.dart';
 
 class DriverTopupRequestSheet extends StatefulWidget {
-  const DriverTopupRequestSheet({super.key, required this.api});
+  const DriverTopupRequestSheet({
+    super.key,
+    required this.api,
+    required this.minTopupKzt,
+  });
 
   final ApiClient api;
+
+  /// Минимум приходит с сервера вместе с остальным кошельком. Здесь стояла
+  /// своя копия «500 ₸»: сегодня числа совпадали, а после правки на сервере
+  /// водителю называли бы одно, а отказывали бы по другому.
+  final int minTopupKzt;
 
   @override
   State<DriverTopupRequestSheet> createState() =>
@@ -31,8 +40,9 @@ class _DriverTopupRequestSheetState extends State<DriverTopupRequestSheet> {
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
     final amount = int.tryParse(_amountController.text.trim()) ?? 0;
-    if (amount < 500) {
-      setState(() => _error = l10n.driverTopupErrorBelowMin('500 ₸'));
+    if (amount < widget.minTopupKzt) {
+      setState(
+          () => _error = l10n.driverTopupErrorBelowMin('${widget.minTopupKzt} ₸'));
       return;
     }
 
@@ -50,7 +60,7 @@ class _DriverTopupRequestSheetState extends State<DriverTopupRequestSheet> {
       setState(() {
         _submitting = false;
         _error = code == 'TOPUP_BELOW_MINIMUM'
-            ? l10n.driverTopupErrorBelowMin('500 ₸')
+            ? l10n.driverTopupErrorBelowMin('${widget.minTopupKzt} ₸')
             : l10n.driverTopupErrorGeneric;
       });
     }

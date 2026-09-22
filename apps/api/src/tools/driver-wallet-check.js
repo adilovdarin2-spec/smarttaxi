@@ -174,6 +174,33 @@ function createExecutor() {
   const executor = createExecutor();
   const summary = await getWalletSummary("driver-1", executor);
   assert.equal(summary.balanceKzt, 10000, "summary reports current balance");
+
+// Пороги едут с сервера, а не хранятся второй копией в приложении.
+//
+// Минимум вывода приложение уже читало из ответа, а минимум пополнения держало
+// своим «500 ₸». Числа совпадали, поэтому расхождения никто бы не заметил — до
+// первой правки на сервере, после которой водителю называли бы одно, а
+// отказывали бы по другому.
+{
+  const { MIN_PAYOUT_KZT, MIN_TOPUP_KZT } = await import("../modules/wallet/wallet.service.js");
+  assert.equal(summary.minPayoutKzt, MIN_PAYOUT_KZT, "минимум вывода должен приходить с сервера");
+  assert.equal(summary.minTopupKzt, MIN_TOPUP_KZT, "минимум пополнения должен приходить с сервера");
+
+  const sheet = readFileSync(
+    new URL("../../../mobile/smarttaxi_app/lib/features/driver/screens/wallet/driver_topup_request_sheet.dart", import.meta.url),
+    "utf8"
+  );
+  const hardcoded = sheet
+    .split("\n")
+    .filter(line => !line.trimStart().startsWith("///"))
+    .filter(line => /amount < \d|driverTopupErrorBelowMin\('\d/.test(line));
+  assert.deepEqual(
+    hardcoded,
+    [],
+    `минимум пополнения снова вписан в приложение своим числом:
+  ${hardcoded.join("\n  ")}`
+  );
+}
   assert.equal(summary.debtKzt, 1500, "summary reports current debt");
   assert.equal(summary.pendingPayoutKzt, 0, "no pending payouts initially");
   assert.equal(summary.minPayoutKzt, MIN_PAYOUT_KZT, "summary exposes minimum payout threshold");
