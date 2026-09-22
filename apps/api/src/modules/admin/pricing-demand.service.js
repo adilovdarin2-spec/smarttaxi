@@ -139,10 +139,9 @@ export async function getPricingDemand({ regionId = null, dateFrom, dateTo } = {
       COALESCE(SUM(EXTRACT(EPOCH FROM (LEAST(COALESCE(s.ended_at, NOW()), $2::timestamptz) - GREATEST(s.started_at, $1::timestamptz)))), 0)::bigint AS seconds,
       COUNT(DISTINCT s.driver_id)::int AS drivers
     FROM driver_shifts s
-    JOIN drivers d ON d.id = s.driver_id
     WHERE s.started_at <= $2::timestamptz
       AND COALESCE(s.ended_at, NOW()) >= $1::timestamptz
-      AND ($3::uuid IS NULL OR d.current_region_id = $3)
+      AND ($3::uuid IS NULL OR s.region_id = $3)
   `, params)).rows[0];
 
   const lineHours = Math.round((Number(line.seconds) / 3600) * 10) / 10;

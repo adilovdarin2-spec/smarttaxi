@@ -32,8 +32,13 @@ export function isOnLine(status) {
 // открылись бы две смены, а часы посчитались бы дважды.
 export async function openShift(driverId, executor) {
   if (!driverId) return null;
+  // Район берётся здесь и остаётся на смене навсегда. Читать его из водителя
+  // при отчёте нельзя: он переезжает, и тогда часы, отработанные в Жетысае,
+  // пересчитались бы в Мырзакент, а заработок одного района поделился бы на
+  // часы другого.
   const result = await run(executor, `
-    INSERT INTO driver_shifts(driver_id) VALUES($1)
+    INSERT INTO driver_shifts(driver_id, region_id)
+    SELECT id, current_region_id FROM drivers WHERE id = $1
     ON CONFLICT (driver_id) WHERE ended_at IS NULL DO NOTHING
     RETURNING *
   `, [driverId]);

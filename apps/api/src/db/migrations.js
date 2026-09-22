@@ -119,6 +119,10 @@ const statements = [
     ended_at TIMESTAMPTZ,
     ended_reason TEXT
   )`,
+  // Район записывается на смене, а не берётся из водителя при чтении: он
+  // переезжает, и тогда вчерашние часы Жетысая уехали бы в Мырзакент, а
+  // заработок одного района делился бы на часы другого.
+  "ALTER TABLE driver_shifts ADD COLUMN IF NOT EXISTS region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
   "CREATE INDEX IF NOT EXISTS idx_driver_shifts_driver ON driver_shifts(driver_id, started_at DESC)",
   // Открытая смена может быть только одна: иначе часы посчитаются дважды.
   "CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_shifts_one_open ON driver_shifts(driver_id) WHERE ended_at IS NULL",

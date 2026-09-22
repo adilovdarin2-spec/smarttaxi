@@ -40,6 +40,8 @@ assert(STALE_SHIFT_MINUTES > 0 && STALE_SHIFT_MINUTES <= 120, `окно зави
   assert.equal(calls.length, 1, "выход на линию должен открыть смену");
   assert.match(calls[0].sql, /INSERT INTO driver_shifts/, "смена открывается вставкой");
   assert.match(calls[0].sql, /ON CONFLICT .*DO NOTHING/, "две одновременные попытки не должны открыть две смены");
+  // Район пишется на смене, а не читается из водителя потом: он переезжает.
+  assert.match(calls[0].sql, /region_id/, "смена должна запомнить район, в котором началась");
 
   calls.length = 0;
   await recordShiftForStatus("driver-1", "FREE", "BUSY", executor);
@@ -53,6 +55,17 @@ assert(STALE_SHIFT_MINUTES > 0 && STALE_SHIFT_MINUTES <= 120, `окно зави
   calls.length = 0;
   await recordShiftForStatus("driver-1", "FREE", "BREAK", executor);
   assert.equal(calls.length, 1, "перерыв закрывает смену: заказы в это время не берут");
+}
+
+// --- Часы принадлежат району, где были отработаны ---
+{
+  const service = readFileSync(`${root}modules/admin/pricing-demand.service.js`, "utf8");
+  assert.doesNotMatch(
+    service,
+    /d\.current_region_id/,
+    "часы нельзя фильтровать по текущему району водителя: переехав, он унесёт туда и прошлые смены"
+  );
+  assert.match(service, /s\.region_id = \$3/, "часы фильтруются по району самой смены");
 }
 
 // --- Одна открытая смена на водителя ---

@@ -347,6 +347,9 @@ CREATE TABLE IF NOT EXISTS service_settings (
 CREATE TABLE IF NOT EXISTS driver_shifts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  -- Район на момент выхода на линию: водитель переезжает, и тогда прошлые
+  -- часы уехали бы вместе с ним в другой район.
+  region_id UUID REFERENCES regions(id) ON DELETE SET NULL,
   started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   ended_at TIMESTAMPTZ,
   ended_reason TEXT
