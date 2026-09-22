@@ -1270,11 +1270,27 @@ async function updateStatus(req, res, next, status) {
     const order = await tx(async (client) => {
       const driver = req.user.role === "DRIVER" ? (await client.query("SELECT * FROM drivers WHERE user_id=$1 FOR UPDATE", [req.user.id])).rows[0] : null;
       if (req.user.role === "DRIVER" && !driver) throw new AppError("Driver profile not found", 404, "DRIVER_NOT_FOUND");
-      if (driver) await assertDriverDispatchReady(driver, client);
       const o = await client.query("SELECT * FROM orders WHERE id=$1 FOR UPDATE", [req.params.id]);
       const existing = o.rows[0];
       if (!existing) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
       if (driver && existing.driver_id !== driver.id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
+      // Здесь стояла проверка готовности водителя к выходу на линию — та же,
+      // что решает, можно ли ему брать НОВУЮ работу. На уже начатой поездке
+      // она означала другое.
+      //
+      // Водителя блокируют мгновенно: владелец из панели или автоматика по
+      // рейтингу — пятый низкий отзыв роняет среднюю ниже трёх, и блокировка
+      // срабатывает, пока он везёт человека. После этого завершить поездку он
+      // не мог: DRIVER_BLOCKED на каждую попытку. Пассажир — не мог отменить,
+      // отмена клиентом из TRIP_STARTED не разрешена. Владелец — тоже не мог,
+      // CANCELLED_BY_OPERATOR из TRIP_STARTED недостижим. Заказ оставался
+      // висеть навсегда, человек больше не мог заказать машину вообще, а
+      // водитель не получал за поездку ничего.
+      //
+      // Блокировка должна закрывать новую работу, а не бросать пассажира в
+      // едущей машине. Заказ уже принадлежит этому водителю — проверено
+      // строкой выше, — и довести его до конца он вправе. Брать новые заказы
+      // ему по-прежнему не дадут: это другой путь, со своими проверками.
       if (driver && existing.region_id !== driver.current_region_id) throw new AppError("Order is outside driver's current region", 403, "ORDER_REGION_MISMATCH");
       if (driver) await assertDriverCanServeOrder(driver, existing, client);
       if (status === "PAID") assertDriverManualPaymentAllowed(req.user.role, existing.payment_method);
