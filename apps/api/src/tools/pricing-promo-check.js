@@ -103,17 +103,23 @@ assert.equal(
     "кешбэк снова округляется до десятков — на коротких поездках это ноль"
   );
 
-  // И ставка в посевах не нулевая: иначе начисление выключено, а владелец об
-  // этом узнает только по отсутствию жалоб.
+  // Ставки читаются по имени тарифа, а не по порядку: переставят строки
+  // местами — и проверка молча начнёт сверять не то.
   const schema = readFileSync(new URL("../db/schema.sql", import.meta.url), "utf8");
-  const seeded = [...schema.matchAll(/\('(?:Economy|Delivery)',[^)]*?,7,([\d.]+),/g)].map(m => Number(m[1]));
-  assert(seeded.length >= 2, "в посевах не найдены ставки кешбэка");
-  assert(seeded.every(rate => rate > 0), `кешбэк выключен в посевах: ${seeded.join(", ")}`);
+  const seeded = Object.fromEntries(
+    [...schema.matchAll(/\('(Economy|Delivery)',[^)]*?,7,([\d.]+),/g)].map(m => [m[1], Number(m[2])])
+  );
+  assert(seeded.Economy !== undefined && seeded.Delivery !== undefined, "в посевах не найдены ставки кешбэка");
+  // Поездке кешбэк есть, посылке — нет. Отправитель выбирает доставку по
+  // сроку и цене, а не копит на бесплатную; платит за неё часто не тот, кто
+  // потом поедет сам.
+  assert(seeded.Economy > 0, "кешбэк за поездку выключен в посевах");
+  assert.equal(seeded.Delivery, 0, `доставке кешбэк не начисляется, а в посевах стоит ${seeded.Delivery}`);
 
   // Ставка круглая и произносимая вслух: «возвращаем один процент». При
   // 0,1 процента поездка за 700 ₸ давала бы один тенге — столько лучше не
   // давать вовсе, чем давать.
-  const rate = seeded[0];
+  const rate = seeded.Economy;
   assert.equal(rate, 1, `в посевах ставка кешбэка ${rate}, а обещан один процент`);
   const earn = (price) => Math.round(price * rate / 100);
   assert.equal(earn(700), 7, `поездка за 700 ₸ должна возвращать 7 ₸, а даёт ${earn(700)}`);

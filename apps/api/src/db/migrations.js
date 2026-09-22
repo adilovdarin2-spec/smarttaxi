@@ -117,6 +117,16 @@ const statements = [
    )
    UPDATE tariffs SET cashback_percent=1, updated_at=NOW()
    WHERE EXISTS (SELECT 1 FROM claim) AND cashback_percent = 0.8`,
+  // Кешбэк — за поездку, не за посылку: отправитель выбирает доставку по
+  // сроку и цене, а не копит на бесплатную. Трогаем только те тарифы
+  // доставки, где стоит поставленная нами единица.
+  `WITH claim AS (
+     INSERT INTO schema_one_time_changes(name) VALUES ('delivery_cashback_off')
+     ON CONFLICT (name) DO NOTHING
+     RETURNING name
+   )
+   UPDATE tariffs SET cashback_percent=0, updated_at=NOW()
+   WHERE EXISTS (SELECT 1 FROM claim) AND name='Delivery' AND cashback_percent = 1`,
   // Когда водитель был на линии. Без этого «заработок в час» не из чего
   // считать: в drivers лежит только текущий статус, истории нет.
   //
@@ -241,7 +251,7 @@ const statements = [
    CROSS JOIN (
      VALUES
       ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,1,1,3,50,0,10,true),
-      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,1,1,3,50,0,30,true)
+      ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
    ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
    WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
    ON CONFLICT (region_id, name) DO NOTHING`,

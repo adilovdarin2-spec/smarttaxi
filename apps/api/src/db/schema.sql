@@ -681,7 +681,7 @@ FROM regions r
 CROSS JOIN (
   VALUES
     ('Economy','Эконом','Фиксированная цена. Быстро и выгодно',700,0,0,700,7,1,1,3,50,0,10,true),
-    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,1,1,3,50,0,30,true)
+    ('Delivery','Доставка','Фиксированная цена. Посылки и небольшие грузы',800,0,0,800,7,0,1,3,50,0,30,true)
 ) AS seed(name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)
 WHERE r.code IN ('ATAKENT','MYRZAKENT','ZHETYSAY','SHYMKENT','KIROV','ASYKATA','DOSTYK','YNTYMAK','BIRLIK','FIRDOUSI','ZHANA_ZHOL','MAKTAARAL','ATAMEKEN')
 ON CONFLICT (region_id, name) DO NOTHING;
