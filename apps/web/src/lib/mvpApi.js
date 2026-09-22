@@ -521,6 +521,20 @@ export function getAdminTariffs(regionId) {
   return api(`/api/admin/tariffs${query}`);
 }
 
+// Карточки на разбор: водители со стабильно низким рейтингом. Сервис их не
+// отключает сам — решение принимает владелец.
+export function getAdminRatingCases(status) {
+  const query = status ? `?status=${encodeURIComponent(status)}` : "";
+  return api(`/api/admin/rating-cases${query}`);
+}
+
+export function resolveAdminRatingCase(id, decision, note) {
+  return api(`/api/admin/rating-cases/${id}/resolve`, {
+    method: "POST",
+    body: JSON.stringify({ decision, note: note || undefined })
+  });
+}
+
 // Цена и спрос: не дорого ли пассажиру и не дёшево ли водителю.
 export function getAdminPricingDemand({ regionId, dateFrom, dateTo } = {}) {
   const params = new URLSearchParams();

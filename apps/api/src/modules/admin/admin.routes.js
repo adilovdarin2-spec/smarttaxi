@@ -59,6 +59,7 @@ import { join } from "node:path";
 import { submitDriverApplication, reviewDriverApplication } from './driver-application.service.js';
 import { DRIVER_DEBT_CEILING_KZT, DRIVER_DEBT_WARNING_KZT } from "../drivers/driver-debt.js";
 import { getPricingDemand } from "./pricing-demand.service.js";
+import { listRatingCases, resolveRatingCase } from "../drivers/driver-rating-case.service.js";
 
 const router = Router();
 
@@ -1719,6 +1720,34 @@ router.delete("/raffles/:id", requireAuth, requireRole("OWNER", "FINANCE"), asyn
       return row;
     });
     res.json({ raffle: publicRaffle(deleted) });
+  } catch (error) { next(error); }
+});
+
+// Карточки на разбор: водители, у кого стабильно низкий рейтинг. Сервис их
+// больше не отключает сам — он показывает их владельцу.
+router.get("/rating-cases", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ status: z.enum(["PENDING", "BLOCKED", "DISMISSED", "ALL"]).optional() }).parse(req.query);
+    const cases = await listRatingCases({ status: params.status || "PENDING" }, query);
+    res.json({ ratingCases: cases });
+  } catch (error) { next(error); }
+});
+
+router.post("/rating-cases/:id/resolve", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      decision: z.enum(["BLOCK", "DISMISS"]),
+      note: z.string().trim().max(500).optional()
+    }).parse(req.body);
+    const result = await tx(async (client) => resolveRatingCase({
+      caseId: params.id,
+      decision: body.decision,
+      note: body.note || "",
+      actorUserId: req.user.id,
+      req
+    }, client));
+    res.json({ ratingCase: result.ratingCase });
   } catch (error) { next(error); }
 });
 

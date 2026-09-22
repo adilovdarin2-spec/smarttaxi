@@ -105,6 +105,29 @@ const statements = [
    )
    UPDATE tariffs SET cashback_percent=0.8, updated_at=NOW()
    WHERE EXISTS (SELECT 1 FROM claim) AND cashback_percent = 0`,
+  // Низкий рейтинг поднимает карточку на разбор, а не блокирует сам.
+  //
+  // Раньше пятый отзыв, уронивший среднюю ниже трёх, отключал водителя
+  // мгновенно и без единого живого взгляда. Пять поездок — это первая неделя
+  // нового водителя, и этого же хватает, чтобы свести с кем-то счёты. Решение
+  // лишить человека заработка принимает человек.
+  `CREATE TABLE IF NOT EXISTS driver_rating_cases (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    average_rating NUMERIC(3,2) NOT NULL,
+    review_count INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','BLOCKED','DISMISSED')),
+    resolution_note TEXT,
+    reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_driver_rating_cases_status ON driver_rating_cases(status, created_at DESC)",
+  // Одна открытая карточка на водителя: каждый следующий низкий отзыв не
+  // должен плодить копии одной и той же жалобы.
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_rating_cases_one_open ON driver_rating_cases(driver_id) WHERE status = 'PENDING'",
   "ALTER TABLE tariffs ALTER COLUMN cashback_percent SET DEFAULT 1",
   // Ставка поднята с 0,8 до 1 процента: число круглое, его легко назвать
   // вслух, и при поездке за 700 ₸ человек получает 7 ₸ вместо 6. Трогаем

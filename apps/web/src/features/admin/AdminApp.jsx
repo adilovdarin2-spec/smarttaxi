@@ -51,6 +51,8 @@ import {
   getAdminSettings,
   getAdminSupport,
   getAdminPricingDemand,
+  getAdminRatingCases,
+  resolveAdminRatingCase,
   getAdminTariffAnalytics,
   getAdminIntercityRoutes,
   getAdminTariffs,
@@ -651,11 +653,13 @@ export default function AdminApp() {
         const leaderboard = await getAdminLeaderboard(
           selectedRaffle ? { dateFrom: selectedRaffle.startsAt, dateTo: selectedRaffle.endsAt } : {}
         );
+        const ratingCases = await getAdminRatingCases("PENDING").catch(() => ({ ratingCases: [] }));
         return {
           reviews: reviewsResult.reviews,
           reviewsRestricted: reviewsResult.restricted,
           leaderboard: leaderboard.leaderboard || [],
-          raffles: raffleList
+          raffles: raffleList,
+          ratingCases: ratingCases.ratingCases || []
         };
       },
       support: async () => {
@@ -1235,6 +1239,14 @@ export default function AdminApp() {
     }, "Отзыв удалён");
   }
 
+  async function resolveRatingCase(caseId, decision, note) {
+    await runAction(async () => {
+      await resolveAdminRatingCase(caseId, decision, note);
+      await loadPage("quality");
+      await loadDashboard();
+    }, decision === "BLOCK" ? "Водитель отключён" : "Водитель оставлен на линии");
+  }
+
   async function reviewPayout(payoutRequest, status, reason = "") {
     await runAction(async () => {
       await reviewAdminPayoutRequest(payoutRequest.id, { status, reason });
@@ -1489,6 +1501,7 @@ export default function AdminApp() {
             ratingRaffleId={ratingRaffleId}
             setRatingRaffleId={setRatingRaffleId}
             onDeleteReview={review => setModal({ type: "reviewDelete", review })}
+            onResolveRatingCase={resolveRatingCase}
             payoutStatus={payoutStatus}
             setPayoutStatus={setPayoutStatus}
             onApprovePayout={payoutRequest => reviewPayout(payoutRequest, "APPROVED")}
@@ -1965,11 +1978,13 @@ function AdminPage(props) {
         reviewsRestricted={Boolean(payload?.reviewsRestricted)}
         leaderboard={asArray(payload, "leaderboard")}
         raffles={asArray(payload, "raffles")}
+        ratingCases={asArray(payload, "ratingCases")}
         ratingScope={props.ratingScope}
         setRatingScope={props.setRatingScope}
         ratingRaffleId={props.ratingRaffleId}
         setRatingRaffleId={props.setRatingRaffleId}
         onDeleteReview={props.onDeleteReview}
+        onResolveRatingCase={props.onResolveRatingCase}
       />
     );
   }
@@ -3800,7 +3815,88 @@ function DriverBlockPanel({ driver, busy, onClose, onConfirm, error }) {
   );
 }
 
-function QualityPage({ reviews, reviewsRestricted, leaderboard, raffles, ratingScope, setRatingScope, ratingRaffleId, setRatingRaffleId, onDeleteReview }) {
+// Водители, у кого рейтинг стабильно низкий.
+//
+// Сервис их больше не отключает сам. Раньше отключал: пятый отзыв, уронивший
+// среднюю ниже трёх, снимал человека с линии мгновенно. Пять поездок — это
+// первая неделя нового водителя, и ровно столько же нужно, чтобы свести с
+// кем-то счёты. Решение лишить человека заработка принимает человек.
+function RatingCasesCard({ cases, onResolve }) {
+  const [busyId, setBusyId] = useState("");
+  const [notes, setNotes] = useState({});
+
+  async function decide(item, decision) {
+    setBusyId(item.id);
+    try {
+      await onResolve(item.id, decision, notes[item.id] || "");
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  if (!cases.length) {
+    return (
+      <DataCard
+        title="Разбор по рейтингу"
+        text="Водители со стабильно низкой оценкой попадают сюда. Сервис никого не отключает сам — решение за вами."
+      >
+        <StatePanel title="Разбирать некого" text="Ни у одного водителя средняя оценка не опускалась ниже порога." />
+      </DataCard>
+    );
+  }
+
+  return (
+    <DataCard
+      title="Разбор по рейтингу"
+      text="Сервис никого не отключил — он показал. Прежде чем решать, стоит позвонить: у новичка это может быть первая неделя, а низкие оценки иногда ставит один и тот же человек."
+    >
+      <div className="admin-table-stack">
+        {cases.map(item => (
+          <article className="admin-rating-case" key={item.id}>
+            <header>
+              <strong>{item.driverName || "Без имени"}</strong>
+              <span>{item.driverPhone || "—"}</span>
+              {item.regionName && <span>{item.regionName}</span>}
+            </header>
+            <div className="admin-card-facts">
+              <InfoLine label="Средняя оценка" value={Number(item.averageRating).toFixed(2)} />
+              <InfoLine label="Отзывов" value={item.reviewCount} />
+              <InfoLine label="Поднято" value={formatDate(item.createdAt)} />
+            </div>
+            <label className="admin-field">
+              <span>Что решили и почему</span>
+              <input
+                value={notes[item.id] || ""}
+                placeholder="Например: позвонил, разобрались"
+                onChange={event => setNotes(current => ({ ...current, [item.id]: event.target.value }))}
+              />
+            </label>
+            <div className="admin-modal-actions">
+              <button
+                type="button"
+                className="admin-secondary-button compact"
+                disabled={busyId === item.id}
+                onClick={() => decide(item, "DISMISS")}
+              >
+                Оставить работать
+              </button>
+              <button
+                type="button"
+                className="admin-danger-button compact"
+                disabled={busyId === item.id}
+                onClick={() => decide(item, "BLOCK")}
+              >
+                Отключить водителя
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+    </DataCard>
+  );
+}
+
+function QualityPage({ reviews, reviewsRestricted, leaderboard, raffles, ratingCases = [], ratingScope, setRatingScope, ratingRaffleId, setRatingRaffleId, onDeleteReview, onResolveRatingCase }) {
   const averageRating = reviews.length
     ? reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length
     : 0;
@@ -3836,6 +3932,8 @@ function QualityPage({ reviews, reviewsRestricted, leaderboard, raffles, ratingS
       {ratingScope === "raffle" && selectedRaffle && (
         <InlineMessage text={`Показан рейтинг за период «${selectedRaffle.title}»: ${formatDate(selectedRaffle.startsAt)} — ${formatDate(selectedRaffle.endsAt)}`} />
       )}
+
+      <RatingCasesCard cases={ratingCases} onResolve={onResolveRatingCase} />
 
       <section className="admin-analytics-grid quality">
         <article className="admin-analytics-card quality">

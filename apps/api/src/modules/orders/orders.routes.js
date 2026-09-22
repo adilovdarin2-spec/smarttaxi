@@ -33,6 +33,7 @@ import {
   TRANSITION_RULES
 } from "./order-dispatch.service.js";
 import { assertDriverDispatchReady } from "../driver-region-approvals/driver-region-approvals.service.js";
+import { openRatingCaseIfNeeded } from "../drivers/driver-rating-case.service.js";
 import { isOverDebtCeiling } from "../drivers/driver-debt.js";
 import { buildActiveLegRoute, requestRoute } from "../routing/routing.service.js";
 import { createOrderCancelledTransaction, createOrderCompletedTransaction, settleConfirmedOrderEarnings } from "../finance/finance.service.js";
@@ -74,8 +75,6 @@ const CANCELLED_BY_FOR_STATUS = {
 };
 // Anti-fraud: auto-suspend a driver whose rolling average drops below this
 // once they have enough reviews that it isn't just one bad trip.
-const DRIVER_AUTO_BLOCK_RATING_THRESHOLD = 3.0;
-const DRIVER_AUTO_BLOCK_MIN_REVIEWS = 5;
 export const ORDER_SELECT = `
   o.*,
   d.name AS driver_name,
@@ -688,7 +687,6 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
   try {
     const { id } = IdParam.parse(req.params);
     const body = RateOrder.parse(req.body);
-    let driverAutoBlocked = false;
     const order = await tx(async (client) => {
       const existing = (await client.query(`
         SELECT o.*, d.name AS driver_name, d.phone AS driver_phone, d.car_model AS driver_car_model,
@@ -722,25 +720,18 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
       const avgRating = Number(ratingStats.avg_rating || body.rating);
       await client.query("UPDATE drivers SET rating=$1 WHERE id=$2", [avgRating, existing.driver_id]);
 
-      // Anti-fraud: a driver who consistently rates below the threshold over
-      // enough trips to rule out one bad review gets suspended automatically
-      // instead of waiting for an operator to notice. Only fires once — a
-      // driver already blocked (for this or any other reason) isn't touched
-      // again, and an operator can always review/unblock manually afterward.
-      if (ratingStats.review_count >= DRIVER_AUTO_BLOCK_MIN_REVIEWS && avgRating < DRIVER_AUTO_BLOCK_RATING_THRESHOLD) {
-        const driverRow = (await client.query("SELECT is_blocked FROM drivers WHERE id=$1 FOR UPDATE", [existing.driver_id])).rows[0];
-        if (driverRow && !driverRow.is_blocked) {
-          await client.query("UPDATE drivers SET is_blocked=true, status='OFFLINE' WHERE id=$1", [existing.driver_id]);
-          await writeAudit(client, {
-            action: "driver_auto_blocked",
-            entityType: "driver",
-            entityId: existing.driver_id,
-            metadata: { avgRating, reviewCount: ratingStats.review_count, reason: "low_rating" },
-            req
-          });
-          driverAutoBlocked = true;
-        }
-      }
+      // Стабильно низкий рейтинг поднимает карточку владельцу, а не отключает
+      // водителя сам. Раньше отключал: пятый отзыв, уронивший среднюю ниже
+      // трёх, снимал человека с линии мгновенно. Пять поездок — первая неделя
+      // нового водителя, и ровно столько же нужно, чтобы свести с кем-то
+      // счёты. Решение лишить человека заработка принимает человек.
+      await openRatingCaseIfNeeded({
+        driverId: existing.driver_id,
+        averageRating: avgRating,
+        reviewCount: ratingStats.review_count,
+        orderId: existing.id,
+        req
+      }, client);
 
       await client.query("UPDATE orders SET status='RATED' WHERE id=$1", [existing.id]);
       await client.query("INSERT INTO order_status_history(order_id,status,message,actor_user_id) VALUES($1,'RATED','Client rated trip',$2)", [existing.id, req.user.id]);
@@ -760,12 +751,6 @@ router.post("/:id/rate", requireAuth, requireRole("CLIENT"), async (req, res, ne
       `, [existing.id])).rows[0];
     });
     emitOrderUpdated(req.io, order, "order.rated");
-    if (driverAutoBlocked) {
-      notifyOrderDriver(order, {
-        key: "accountBlockedRating",
-        type: "DRIVER_AUTO_BLOCKED"
-      }).catch((error) => console.error("[push] notifyOrderDriver failed", error));
-    }
     res.status(201).json({ order: publicOrderResponse(order) });
   } catch (e) { next(e); }
 });

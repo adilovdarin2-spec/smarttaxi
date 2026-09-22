@@ -26370,3 +26370,31 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   font-size: 12px;
   line-height: 1.4;
 }
+
+/* Карточка водителя на разборе по рейтингу. */
+.admin-rating-case {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: 18px;
+}
+
+.admin-rating-case > header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.admin-rating-case > header strong {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.admin-rating-case > header span {
+  color: #5A6172;
+  font-size: 13px;
+}
