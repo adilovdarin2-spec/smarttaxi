@@ -140,6 +140,14 @@ const MESSAGES = {
     uz: { title: "Haydovchi yetib keldi", body: "Haydovchingiz joyida, sizni kutmoqda" },
     zh: { title: "司机已到达", body: "司机已在上车点等您" }
   },
+  // Заказ, на который за отведённое время никто не поехал. Человеку говорят
+  // словами, что машины не нашлось, а не оставляют экран крутиться до утра.
+  searchExpired: {
+    ru: { title: "Машину не нашли", body: "За {minutes} мин никто не принял заказ. Попробуйте заказать снова" },
+    kk: { title: "Көлік табылмады", body: "{minutes} мин ішінде тапсырысты ешкім қабылдамады. Қайта тапсырыс беріп көріңіз" },
+    uz: { title: "Mashina topilmadi", body: "{minutes} daqiqada buyurtmani hech kim qabul qilmadi. Qaytadan buyurtma bering" },
+    zh: { title: "未找到车辆", body: "{minutes} 分钟内无人接单，请重新下单" }
+  },
   tripCompleted: {
     ru: { title: "Поездка завершена", body: "Стоимость поездки: {price} ₸" },
     kk: { title: "Сапар аяқталды", body: "Сапардың құны: {price} ₸" },
