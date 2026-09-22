@@ -103,8 +103,11 @@ String _slashes(String path) =>
 bool _isExempt(String path) {
   final normalized = _slashes(path);
   // The offer and the privacy policy are legal documents with one
-  // authoritative language, stated in their own final clause.
+  // authoritative language, stated in their own final clause. The texts now
+  // arrive in legal_content.g.dart, generated from the same JSON the website
+  // shows, so neither file is translated here.
   if (normalized.contains('legal_content.dart')) return true;
+  if (normalized.contains('legal_content.g.dart')) return true;
   // The translations themselves, and the code generated from them.
   return normalized.contains('/l10n/');
 }

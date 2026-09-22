@@ -28,10 +28,21 @@ enum MapStyleChoice {
 
   static const fallback = MapStyleChoice.threeD;
 
+  /// Что человеку реально предлагать. Снимки показываются, только если в
+  /// сборку передан оплаченный источник: иначе выбирать нечего, кроме серого
+  /// поля с надписью про недоступные данные.
+  static List<MapStyleChoice> get available => AppConfig.satelliteEnabled
+      ? MapStyleChoice.values
+      : MapStyleChoice.values
+          .where((choice) => choice != MapStyleChoice.satellite)
+          .toList(growable: false);
+
   static MapStyleChoice fromStorage(String? value) {
-    for (final choice in MapStyleChoice.values) {
+    for (final choice in available) {
       if (choice.storageValue == value) return choice;
     }
+    // Телефон мог помнить выбор снимков со старой сборки — возвращаем его к
+    // тому, что можно нарисовать сейчас, а не к пустому экрану.
     return fallback;
   }
 

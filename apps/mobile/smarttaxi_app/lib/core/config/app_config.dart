@@ -64,17 +64,27 @@ class AppConfig {
   );
 
   // --- Satellite ------------------------------------------------------
-  // The imagery layer offered alongside the drawn map. Esri's World Imagery
-  // is what a build reaches for without a key, and over these regions it is
-  // genuinely good: individual houses, roofs and yards are legible. It is
-  // NOT licensed for commercial use by default — before the app is published,
-  // point this at a licensed provider (a MapTiler key covers this volume on
-  // its free tier) and change the attribution with it.
+  // Слой снимков рядом с рисованной картой. Пусто — значит выключен, и в
+  // выборе стиля его нет.
+  //
+  // Выключен не потому, что плохо работал. Esri World Imagery над этими
+  // районами показывает дворы, крыши и калитки — ровно то, ради чего человек
+  // и открывает снимок. Но его условия не разрешают такое использование, и
+  // бесплатной замены нет: у MapTiler бесплатный тариф прямо назван
+  // некоммерческим, у Mapbox отдельная оговорка про приложения, связанные с
+  // транспортом, — такси требует отдельной коммерческой лицензии. Открытые и
+  // бесплатные Sentinel-2 и Landsat дают 10–30 метров на пиксель: поле и сетку
+  // улиц видно, двор — нет.
+  //
+  // Включать обратно — только вместе с оплаченной лицензией: адрес провайдера
+  // в SATELLITE_TILE_URL и его подпись в SATELLITE_ATTRIBUTION_TEXT.
   static const satelliteTileUrl = String.fromEnvironment(
     'SATELLITE_TILE_URL',
-    defaultValue:
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    defaultValue: '',
   );
+
+  /// Есть ли что показывать в режиме снимков.
+  static bool get satelliteEnabled => satelliteTileUrl.trim().isNotEmpty;
 
   // Measured against every active region, not assumed: this provider answers
   // z18 and deeper with a grey "Map data not yet available" tile. Declaring

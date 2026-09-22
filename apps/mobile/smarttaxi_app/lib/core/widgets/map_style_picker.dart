@@ -85,7 +85,7 @@ class _MapStyleSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 14),
-            for (final style in MapStyleChoice.values)
+            for (final style in MapStyleChoice.available)
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: _MapStyleOption(

@@ -9,7 +9,7 @@ String _read(String path) => File(path).readAsStringSync();
 
 void main() {
   test('a stored choice survives a rename of the enum constant', () {
-    for (final style in MapStyleChoice.values) {
+    for (final style in MapStyleChoice.available) {
       expect(MapStyleChoice.fromStorage(style.storageValue), style);
     }
     expect(MapStyleChoice.fromStorage(null), MapStyleChoice.fallback);
@@ -20,6 +20,16 @@ void main() {
       MapStyleChoice.values.map((style) => style.storageValue).toList(),
       ['3d', '2d', 'satellite'],
     );
+  });
+
+  test('a phone that remembers imagery is not left on an empty layer', () {
+    // Снимки выключены, пока в сборку не передан оплаченный источник: у
+    // бесплатных провайдеров условия этого не разрешают. Телефон, на котором
+    // человек когда-то выбрал снимки, должен вернуться к рисованной карте, а
+    // не к серому полю.
+    expect(AppConfig.satelliteEnabled, isFalse);
+    expect(MapStyleChoice.available, isNot(contains(MapStyleChoice.satellite)));
+    expect(MapStyleChoice.fromStorage('satellite'), MapStyleChoice.fallback);
   });
 
   test('each style answers a different question', () {
