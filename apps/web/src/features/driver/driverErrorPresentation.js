@@ -1,5 +1,6 @@
 import { assignmentErrorMessage } from '../shared/assignmentError.mjs';
 import { priceOfferErrorMessage } from '../shared/priceNegotiation.js';
+import { apiErrorMessage } from "../shared/apiErrorMessages.js";
 
 const DRIVER_ERROR_MESSAGES = {
   INVALID_CREDENTIALS: "Неверный телефон или пароль",
@@ -44,5 +45,10 @@ export function driverErrorMessage(error) {
   ) {
     return NETWORK_ERROR;
   }
+  // Общая карта отказов — последней: у экранов свои формулировки под
+  // контекст. Без неё сервер называл причину, а водитель читал «что-то пошло
+  // не так» и не понимал, что делать.
+  const explained = apiErrorMessage(error?.code);
+  if (explained) return explained;
   return GENERIC_ERROR;
 }

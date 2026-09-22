@@ -134,6 +134,29 @@ assert.deepEqual(
   `приложение покажет "что-то пошло не так" вместо причины для: ${unexplained.join(", ")}`
 );
 
+// --- То же самое для сайта ---
+//
+// Сайт — не черновик приложения: с него заказывают с компьютера, с него же
+// работает водитель, если телефон не тянет. Отказы там объяснялись 24 из 99, а
+// остальное превращалось в «Не удалось выполнить запрос. Проверьте соединение»
+// — человеку говорили, что у него плохой интернет, когда сервер назвал
+// причину.
+const webSrc = walk(join(mobileRoot, "..", "..", "web", "src"))
+  .filter(file => /\.(js|jsx)$/.test(file))
+  .map(file => readFileSync(file, "utf8"))
+  .join("\n");
+
+const unexplainedOnWeb = [...reachable]
+  .filter(code => !SERVER_TO_SERVER.has(code))
+  .filter(code => !webSrc.includes(code))
+  .sort();
+
+assert.deepEqual(
+  unexplainedOnWeb,
+  [],
+  `сайт покажет "проверьте соединение" вместо причины для: ${unexplainedOnWeb.join(", ")}`
+);
+
 console.log(
   `Client error coverage checks ok: ${matchedRoutes} routes, ${reachable.size} reachable codes, all explained`
 );

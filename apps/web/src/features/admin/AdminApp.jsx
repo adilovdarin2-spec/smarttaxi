@@ -78,6 +78,7 @@ import {
   updateAdminIntercityRoute,
   updateAdminTariff
 } from "../../lib/mvpApi.js";
+import { apiErrorMessage } from "../shared/apiErrorMessages.js";
 import { plural } from "../shared/standFormat.mjs";
 import { sessionSnapshotGuard } from "../../lib/browserSession.js";
 import { sanitizeAddressText } from "../../lib/text.js";
@@ -263,6 +264,9 @@ function readError(error) {
   if (error?.code === "PROMO_CODE_HAS_REDEMPTIONS") return "Промокод уже использовался в заказах — отключите его вместо удаления, чтобы сохранить историю цен.";
   if (error?.code === "PROMO_CODE_EXISTS") return "Промокод с таким кодом уже существует";
   if (error?.details?.length) return error.details.map(item => item.message).join("; ");
+  // Общая карта отказов — последней, после собственных формулировок панели.
+  const explained = apiErrorMessage(error?.code);
+  if (explained) return explained;
   return "Не удалось загрузить данные. Проверьте соединение и попробуйте снова.";
 }
 

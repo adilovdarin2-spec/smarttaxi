@@ -70,6 +70,7 @@ import {
   verifyAuthSms
 } from "../../lib/mvpApi.js";
 import { createSocket } from "../../lib/socket.js";
+import { apiErrorMessage } from "../shared/apiErrorMessages.js";
 import { sanitizeAddressText } from "../../lib/text.js";
 import { clientDriverMapPoint, mergeClientDriverLocation, recoverClientActiveOrder } from "./clientTripLifecycle.js";
 import { useLiveDriverRoute } from "./useLiveDriverRoute.js";
@@ -433,7 +434,13 @@ const errorMessages = {
 };
 
 function formatError(error) {
-  return assignmentErrorMessage(error?.code) || errorMessages[error?.code] || "Не удалось выполнить запрос. Проверьте соединение и попробуйте снова.";
+  // Общая карта — последней: у экранов свои формулировки под контекст, и
+  // они важнее. А общий текст про соединение остаётся только для тех случаев,
+  // когда сервер действительно ничего не сказал.
+  return assignmentErrorMessage(error?.code)
+    || errorMessages[error?.code]
+    || apiErrorMessage(error?.code)
+    || "Не удалось выполнить запрос. Проверьте соединение и попробуйте снова.";
 }
 
 function publicStatus(status) {
