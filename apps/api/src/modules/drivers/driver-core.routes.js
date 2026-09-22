@@ -7,6 +7,7 @@ import { writeAudit } from "../../common/audit.js";
 import { driverDailyStats, DRIVER_COMPLETED_STATUSES } from "./driver-daily-stats.service.js";
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
 import { announceStandRelease } from "../stands/stands.notify.js";
+import { recordShiftForStatus } from "./driver-shift.service.js";
 import {
   assertDriverCanGoOnline,
   assertDriverDispatchReady
@@ -137,6 +138,8 @@ router.post("/status/online", requireAuth, requireRole("DRIVER"), async (req, re
       const activeOrder = await activeOrderForDriver(driver, client);
       const nextStatus = activeOrder ? "BUSY" : "FREE";
       const row = (await client.query("UPDATE drivers SET status=$2, last_seen_at=NOW() WHERE id=$1 RETURNING *", [driver.id, nextStatus])).rows[0];
+      // Водитель вышел на линию — с этой минуты идёт его смена.
+      await recordShiftForStatus(driver.id, driver.status, nextStatus, client);
       await writeAudit(client, {
         action: "driver_online", actorUserId: req.user.id, entityType: "driver", entityId: driver.id,
         metadata: { from: driver.status, to: nextStatus, activeOrderId: activeOrder?.id || null }, req
@@ -155,6 +158,7 @@ router.post("/status/offline", requireAuth, requireRole("DRIVER"), async (req, r
       const activeOrder = await activeOrderForDriver(driver, client);
       if (activeOrder) throw new AppError("Driver has active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
       const updated = (await client.query("UPDATE drivers SET status='OFFLINE', last_seen_at=NOW() WHERE id=$1 RETURNING *", [driver.id])).rows[0];
+      await recordShiftForStatus(driver.id, driver.status, "OFFLINE", client);
       // Availability, queue removal and seat cancellation commit together.
       const release = await releaseStandPlaceForDriver(
         { driverId: driver.id, reason: "DRIVER_OFFLINE" }, client

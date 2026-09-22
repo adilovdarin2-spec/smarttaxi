@@ -106,6 +106,22 @@ const statements = [
    UPDATE tariffs SET cashback_percent=0.8, updated_at=NOW()
    WHERE EXISTS (SELECT 1 FROM claim) AND cashback_percent = 0`,
   "ALTER TABLE tariffs ALTER COLUMN cashback_percent SET DEFAULT 0.8",
+  // Когда водитель был на линии. Без этого «заработок в час» не из чего
+  // считать: в drivers лежит только текущий статус, истории нет.
+  //
+  // Смена открывается, когда водитель уходит с OFFLINE, и закрывается, когда
+  // возвращается. Переходы FREE <-> BUSY смену не трогают: и то и другое —
+  // время на линии.
+  `CREATE TABLE IF NOT EXISTS driver_shifts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    ended_at TIMESTAMPTZ,
+    ended_reason TEXT
+  )`,
+  "CREATE INDEX IF NOT EXISTS idx_driver_shifts_driver ON driver_shifts(driver_id, started_at DESC)",
+  // Открытая смена может быть только одна: иначе часы посчитаются дважды.
+  "CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_shifts_one_open ON driver_shifts(driver_id) WHERE ended_at IS NULL",
   "ALTER TABLE tariffs ALTER COLUMN service_commission_percent SET DEFAULT 7",
   "ALTER TABLE drivers ADD COLUMN IF NOT EXISTS current_region_id UUID REFERENCES regions(id) ON DELETE SET NULL",
   // Телефон поддержки у каждого района свой: publicRegion его уже отдавал,

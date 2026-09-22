@@ -521,6 +521,16 @@ export function getAdminTariffs(regionId) {
   return api(`/api/admin/tariffs${query}`);
 }
 
+// Цена и спрос: не дорого ли пассажиру и не дёшево ли водителю.
+export function getAdminPricingDemand({ regionId, dateFrom, dateTo } = {}) {
+  const params = new URLSearchParams();
+  if (regionId) params.set("regionId", regionId);
+  if (dateFrom) params.set("dateFrom", dateFrom);
+  if (dateTo) params.set("dateTo", dateTo);
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return api(`/api/admin/pricing-demand${query}`);
+}
+
 export function getAdminTariffAnalytics({ regionId, dateFrom, dateTo } = {}) {
   const params = new URLSearchParams();
   if (regionId) params.set("regionId", regionId);

@@ -50,6 +50,7 @@ import {
   getAdminRoadAlerts,
   getAdminSettings,
   getAdminSupport,
+  getAdminPricingDemand,
   getAdminTariffAnalytics,
   getAdminIntercityRoutes,
   getAdminTariffs,
@@ -96,6 +97,7 @@ const navigation = [
   { key: "promoCodes", label: "Промокоды", eyebrow: "Скидки и акции" },
   { key: "recurringBookings", label: "Регулярные поездки", eyebrow: "Постоянные привязки" },
   { key: "finance", label: "Финансы", eyebrow: "Деньги и долги" },
+  { key: "pricingDemand", label: "Цена и спрос", eyebrow: "Дорого ли пассажиру, дёшево ли водителю" },
   { key: "payouts", label: "Выплаты", eyebrow: "Заявки водителей на вывод" },
   { key: "stands", label: "Стоянки", eyebrow: "Очереди водителей", ownerOnly: true },
   { key: "cancellations", label: "Разбор отмен", eyebrow: "Отмены после подачи" },
@@ -401,6 +403,10 @@ export default function AdminApp() {
   const [applicationStatus, setApplicationStatus] = useState("PENDING");
   const [orderStatus, setOrderStatus] = useState("all");
   const [tariffStatus, setTariffStatus] = useState("all");
+  const [pricingRegion, setPricingRegion] = useState("all");
+  const [pricingDatePreset, setPricingDatePreset] = useState("30d");
+  const [pricingDateFrom, setPricingDateFrom] = useState("");
+  const [pricingDateTo, setPricingDateTo] = useState("");
   const [tariffRegion, setTariffRegion] = useState("all");
   const [tariffDatePreset, setTariffDatePreset] = useState("30d");
   const [tariffDateFrom, setTariffDateFrom] = useState("");
@@ -508,6 +514,19 @@ export default function AdminApp() {
         return {
           orders: orders.value.orders || [],
           drivers: drivers.status === "fulfilled" ? drivers.value.drivers || [] : [],
+          regions: regions.status === "fulfilled" ? regions.value.regions || [] : []
+        };
+      },
+      pricingDemand: async () => {
+        const selectedRegionId = pricingRegion !== "all" ? pricingRegion : undefined;
+        const dateParams = dateRangeParams(pricingDatePreset, pricingDateFrom, pricingDateTo);
+        const [demand, regions] = await Promise.allSettled([
+          getAdminPricingDemand({ regionId: selectedRegionId, ...dateParams }),
+          getAdminRegions()
+        ]);
+        if (demand.status === "rejected") throw demand.reason;
+        return {
+          demand: demand.value,
           regions: regions.status === "fulfilled" ? regions.value.regions || [] : []
         };
       },
@@ -692,7 +711,7 @@ export default function AdminApp() {
     } catch (error) {
       if (isCurrent()) setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [cancellationStatus, financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [cancellationStatus, financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, pricingDateFrom, pricingDatePreset, pricingDateTo, pricingRegion, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   // Fetches the next page from the server and appends it to whatever's
   // already loaded under itemsKey (e.g. "orders"), rather than replacing
@@ -1901,6 +1920,15 @@ function AdminPage(props) {
   if (active === "tariffs") return <TariffsPage tariffs={asArray(payload, "tariffs")} regions={asArray(payload, "regions")} {...props} />;
   if (active === "intercity") return <IntercityPage routes={asArray(payload, "routes")} {...props} />;
   if (active === "finance") return <FinancePage payload={payload} regions={asArray(payload, "regions")} {...props} />;
+  if (active === "pricingDemand") {
+    return (
+      <PricingDemandPage
+        demand={payload?.demand || null}
+        regions={asArray(payload, "regions")}
+        {...props}
+      />
+    );
+  }
   if (active === "stands") {
     return (
       <StandsPage
@@ -5031,6 +5059,214 @@ function ModalFrame({ title, onClose, children, wide = false, error }) {
 
 function InlineMessage({ text, danger = false }) {
   return <div className={`admin-inline-message ${danger ? "danger" : ""}`}>{text}</div>;
+}
+
+// Цена и спрос.
+//
+// Панель показывала деньги — сколько заработано и сколько должны. На вопрос
+// «не дорого ли пассажиру и не дёшево ли водителю» деньги не отвечают: обе
+// стороны уходят молча, в поддержку не пишут. Но след в базе оставляют, и
+// следы у них разные.
+//
+// Страница не называет правильную цену — её не существует в отрыве от спроса.
+// Она показывает те несколько чисел, по которым цену можно двигать осознанно.
+const CANCEL_REASON_LABELS = {
+  CHANGED_MIND: "Передумал",
+  DRIVER_ASKED_TO_CANCEL: "Водитель попросил отменить",
+  WAITED_TOO_LONG: "Долго ждал",
+  FOUND_ANOTHER_CAR: "Нашёл другую машину",
+  WRONG_ADDRESS: "Неверный адрес",
+  CLIENT_NO_SHOW: "Пассажир не вышел",
+  CLIENT_ASKED: "Пассажир попросил",
+  CAR_PROBLEM: "Проблема с машиной",
+  TOO_FAR: "Слишком далеко",
+  OTHER: "Другое"
+};
+
+function formatDuration(seconds) {
+  const total = Math.max(0, Math.round(Number(seconds) || 0));
+  if (total < 60) return `${total} с`;
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  return rest ? `${minutes} мин ${rest} с` : `${minutes} мин`;
+}
+
+// Отдельно от formatPercent выше: там пустое значение превращается в «0%»,
+// а здесь ноль и «не измеряли» — разные вещи, и путать их нельзя.
+function demandPercent(value) {
+  return value === null || value === undefined ? "—" : `${value}%`;
+}
+
+// Вывод, а не число. Владельцу нужен ответ, а не таблица, из которой ответ
+// ещё надо достать.
+function priceVerdict(demand) {
+  const orders = demand?.orders || {};
+  const decided = Number(orders.created || 0) - Number(orders.stillSearching || 0);
+  if (decided < 30) {
+    return {
+      tone: "neutral",
+      title: "Данных пока мало",
+      text: `Решённых заказов: ${decided}. Двигать цену по такой выборке — гадание. Возвращайтесь, когда наберётся хотя бы две-три сотни.`
+    };
+  }
+  const fill = Number(orders.fillRatePercent || 0);
+  const refused = Number(demand?.offers?.fromDriver?.refusedPercent || 0);
+  const waitedTooLong = (demand?.cancelReasons || [])
+    .filter(reason => reason.code === "WAITED_TOO_LONG" || reason.code === "FOUND_ANOTHER_CAR")
+    .reduce((sum, reason) => sum + Number(reason.count || 0), 0);
+  const tooFar = (demand?.cancelReasons || [])
+    .filter(reason => reason.code === "TOO_FAR")
+    .reduce((sum, reason) => sum + Number(reason.count || 0), 0);
+
+  if (fill < 85 || tooFar > 0) {
+    return {
+      tone: "warning",
+      title: "Похоже, водителю дёшево",
+      text: `Машину нашли ${fill}% заказов${tooFar ? `, и ${tooFar} раз водитель отказался из-за расстояния` : ""}. Заказ, на который никто не поехал, — это ушедший пассажир и пустой час водителя.`
+    };
+  }
+  if (refused > 25 || waitedTooLong > 0) {
+    return {
+      tone: "warning",
+      title: "Похоже, пассажиру дорого",
+      text: `Водители отклонили ${demandPercent(demand.offers.fromDriver.refusedPercent)} предложенных цен${waitedTooLong ? `, и ${waitedTooLong} раз человек ушёл, не дождавшись` : ""}. Люди торгуются вниз, а потом уходят.`
+    };
+  }
+  return {
+    tone: "success",
+    title: "Цена сходится",
+    text: `Машину нашли ${fill}% заказов, отказов по цене ${demandPercent(demand.offers.fromDriver.refusedPercent)}. Обе стороны принимают то, что есть.`
+  };
+}
+
+function PricingDemandPage({
+  demand,
+  regions,
+  pricingRegion,
+  setPricingRegion,
+  pricingDatePreset,
+  setPricingDatePreset,
+  pricingDateFrom,
+  setPricingDateFrom,
+  pricingDateTo,
+  setPricingDateTo
+}) {
+  if (!demand) {
+    return (
+      <>
+        <PageHeader title="Цена и спрос" subtitle="Не дорого ли пассажиру и не дёшево ли водителю" />
+        <StatePanel title="Нет данных" text="За выбранный период заказов не было." />
+      </>
+    );
+  }
+
+  const verdict = priceVerdict(demand);
+  const orders = demand.orders || {};
+  const line = demand.line || {};
+
+  return (
+    <>
+      <PageHeader title="Цена и спрос" subtitle="Не дорого ли пассажиру и не дёшево ли водителю">
+        <select className="admin-control-select" value={pricingRegion} onChange={event => setPricingRegion(event.target.value)}>
+          <option value="all">Все районы</option>
+          {regions.map(region => (
+            <option value={region.id} key={region.id}>{region.name}</option>
+          ))}
+        </select>
+        <SegmentedFilter
+          value={pricingDatePreset}
+          onChange={setPricingDatePreset}
+          items={[
+            ["today", "Сегодня"],
+            ["7d", "7 дней"],
+            ["30d", "30 дней"],
+            ["custom", "Период"]
+          ]}
+        />
+        {pricingDatePreset === "custom" && (
+          <div className="admin-date-inputs">
+            <input type="date" value={pricingDateFrom} onChange={event => setPricingDateFrom(event.target.value)} aria-label="Дата начала" />
+            <input type="date" value={pricingDateTo} onChange={event => setPricingDateTo(event.target.value)} aria-label="Дата окончания" />
+          </div>
+        )}
+      </PageHeader>
+
+      <DataCard title={verdict.title} text={verdict.text}>
+        <div className="admin-card-facts">
+          <InfoLine label="Заказов создано" value={orders.created} />
+          <InfoLine label="Нашли машину" value={demandPercent(orders.fillRatePercent)} />
+          <InfoLine label="Завершено" value={orders.completed} />
+          <InfoLine label="Ещё ищут" value={orders.stillSearching} />
+        </div>
+      </DataCard>
+
+      <DataCard
+        title="Водителю дёшево?"
+        text="Заказ, который не нашёл машину, — это ушедший пассажир и пустой час водителя. Отказ «слишком далеко» значит, что цена не покрывает подачу."
+      >
+        <div className="admin-card-facts">
+          <InfoLine label="Так и не нашли машину" value={orders.neverAssigned} />
+          <InfoLine label="Водитель отменил" value={orders.cancelledByDriver} />
+          <InfoLine
+            label="Водитель заработал"
+            value={line.earningsPerHourKzt === null || line.earningsPerHourKzt === undefined
+              ? null
+              : `${Number(line.earningsPerHourKzt).toLocaleString("ru-RU")} ₸/час`}
+          />
+          <InfoLine label="Часов на линии" value={line.hours ? line.hours : null} />
+        </div>
+        {line.earningsPerHourKzt === null && (
+          <InlineMessage text="Часы на линии считаются с того дня, как это включили. Пока смен не накопилось, заработок за час показать не из чего." />
+        )}
+      </DataCard>
+
+      <DataCard
+        title="Пассажиру дорого?"
+        text="Человек предлагает свою цену и получает отказ либо уходит, не дождавшись. Средняя предложенная цена ниже названной — фиксированная великовата."
+      >
+        <div className="admin-card-facts">
+          <InfoLine label="Пассажир отменил" value={orders.cancelledByClient} />
+          <InfoLine label="Ждал до машины (обычно)" value={formatDuration(demand.wait?.medianSeconds)} />
+          <InfoLine label="Ждал дольше всех (9 из 10)" value={formatDuration(demand.wait?.p90Seconds)} />
+          <InfoLine label="Предлагал от названной" value={demandPercent(demand.offers?.offeredVsFixedPercent)} />
+        </div>
+      </DataCard>
+
+      <DataCard title="Торг о цене" text="Пассажир называет свою цену, водитель отвечает своей. Много отказов — стороны не сходятся.">
+        <div className="admin-card-facts">
+          <InfoLine label="Предложений от пассажиров" value={demand.offers?.fromRider?.made} />
+          <InfoLine label="Из них отклонено" value={demandPercent(demand.offers?.fromRider?.refusedPercent)} />
+          <InfoLine label="Встречных от водителей" value={demand.offers?.fromDriver?.made} />
+          <InfoLine label="Из них отклонено" value={demandPercent(demand.offers?.fromDriver?.refusedPercent)} />
+        </div>
+      </DataCard>
+
+      <DataCard title="Почему отменяли" text="Причина, которую человек назвал сам, — самый честный сигнал о цене и об ожидании.">
+        {demand.cancelReasons?.length ? (
+          <div className="admin-card-facts">
+            {demand.cancelReasons.map(reason => (
+              <InfoLine
+                key={`${reason.side}-${reason.code}`}
+                label={`${CANCEL_REASON_LABELS[reason.code] || reason.code} · ${reason.side === "driver" ? "водитель" : "пассажир"}`}
+                value={reason.count}
+              />
+            ))}
+          </div>
+        ) : (
+          <StatePanel title="Отмен с причиной не было" text="Либо не отменяли, либо отменяли до того, как причину начали спрашивать." />
+        )}
+      </DataCard>
+
+      <DataCard title="Деньги за период" text="Сколько прошло через сервис и сколько из этого осталось водителям.">
+        <div className="admin-card-facts">
+          <InfoLine label="Средний чек" value={`${Number(demand.money?.averagePriceKzt || 0).toLocaleString("ru-RU")} ₸`} />
+          <InfoLine label="Сумма поездок" value={`${Number(demand.money?.grossKzt || 0).toLocaleString("ru-RU")} ₸`} />
+          <InfoLine label="Комиссия сервиса" value={`${Number(demand.money?.commissionKzt || 0).toLocaleString("ru-RU")} ₸`} />
+          <InfoLine label="Осталось водителям" value={`${Number(demand.money?.driverEarningsKzt || 0).toLocaleString("ru-RU")} ₸`} />
+        </div>
+      </DataCard>
+    </>
+  );
 }
 
 function InfoLine({ label, value }) {

@@ -16,6 +16,7 @@ import { ACTIVE_ORDER_STATUSES, syncDriverAvailability } from "../orders/order-d
 import { driverDailyStats } from "./driver-daily-stats.service.js";
 import { releaseStandPlaceForDriver } from '../stands/stands.service.js';
 import { announceStandRelease } from '../stands/stands.notify.js';
+import { recordShiftForStatus } from "./driver-shift.service.js";
 const router = Router();
 
 function nearbyPublicId(driverId) {
@@ -173,6 +174,7 @@ router.patch("/me/status", requireAuth, requireRole("DRIVER"), async (req, res, 
       if (active.rows[0]) throw new AppError("Driver has active order", 409, "DRIVER_HAS_ACTIVE_ORDER");
       if (body.status === "FREE") await assertDriverCanGoOnline(driver, client);
       const updated = (await client.query("UPDATE drivers SET status=$1,last_seen_at=NOW() WHERE user_id=$2 RETURNING *", [body.status, req.user.id])).rows[0];
+      await recordShiftForStatus(driver.id, driver.status, body.status, client);
       const release = body.status === 'FREE' ? null : await releaseStandPlaceForDriver(
         { driverId: driver.id, reason: 'DRIVER_OFFLINE' }, client
       );

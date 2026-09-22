@@ -58,6 +58,7 @@ import { join } from "node:path";
 
 import { submitDriverApplication, reviewDriverApplication } from './driver-application.service.js';
 import { DRIVER_DEBT_CEILING_KZT, DRIVER_DEBT_WARNING_KZT } from "../drivers/driver-debt.js";
+import { getPricingDemand } from "./pricing-demand.service.js";
 
 const router = Router();
 
@@ -1384,6 +1385,25 @@ router.get("/referrals", requireAuth, requireRole("OWNER", "FINANCE"), async (re
         rewardKzt: row.reward_kzt == null ? null : Number(row.reward_kzt)
       }))
     });
+  } catch (error) { next(error); }
+});
+
+// Цена и спрос: несколько чисел, по которым видно, не дорого ли пассажиру и
+// не дёшево ли водителю. Панель показывала деньги, но обе стороны уходят
+// молча — деньги об этом не скажут.
+router.get("/pricing-demand", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      regionId: z.string().uuid().optional(),
+      dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+      dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional()
+    }).parse(req.query);
+    const demand = await getPricingDemand({
+      regionId: params.regionId || null,
+      dateFrom: params.dateFrom,
+      dateTo: params.dateTo
+    }, query);
+    res.json(demand);
   } catch (error) { next(error); }
 });
 

@@ -341,6 +341,19 @@ CREATE TABLE IF NOT EXISTS service_settings (
   CONSTRAINT service_settings_singleton CHECK (id = 1)
 );
 
+-- Когда водитель был на линии: в drivers лежит только текущий статус.
+-- Смена открывается при уходе с OFFLINE и закрывается при возврате;
+-- FREE <-> BUSY её не трогают, это всё время на линии.
+CREATE TABLE IF NOT EXISTS driver_shifts (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  driver_id UUID NOT NULL REFERENCES drivers(id) ON DELETE CASCADE,
+  started_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  ended_at TIMESTAMPTZ,
+  ended_reason TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_driver_shifts_driver ON driver_shifts(driver_id, started_at DESC);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_driver_shifts_one_open ON driver_shifts(driver_id) WHERE ended_at IS NULL;
+
 CREATE TABLE IF NOT EXISTS driver_applications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID REFERENCES users(id) ON DELETE SET NULL,

@@ -45,6 +45,7 @@ import adminStandsRoutes from "./modules/stands/stands.admin.routes.js";
 import cancellationReviewRoutes from "./modules/orders/cancellation-review.routes.js";
 import { standRegionRoom, standRoom } from "./modules/stands/stands.service.js";
 import { startStandsSweeper, stopStandsSweeper } from "./modules/stands/stands.scheduler.js";
+import { startDriverShiftSweeper, stopDriverShiftSweeper } from "./modules/drivers/driver-shift.scheduler.js";
 import { startCancellationReviewScheduler, stopCancellationReviewScheduler } from "./modules/orders/cancellation-review.scheduler.js";
 import { startRecurringBookingsScheduler, stopRecurringBookingsScheduler } from "./modules/recurring-bookings/recurring-bookings.scheduler.js";
 import { assertDriverDispatchReady } from "./modules/driver-region-approvals/driver-region-approvals.service.js";
@@ -314,6 +315,7 @@ async function bootstrap() {
   if (isShuttingDown()) return;
   startRecurringBookingsScheduler(io);
   startStandsSweeper(io);
+  startDriverShiftSweeper();
   startCancellationReviewScheduler();
   // Bind every interface explicitly. Without a host Node listens on the IPv6
 // wildcard, and a platform proxy that dials the container over IPv4 — which is
@@ -351,6 +353,7 @@ function closeHttpServer() {
 async function drainServer() {
   stopRecurringBookingsScheduler();
   stopStandsSweeper();
+  stopDriverShiftSweeper();
   stopCancellationReviewScheduler();
 
   // Tell connected clients to reconnect immediately. With the Redis adapter,
