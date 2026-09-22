@@ -261,9 +261,23 @@ assert.doesNotThrow(() => assertStatusTransition({ status }, "TRIP_COMPLETED"), 
 assert.throws(() => assertStatusTransition({ status: "SEARCHING_DRIVER" }, "TRIP_STARTED"), { code: "INVALID_STATUS_TRANSITION" }, "invalid transition fails");
 assert.throws(() => assertStatusTransition({ status: "TRIP_STARTED" }, "CANCELLED_BY_DRIVER"), { code: "INVALID_STATUS_TRANSITION" }, "driver cannot cancel after trip start");
 assert.throws(() => assertStatusTransition({ status: "TRIP_STARTED" }, "CANCELLED_BY_CLIENT"), { code: "INVALID_STATUS_TRANSITION" }, "client cannot cancel after trip start");
-for (const cancellationStatus of ["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER", "CANCELLED_BY_OPERATOR"]) {
+// Ни пассажир, ни водитель не выходят из начатой поездки: один уже едет,
+// второй везёт.
+for (const cancellationStatus of ["CANCELLED_BY_CLIENT", "CANCELLED_BY_DRIVER"]) {
   assert.equal(TRANSITION_RULES[cancellationStatus].includes("TRIP_STARTED"), false, `${cancellationStatus} must not allow TRIP_STARTED`);
   assert.equal(TRANSITION_RULES[cancellationStatus].includes("IN_PROGRESS"), false, `${cancellationStatus} must not allow legacy IN_PROGRESS`);
+}
+// А владелец — выходит, и это единственный выход, который вообще есть.
+// Завершить поездку мог только водитель; если его телефон сел или приложение
+// снесли, заказ оставался живым навсегда, а пассажир после этого не мог
+// заказать машину вообще. Отменять идущую поездку плохо — заказ, который
+// нельзя закрыть никогда, хуже.
+for (const status of ["TRIP_STARTED", "IN_PROGRESS"]) {
+  assert.equal(
+    TRANSITION_RULES.CANCELLED_BY_OPERATOR.includes(status),
+    true,
+    `владелец обязан уметь закрыть поездку из ${status}: больше это не может никто`
+  );
 }
 assert.throws(() => assertStatusTransition({ status: "PAID" }, "CANCELLED_BY_CLIENT"), { code: "INVALID_STATUS_TRANSITION" }, "paid order is terminal");
 assert.throws(() => assertStatusTransition({ status: "CANCELLED_BY_CLIENT" }, "DRIVER_FOUND"), { code: "INVALID_STATUS_TRANSITION" }, "cancelled order is terminal");

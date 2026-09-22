@@ -1,6 +1,7 @@
 import { query as defaultQuery } from "../../db/pool.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { ACTIVE_ORDER_STATUSES } from "../orders/order-dispatch.service.js";
 
 // Низкий рейтинг поднимает карточку на разбор, а не отключает водителя сам.
 //
@@ -99,6 +100,25 @@ export async function resolveRatingCase({ caseId, decision, note = "", actorUser
     });
   }
 
+  // Отказ до записи, а не после: пока человек кого-то везёт, отключать его
+  // нельзя. Пассажир в машине об этом не просил, а закрывать заказ после
+  // блокировки будет некому, кроме владельца. Сначала закройте поездку — потом
+  // отключайте. Тот же отказ стоит и на блокировке из карточки водителя.
+  if (decision === "BLOCK") {
+    const active = (await run(executor,
+      "SELECT id, short_id, status FROM orders WHERE driver_id=$1 AND status = ANY($2::text[]) LIMIT 1",
+      [existing.driver_id, ACTIVE_ORDER_STATUSES]
+    )).rows[0];
+    if (active) {
+      throw new AppError(
+        "This driver is on a trip right now — close that trip first",
+        409,
+        "DRIVER_HAS_ACTIVE_ORDER",
+        { orderId: active.id, shortId: active.short_id, orderStatus: active.status }
+      );
+    }
+  }
+
   const status = decision === "BLOCK" ? "BLOCKED" : "DISMISSED";
   const updated = (await run(executor, `
     UPDATE driver_rating_cases
@@ -109,8 +129,6 @@ export async function resolveRatingCase({ caseId, decision, note = "", actorUser
 
   let blockedDriver = null;
   if (decision === "BLOCK") {
-    // Водителя снимают с линии, но поездку, которую он везёт прямо сейчас, он
-    // доводит до конца — это отдельное правило в orders.routes.js.
     blockedDriver = (await run(executor, `
       UPDATE drivers SET is_blocked=true, status='OFFLINE' WHERE id=$1 RETURNING *
     `, [existing.driver_id])).rows[0];

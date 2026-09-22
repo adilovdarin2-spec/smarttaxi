@@ -1901,8 +1901,22 @@ function buildAdminProblemItems(dashboard, health) {
       action: "Финансы"
     },
     {
-      key: "frequent-cancel-clients",
+      key: "stalled-trips",
       index: "07",
+      // Поездка, по которой давно ничего не происходит. Закрыть её может
+      // только владелец: водитель мог уехать с севшим телефоном или снести
+      // приложение, а пассажир до закрытия не может заказать машину вообще.
+      tone: Number(attention.stalledTrips || 0) > 0 ? "warning" : "success",
+      page: "orders",
+      title: Number(attention.stalledTrips || 0) > 0 ? "Поездки без движения" : "Поездки идут нормально",
+      text: Number(attention.stalledTrips || 0) > 0
+        ? `${Number(attention.stalledTrips)} ${plural(Number(attention.stalledTrips), "поездка", "поездки", "поездок")} больше трёх часов без изменений. Пока такая поездка не закрыта, пассажир не может заказать снова.`
+        : "Нет поездок, застрявших без изменений.",
+      action: "Заказы"
+    },
+    {
+      key: "frequent-cancel-clients",
+      index: "08",
       tone: Number(attention.frequentCancelClients || 0) > 0 ? "warning" : "success",
       page: "orders",
       title: Number(attention.frequentCancelClients || 0) > 0 ? "Клиенты часто отменяют заказы" : "Отмены клиентов в норме",
@@ -2697,10 +2711,26 @@ function FinancePage({
 // transition, so drift here only ever means a button is missing or shown
 // when it would 409, never an unsafe action actually going through.
 const OPEN_ORDER_STATUSES = ["SEARCHING_DRIVER", "NEW"];
+// Начатая поездка тоже закрывается — владельцем и только им.
+//
+// Раньше из неё не было выхода ни у кого: водитель завершает — и всё. Сел
+// телефон, снесли приложение, просто больше не открыл — заказ оставался живым
+// навсегда, а пассажир после этого не мог заказать машину вообще.
 const CANCELLABLE_ORDER_STATUSES = [
   "SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_ASSIGNED",
-  "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT"
+  "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT",
+  "TRIP_STARTED", "IN_PROGRESS"
 ];
+
+// Поездка, по которой давно ничего не происходит.
+const STALLED_TRIP_HOURS = 3;
+
+function isStalledTrip(order) {
+  if (!["TRIP_STARTED", "IN_PROGRESS"].includes(order?.status)) return false;
+  const since = Date.parse(order.acceptedAt || order.createdAt || "");
+  if (!Number.isFinite(since)) return false;
+  return Date.now() - since > STALLED_TRIP_HOURS * 60 * 60 * 1000;
+}
 
 function nextOrderStatusAction(status) {
   if (["DRIVER_FOUND", "DRIVER_ASSIGNED"].includes(status)) {
@@ -2883,6 +2913,12 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
               </button>
             </div>
           )}
+          {isStalledTrip(order) && (
+            <InlineMessage
+              danger
+              text={`По этой поездке больше ${STALLED_TRIP_HOURS} часов ничего не происходит. Позвоните водителю и пассажиру: пока заказ не закрыт, пассажир не может заказать снова.`}
+            />
+          )}
           <div className="admin-order-actions">
             {canAdvance && (
               <button type="button" className="admin-secondary-button compact" disabled={busy} onClick={handleAdvance}>
@@ -2896,7 +2932,7 @@ function OrderRow({ order, drivers, regions, expanded, onToggle, onAssignDriver,
                 disabled={busy}
                 onClick={() => onRequestCancel?.(order)}
               >
-                Отменить заказ
+                {["TRIP_STARTED", "IN_PROGRESS"].includes(order.status) ? "Закрыть поездку" : "Отменить заказ"}
               </button>
             )}
           </div>

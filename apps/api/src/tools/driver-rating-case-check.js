@@ -77,11 +77,14 @@ assert.equal(needsRatingReview(4.5, 100), false, "хороший рейтинг 
 {
   const state = { status: "PENDING", driver_id: "d1", average_rating: 2.1, review_count: 7 };
   const seen = [];
+  // Водитель свободен: активных заказов у него нет.
+  let activeTrip = null;
   const executor = {
     query: async (sql, params) => {
       seen.push(sql.replace(/\s+/g, " ").trim());
       if (/SELECT \* FROM driver_rating_cases/.test(sql)) return { rows: [{ id: params[0], ...state }] };
       if (/UPDATE driver_rating_cases/.test(sql)) return { rows: [{ id: params[0], ...state, status: params[1] }] };
+      if (/FROM orders WHERE driver_id/.test(sql)) return { rows: activeTrip ? [activeTrip] : [] };
       return { rows: [{ id: "d1" }], rowCount: 1 };
     }
   };
@@ -107,6 +110,22 @@ assert.equal(needsRatingReview(4.5, 100), false, "хороший рейтинг 
     (error) => error.code === "INVALID_RATING_CASE_DECISION",
     "решение бывает только двух видов"
   );
+
+  // Пока водитель кого-то везёт, отключать его нельзя: пассажир в машине об
+  // этом не просил, а закрывать заказ после блокировки будет некому, кроме
+  // владельца. Сначала закройте поездку.
+  activeTrip = { id: "o1", short_id: "AB12", status: "TRIP_STARTED" };
+  seen.length = 0;
+  await assert.rejects(
+    () => resolveRatingCase({ caseId: "c1", decision: "BLOCK", actorUserId: "u1" }, executor),
+    (error) => error.code === "DRIVER_HAS_ACTIVE_ORDER" && error.details?.shortId === "AB12",
+    "отключать водителя посреди поездки нельзя, и отказ должен назвать саму поездку"
+  );
+  assert(
+    !seen.some(sql => /UPDATE drivers SET is_blocked=true/.test(sql)),
+    "отказ обязан сработать до записи, а не после"
+  );
+  activeTrip = null;
 }
 
 // --- Владелец видит карточку и обе кнопки ---

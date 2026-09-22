@@ -233,15 +233,34 @@ for (const [name, source] of [["admin", adminRoutes], ["drivers", driverRoutes]]
     `${name} block must refuse before it writes`
   );
 }
-// CANCELLED_BY_OPERATOR really is unreachable once the trip has started —
-// that is the whole reason the block has to be refused rather than warned
-// about. If this ever changes, the refusal can soften with it.
+// Раньше здесь стояло обратное: из начатой поездки оператор выйти не мог, и
+// именно поэтому блокировку приходилось запрещать, а не предупреждать о ней.
+//
+// Теперь выход есть — иначе поездка, брошенная водителем с севшим телефоном,
+// висела бы вечно, а пассажир после неё не мог бы заказать машину вообще. Но
+// отказ при блокировке остаётся, и он важнее прежнего: он говорит владельцу
+// «сначала закройте поездку», то есть называет то самое действие, которое у
+// него теперь есть.
 const dispatchSource = readFileSync(join(root, "modules", "orders", "order-dispatch.service.js"), "utf8");
 const operatorRule = dispatchSource.match(/CANCELLED_BY_OPERATOR: \[([^\]]*)\]/);
 assert.ok(operatorRule, "the operator cancellation rule must exist");
 assert.ok(
-  !operatorRule[1].includes("TRIP_STARTED"),
-  "an operator who can cancel a started trip would make the block refusal unnecessary"
+  operatorRule[1].includes("TRIP_STARTED"),
+  "the owner must be able to close a started trip — otherwise a driver who vanishes leaves an order nobody can ever close"
+);
+
+// И тот же отказ — на блокировке из карточки разбора по рейтингу: иначе она
+// создавала бы ровно то состояние, которое соседний путь запрещает.
+const ratingCaseSource = readFileSync(join(root, "modules", "drivers", "driver-rating-case.service.js"), "utf8");
+assert.match(
+  ratingCaseSource,
+  /DRIVER_HAS_ACTIVE_ORDER/,
+  "решение отключить водителя по рейтингу обязано отказывать, пока он кого-то везёт"
+);
+assert.ok(
+  ratingCaseSource.indexOf("DRIVER_HAS_ACTIVE_ORDER") <
+    ratingCaseSource.indexOf("UPDATE drivers SET is_blocked=true"),
+  "отказ должен стоять до записи, а не после"
 );
 
 // Blocking a driver out of a region puts them OFFLINE with no region at all,

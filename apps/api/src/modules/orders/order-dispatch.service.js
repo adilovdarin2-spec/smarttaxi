@@ -82,7 +82,18 @@ export const TRANSITION_RULES = {
   RATED: ["PAID"],
   CANCELLED_BY_CLIENT: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"],
   CANCELLED_BY_DRIVER: ["DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"],
-  CANCELLED_BY_OPERATOR: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED"],
+  // Владелец — единственный, кто может закрыть уже начатую поездку, и поэтому
+  // он должен это мочь.
+  //
+  // Раньше из TRIP_STARTED выхода не было ни у кого: водитель завершает — и
+  // всё. Если его телефон сел, приложение снесли или он просто больше его не
+  // открыл, заказ оставался живым навсегда, а пассажир после этого не мог
+  // заказать машину вообще — незакрытый заказ считается активным.
+  //
+  // Отменить идущую поездку — плохо; но заказ, который нельзя закрыть никогда,
+  // хуже. Владелец — живой человек, он может позвонить обеим сторонам и
+  // разобраться, а «нельзя» разобраться не может.
+  CANCELLED_BY_OPERATOR: ["SEARCHING_DRIVER", "NEW", "DRIVER_FOUND", "DRIVER_GOING_TO_CLIENT", "DRIVER_ARRIVED", "WAITING_CLIENT", "DRIVER_ASSIGNED", "TRIP_STARTED", "IN_PROGRESS"],
   NO_SHOW: ["WAITING_CLIENT", "DRIVER_ARRIVED"],
   DRIVER_ASSIGNED: ["NEW", "SEARCHING_DRIVER"],
   IN_PROGRESS: ["DRIVER_ARRIVED", "WAITING_CLIENT"],

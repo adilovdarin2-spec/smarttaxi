@@ -433,6 +433,14 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
                COUNT(*) FILTER (WHERE status = ANY($1::text[]))::int searching,
                COUNT(*) FILTER (WHERE status = ANY($1::text[]) AND created_at < NOW() - INTERVAL '3 minutes')::int stuck,
                COUNT(*) FILTER (WHERE status = ANY($2::text[]))::int active,
+               -- Поездка, по которой давно ничего не происходит. Водитель мог
+               -- уехать с севшим телефоном, снести приложение или просто
+               -- больше его не открыть: закрыть такой заказ может только
+               -- владелец, а до этого пассажир не может заказать машину.
+               COUNT(*) FILTER (
+                 WHERE status = ANY($2::text[])
+                   AND COALESCE(accepted_at, created_at) < NOW() - INTERVAL '3 hours'
+               )::int stalled,
                COUNT(*) FILTER (WHERE status = ANY($3::text[]))::int completed
         FROM orders
       `, [OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, SETTLED_ORDER_STATUSES]),
@@ -493,6 +501,7 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
         orders: orders.rows[0],
         applications: applications.rows[0],
         attention: {
+          stalledTrips: orders.rows[0].stalled,
           highDebtDrivers: highDebtDrivers.rows[0].total,
           // Пороги едут вместе с числом, которое по ним посчитано. Пока панель
           // держала свои копии, она показывала счёт по 3 500 и подписывала его
