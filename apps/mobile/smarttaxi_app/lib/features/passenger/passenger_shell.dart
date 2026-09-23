@@ -9030,46 +9030,58 @@ class _RouteSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
-      decoration: BoxDecoration(
-        color: palette.card,
-        border: Border.fromBorderSide(
-          BorderSide(color: palette.border),
+    const radius = BorderRadius.all(Radius.circular(16));
+    // Всюду в приложении строка адреса открывается касанием по самому адресу.
+    // Здесь работала одна стрелка справа: человек жал по «Куда», чтобы
+    // поменять точку, и карточка молчала. Стрелку оставляем — она привычная
+    // цель, — но касание по всей карточке ведёт туда же.
+    return Material(
+      color: palette.card,
+      borderRadius: radius,
+      child: InkWell(
+        onTap: onEdit,
+        borderRadius: radius,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 0, 8),
+          decoration: BoxDecoration(
+            border: Border.fromBorderSide(
+              BorderSide(color: palette.border),
+            ),
+            borderRadius: radius,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const _RouteDotsColumn(height: 40),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  children: [
+                    _RouteSummaryLine(
+                        title: l10n.passengerFromLabel, value: pickupLabel),
+                    Divider(height: 9, color: palette.border),
+                    _RouteSummaryLine(
+                        title: l10n.passengerToLabel, value: dropoffLabel),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Keep a full touch target without squeezing the address labels.
+              IconButton(
+                onPressed: onEdit,
+                visualDensity: VisualDensity.standard,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                tooltip: l10n.passengerChangeButton,
+                icon: Icon(
+                  Icons.chevron_right_rounded,
+                  size: 24,
+                  color: palette.textMuted,
+                ),
+              ),
+            ],
+          ),
         ),
-        borderRadius: const BorderRadius.all(Radius.circular(16)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          const _RouteDotsColumn(height: 40),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              children: [
-                _RouteSummaryLine(
-                    title: l10n.passengerFromLabel, value: pickupLabel),
-                Divider(height: 9, color: palette.border),
-                _RouteSummaryLine(
-                    title: l10n.passengerToLabel, value: dropoffLabel),
-              ],
-            ),
-          ),
-          const SizedBox(width: 4),
-          // Keep a full touch target without squeezing the address labels.
-          IconButton(
-            onPressed: onEdit,
-            visualDensity: VisualDensity.standard,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
-            tooltip: l10n.passengerChangeButton,
-            icon: Icon(
-              Icons.chevron_right_rounded,
-              size: 24,
-              color: palette.textMuted,
-            ),
-          ),
-        ],
       ),
     );
   }
