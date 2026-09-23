@@ -3122,6 +3122,7 @@ class _PassengerShellState extends State<PassengerShell>
                       target: _target,
                       addressLabel: _mapPickerAddressLabel,
                       addressHint: _mapPickerAddressHint,
+                      error: _error,
                       addressLoading: _mapPickerAddressLoading,
                       onCancel: _cancelMapPointSelection,
                       onConfirm: _confirmMapPointSelection,
@@ -9555,6 +9556,7 @@ class _MapPointPickerSheet extends StatelessWidget {
     required this.target,
     required this.addressLabel,
     this.addressHint,
+    this.error,
     required this.addressLoading,
     required this.onCancel,
     required this.onConfirm,
@@ -9565,6 +9567,14 @@ class _MapPointPickerSheet extends StatelessWidget {
   // Set only when the pin resolved to nothing usable; carries the server's
   // "move the pin" guidance, or a localised stand-in when it had none.
   final String? addressHint;
+  // Отказ, если подтвердить точку нельзя, — например, она за пределами
+  // выбранного района.
+  //
+  // Этого здесь не было. Отказ записывался в состояние экрана заказа, а тот в
+  // это время закрыт картой: человек нажимал «Подтвердить адрес», и не
+  // происходило ровно ничего. Ни подсказки, ни причины — кнопка, которая
+  // молчит, читается как сломанная.
+  final String? error;
   final bool addressLoading;
   final VoidCallback onCancel;
   final VoidCallback onConfirm;
@@ -9766,6 +9776,37 @@ class _MapPointPickerSheet extends StatelessWidget {
                   ],
                 ),
               ),
+              if (error != null && error!.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(13, 11, 13, 11),
+                  decoration: BoxDecoration(
+                    color: palette.dangerSoft,
+                    border: Border.all(color: palette.danger.withValues(alpha: 0.24)),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.error_outline_rounded,
+                          size: 19, color: palette.danger),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Text(
+                          error!,
+                          style: TextStyle(
+                            color: palette.danger,
+                            fontSize: 13.4,
+                            height: 1.3,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               _BrandCtaButton(
                 enabled: canConfirm,
