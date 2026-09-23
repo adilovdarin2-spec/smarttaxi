@@ -2230,7 +2230,14 @@ class _PassengerShellState extends State<PassengerShell>
     setState(() {
       if (inferredPickup != null) {
         _pickup = inferredPickup;
-        _pickupLabel = l10n.passengerMyLocationLabel;
+        // Это центр карты, а не место, где стоит человек. Подписывать его
+        // «Моё местоположение» — врать: карта показывает то, куда человек
+        // последний раз посмотрел. Разрешения на геолокацию может не быть
+        // вовсе, и тогда подача уезжала туда, куда пассажир её не ставил, —
+        // а он читал «моё местоположение» и был уверен, что машина придёт к
+        // нему. Называем точку тем, чем она является; поменять её он может
+        // одним касанием.
+        _pickupLabel = l10n.passengerMapPointLabel;
         _pickupSource = PointSource.map;
       }
       if (target == PointTarget.pickup) {
@@ -2399,6 +2406,20 @@ class _PassengerShellState extends State<PassengerShell>
         if (_preview == null || _preview!.estimatedPrice == null) {
           return;
         }
+      }
+      // Маршрут нулевой длины сервер не примет — и правильно сделает. Но
+      // «та же точка» здесь считалась с точностью до метра, а маршрут между
+      // соседними подъездами округляется в ноль: цена показывалась, кнопка
+      // выглядела рабочей, и человек получал общее «проверьте адреса» про
+      // адреса, которые сам же выбрал и которые выглядят разными.
+      if (_preview!.distanceMeters <= 0) {
+        final message = l10n.passengerPickupDestinationSameError;
+        setState(() {
+          _loading = false;
+          _error = message;
+        });
+        AppToast.showError(context, message);
+        return;
       }
       final order = await widget.api.createOrder(
         pickup: _pickup!,
