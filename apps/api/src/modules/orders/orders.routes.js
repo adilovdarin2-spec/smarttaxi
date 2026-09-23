@@ -354,12 +354,29 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         serviceCommission = Math.round((finalPrice * commissionPercent) / 100);
       }
 
-      const rider = (await client.query(`
+      // Заказ принадлежит тому, кто его создал, а не тому, чей телефон ввели.
+      //
+      // Раньше профиль пассажира искался по введённому номеру. Заказать
+      // машину другу — обычное дело, и номер в форме чужой; из-за этого
+      // заказ вставал на чужой счёт целиком. С чужого баланса списывались
+      // бонусы при оплате кэшбэком, чужой промокод отмечался использованным,
+      // чужое имя переписывалось на введённое, а чужой аккаунт занимал свой
+      // единственный активный заказ — и человек не мог вызвать себе машину,
+      // пока незнакомец этого не отменит. Сам заказчик своего заказа при
+      // этом не видел: списки и отмена идут по client_id.
+      //
+      // Кого везут — по-прежнему то, что ввели: rider_name и rider_phone
+      // лежат в самом заказе, водитель звонит именно туда.
+      const rider = (await client.query(
+        "SELECT * FROM clients WHERE user_id=$1",
+        [req.user.id]
+      )).rows[0] ?? (await client.query(`
         INSERT INTO clients(user_id, name, phone)
-        VALUES($1,$2,$3)
-        ON CONFLICT (phone) DO UPDATE SET name=EXCLUDED.name, user_id=COALESCE(clients.user_id, EXCLUDED.user_id)
+        SELECT id, name, phone FROM users WHERE id=$1
+        ON CONFLICT (phone) DO UPDATE SET user_id=EXCLUDED.user_id
         RETURNING *
-      `, [req.user.id, body.riderName, body.riderPhone])).rows[0];
+      `, [req.user.id])).rows[0];
+      if (!rider) throw new AppError("Client profile not found", 404, "CLIENT_NOT_FOUND");
 
       // A promo code and a rider-proposed price both change what's charged —
       // combining them would make the discount math ambiguous, so a promo
