@@ -117,6 +117,49 @@ assert(admin.includes('router.get("/recurring-bookings", requireAuth, requireRol
 assert(admin.includes("timeOfDay: String(row.time_of_day).slice(0, 5)"), "publicAdminRecurringBooking must format time_of_day back to HH:MM, matching the client/driver mapper's own fix");
 assert(admin.includes("skippedToday: Boolean(row.skipped_today)"), "publicAdminRecurringBooking must surface skippedToday to the admin panel");
 assert(admin.includes("lastSkipReason: row.last_skip_reason || undefined"), "publicAdminRecurringBooking must surface the specific skip reason for admin diagnosis");
+
+// Одна активная поездка на пассажира -- правило, на котором держится весь
+// экран пассажира.
+//
+// Ручной заказ его соблюдает, а регулярный рейс назначал сам и мимо него.
+// /orders/me/active отдаёт одну строку, самую свежую: человек едет в машине,
+// в 07:45 срабатывает школьный рейс -- и приложение показывает новый заказ
+// вместо той поездки, в которой он сидит. Пропадают водитель, кнопка SOS,
+// ссылка "поделиться поездкой", отмена и оплата.
+assert(
+  scheduler.includes("CLIENT_ACTIVE_ORDER_STATUSES"),
+  "регулярный рейс должен спрашивать, не в поездке ли уже пассажир -- тем же списком статусов, что и обычный заказ"
+);
+{
+  const txAt = scheduler.indexOf("const result = await tx(");
+  assert(txAt >= 0, "не нашлась транзакция создания заказа регулярного рейса");
+  const insertAt = scheduler.indexOf("INSERT INTO orders(", txAt);
+  const busyAt = scheduler.indexOf("CLIENT_ACTIVE_ORDER_STATUSES", txAt);
+  const stopAt = scheduler.indexOf('return { status: "client_busy" }', txAt);
+  assert(
+    busyAt > txAt && busyAt < insertAt,
+    "проверка активной поездки должна стоять внутри транзакции и до вставки заказа, иначе она ничего не решает в гонке"
+  );
+  assert(
+    stopAt > busyAt && stopAt < insertAt,
+    "найденную активную поездку нужно не просто прочитать, а остановить на ней создание заказа -- до вставки"
+  );
+}
+assert(
+  scheduler.includes('recordSkip(booking.id, "CLIENT_HAS_ACTIVE_ORDER")'),
+  "пропуск по этой причине должен записываться -- иначе человек не узнает, почему рейс не поехал"
+);
+assert(
+  /CHECK \(last_skip_reason IS NULL OR last_skip_reason = ANY \(ARRAY\[[^\]]*'CLIENT_HAS_ACTIVE_ORDER'/s.test(migrations),
+  "новая причина пропуска должна проходить проверку столбца, а не падать на вставке"
+);
+{
+  const web = fs.readFileSync(new URL("../../../web/src/features/admin/AdminApp.jsx", import.meta.url), "utf8");
+  assert(
+    web.includes("CLIENT_HAS_ACTIVE_ORDER:"),
+    "в панели причина пропуска должна читаться словами, а не кодом"
+  );
+}
 assert(admin.includes("(rb.last_skip_date = CURRENT_DATE) AS skipped_today"), "the admin recurring-bookings query must compute skipped_today off CURRENT_DATE, matching the client/driver endpoints");
 
 console.log("Recurring bookings (\"школьный маршрут\") checks ok");

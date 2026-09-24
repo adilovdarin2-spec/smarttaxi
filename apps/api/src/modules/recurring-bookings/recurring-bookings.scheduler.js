@@ -2,7 +2,7 @@ import { query, tx } from "../../db/pool.js";
 import { randomBytes } from "node:crypto";
 import { writeAudit } from "../../common/audit.js";
 import { resolveTripRegion, requestRoute } from "../routing/routing.service.js";
-import { emitOrderCreated, isSamePerson } from "../orders/order-dispatch.service.js";
+import { CLIENT_ACTIVE_ORDER_STATUSES, emitOrderCreated, isSamePerson } from "../orders/order-dispatch.service.js";
 import { commissionPercentForOrder } from "../orders/order-pricing.service.js";
 import { isOverDebtCeiling } from "../drivers/driver-debt.js";
 import { notifyOrderClient, notifyOrderDriver, notifyUser } from "../notifications/notification.service.js";
@@ -172,6 +172,21 @@ async function createOrderForBooking(booking) {
     )).rows[0];
     if (!bookingRow) return { status: "already_triggered" };
 
+    // У пассажира может быть только одна активная поездка. Ручной заказ это
+    // правило соблюдает, а регулярный рейс назначал сам и мимо него.
+    //
+    // Экран пассажира читает /orders/me/active, а он отдаёт одну строку --
+    // самую свежую. Человек едет в машине, в 07:45 срабатывает школьный
+    // рейс, и приложение показывает новый заказ вместо той поездки, в
+    // которой он физически сидит: пропадают водитель, кнопка SOS, ссылка
+    // "поделиться поездкой", отмена и оплата. Рейс подождёт до завтра, а
+    // причину пропуска человек увидит.
+    const busy = (await dbClient.query(
+      `SELECT id FROM orders WHERE client_id=$1 AND status = ANY($2::text[]) LIMIT 1`,
+      [booking.client_id, CLIENT_ACTIVE_ORDER_STATUSES]
+    )).rows[0];
+    if (busy) return { status: "client_busy" };
+
     let created;
     for (let attempt = 0; attempt < 5; attempt += 1) {
       try {
@@ -223,6 +238,10 @@ async function createOrderForBooking(booking) {
 
   if (result.status === "driver_busy") {
     await recordSkip(booking.id, "DRIVER_BUSY");
+    return;
+  }
+  if (result.status === "client_busy") {
+    await recordSkip(booking.id, "CLIENT_HAS_ACTIVE_ORDER");
     return;
   }
   if (result.status === "already_triggered") return;

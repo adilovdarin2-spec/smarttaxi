@@ -1338,7 +1338,18 @@ const statements = [
   // Снимаем, а не удаляем: сколько скидки было обещано и когда её вернули --
   // это след, который стоит сохранить.
   "ALTER TABLE promo_code_redemptions ADD COLUMN IF NOT EXISTS released_at TIMESTAMPTZ",
-  "CREATE INDEX IF NOT EXISTS idx_promo_redemptions_active ON promo_code_redemptions(promo_code_id, client_id) WHERE released_at IS NULL"
+  "CREATE INDEX IF NOT EXISTS idx_promo_redemptions_active ON promo_code_redemptions(promo_code_id, client_id) WHERE released_at IS NULL",
+
+  // У регулярного рейса появилась ещё одна причина пропуска: пассажир уже в
+  // поездке. Причину видно и владельцу в панели, и самому пассажиру, поэтому
+  // она должна пройти проверку столбца, а не упасть на вставке.
+  "ALTER TABLE recurring_bookings DROP CONSTRAINT IF EXISTS recurring_bookings_last_skip_reason_check",
+  `ALTER TABLE recurring_bookings ADD CONSTRAINT recurring_bookings_last_skip_reason_check
+     CHECK (last_skip_reason IS NULL OR last_skip_reason = ANY (ARRAY[
+       'CLIENT_MISSING','DRIVER_MISSING','ROUTE_UNAVAILABLE',
+       'DRIVER_OUT_OF_REGION','DRIVER_NOT_READY','DRIVER_BUSY','DRIVER_DEBT_LIMIT',
+       'CLIENT_HAS_ACTIVE_ORDER'
+     ]))`
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies

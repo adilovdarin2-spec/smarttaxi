@@ -3276,7 +3276,8 @@ const recurringSkipReasonLabels = {
   DRIVER_OUT_OF_REGION: "Водитель не в регионе поездки",
   DRIVER_NOT_READY: "Водитель не готов к выходу на линию",
   DRIVER_BUSY: "Водитель занят другой поездкой",
-  DRIVER_DEBT_LIMIT: "У водителя долг выше лимита"
+  DRIVER_DEBT_LIMIT: "У водителя долг выше лимита",
+  CLIENT_HAS_ACTIVE_ORDER: "Пассажир уже в поездке"
 };
 
 // What each road between two towns costs.
