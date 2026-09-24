@@ -132,6 +132,13 @@ async function createOrderForBooking(booking) {
   // Distance/duration are informational only — price is fixed by the
   // booking, not recalculated — so a routing hiccup shouldn't block the
   // school run from being created.
+  //
+  // orders.duration_min -- целое. Здесь клали результат деления, и вставка
+  // падала на любом настоящем маршруте: "invalid input syntax for type
+  // integer: 1.4166666666666667". Регулярный рейс не создавался вообще
+  // никогда, а человек не получал даже отметки "сегодня пропущено": падение
+  // случалось до неё. Округляем ровно так же, как обычный заказ
+  // (verifiedRouteForPricing в orders.routes.js) -- одна дорога, одно число.
   let distanceKm = 0;
   let durationMin = 0;
   try {
@@ -139,8 +146,8 @@ async function createOrderForBooking(booking) {
       from: { lat: Number(booking.pickup_lat), lng: Number(booking.pickup_lng) },
       to: { lat: Number(booking.dropoff_lat), lng: Number(booking.dropoff_lng) }
     });
-    distanceKm = route.distanceMeters / 1000;
-    durationMin = route.durationSeconds / 60;
+    distanceKm = Math.max(0.1, route.distanceMeters / 1000);
+    durationMin = Math.max(1, Math.ceil(route.durationSeconds / 60));
   } catch {
     // keep zeros
   }

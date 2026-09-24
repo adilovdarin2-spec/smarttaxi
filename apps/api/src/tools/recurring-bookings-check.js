@@ -118,6 +118,32 @@ assert(admin.includes("timeOfDay: String(row.time_of_day).slice(0, 5)"), "public
 assert(admin.includes("skippedToday: Boolean(row.skipped_today)"), "publicAdminRecurringBooking must surface skippedToday to the admin panel");
 assert(admin.includes("lastSkipReason: row.last_skip_reason || undefined"), "publicAdminRecurringBooking must surface the specific skip reason for admin diagnosis");
 
+// orders.duration_min -- целое.
+//
+// Здесь клали результат деления секунд на 60, и вставка падала на любом
+// настоящем маршруте: "invalid input syntax for type integer:
+// 1.4166666666666667". Регулярный рейс не создавался вообще никогда, причём
+// человек не получал даже отметки "сегодня пропущено" -- падение случалось до
+// неё. Нашлось только запуском: на разборе исходников это выглядит как
+// обычное деление.
+assert(
+  scheduler.includes("Math.ceil(route.durationSeconds / 60)"),
+  "длительность должна округляться до целого: orders.duration_min -- integer, и дробь роняет вставку"
+);
+assert(
+  !/durationMin = route\.durationSeconds \/ 60\s*;/.test(scheduler),
+  "сырое деление вернулось: вставка снова упадёт на первом же настоящем маршруте"
+);
+{
+  // То же округление, что у обычного заказа: одна дорога -- одно число.
+  const orders = fs.readFileSync(new URL("../modules/orders/orders.routes.js", import.meta.url), "utf8");
+  assert(
+    orders.includes("Math.max(1, Math.ceil(route.durationSeconds / 60))") &&
+      scheduler.includes("Math.max(1, Math.ceil(route.durationSeconds / 60))"),
+    "регулярный рейс и обычный заказ должны считать длительность одинаково"
+  );
+}
+
 // Одна активная поездка на пассажира -- правило, на котором держится весь
 // экран пассажира.
 //
