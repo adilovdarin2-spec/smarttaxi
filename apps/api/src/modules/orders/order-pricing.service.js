@@ -222,6 +222,58 @@ export function buildPricingSnapshot({ region, destinationRegion = region, tarif
   };
 }
 
+// Цена, о которой договорились, должна дойти до книг.
+//
+// Торг меняет цену уже после создания заказа: водитель просит своё, пассажир
+// отвечает своим. Обе стороны в итоге соглашаются на новую сумму — а в заказе
+// обновлялась только price. service_commission и pricing_snapshot оставались
+// от первоначальной оценки, и проводка ORDER_COMPLETED читает именно
+// снимок (orderAmounts в finance.service.js).
+//
+// Из-за этого поездка, за которую человек заплатил 800, попадала в книги как
+// 700, и комиссия бралась с 700. В обратную сторону хуже: сторговались с 700
+// до 500 — а с водителя всё равно удерживали 49 вместо 35. Торг здесь не
+// редкость, а сам замысел сервиса, так что ошибались обе стороны и каждый
+// день.
+//
+// Ставка берётся из снимка — та, что действовала при оформлении заказа, а не
+// сегодняшняя: менять условия задним числом нельзя.
+export function repricedOrderFields(order, agreedPriceKzt) {
+  const price = Math.round(Number(agreedPriceKzt));
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new AppError("Agreed price must be positive", 400, "INVALID_AGREED_PRICE");
+  }
+  let snapshot = order?.pricing_snapshot;
+  if (typeof snapshot === "string") {
+    try { snapshot = JSON.parse(snapshot); } catch { snapshot = null; }
+  }
+  if (!snapshot || typeof snapshot !== "object") snapshot = {};
+
+  const storedPercent = Number(snapshot.serviceCommissionPercent);
+  const previousPrice = Number(snapshot.finalPrice ?? snapshot.estimatedPrice ?? order?.price);
+  const previousCommission = Number(snapshot.serviceCommission ?? order?.service_commission);
+  // Заказы старше самого снимка процент не хранят: восстанавливаем его из
+  // того, что уже было записано, а не подставляем сегодняшнюю ставку.
+  const percent = Number.isFinite(storedPercent)
+    ? storedPercent
+    : (Number.isFinite(previousPrice) && previousPrice > 0 && Number.isFinite(previousCommission)
+        ? (previousCommission / previousPrice) * 100
+        : 0);
+
+  const serviceCommission = roundCurrency((price * percent) / 100);
+  return {
+    price,
+    serviceCommission,
+    pricingSnapshot: {
+      ...snapshot,
+      serviceCommissionPercent: percent,
+      finalPrice: price,
+      serviceCommission,
+      driverEarning: roundCurrency(price - serviceCommission)
+    }
+  };
+}
+
 export async function prepareOrderPricing(input, executor) {
   const pickupRegion = await resolveActiveRegionForPoint({
     lat: input.pickupLat,

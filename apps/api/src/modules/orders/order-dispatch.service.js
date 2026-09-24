@@ -5,6 +5,7 @@ import { assertDriverDispatchReady, assertDriverRegionApproved } from "../driver
 import { releaseStandPlaceForDriver } from "../stands/stands.service.js";
 import { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
 import { assertPriceOfferConsent, assertOrderPriceOfferConsent } from './price-offer-consent.js';
+import { repricedOrderFields } from "./order-pricing.service.js";
 export { ACTIVE_ORDER_STATUSES } from './active-order-statuses.js';
 
 export const ORDER_STATUSES = [
@@ -750,18 +751,25 @@ export async function respondToDriverPriceOffer({ orderId, clientUserId, accept,
   assertOrderPriceOfferConsent(existing, expectedOffer);
   await assertAssignmentPolicy(driver, existing, executor);
 
+  // Согласованная цена идёт и в комиссию, и в снимок: проводка при
+  // завершении читает именно снимок, и без этого поездка за 800 попадала в
+  // книги как 700, а комиссия бралась со старой суммы.
+  const repriced = repricedOrderFields(existing, existing.driver_offer_price_kzt);
   const order = (await runQuery(
     executor,
     `UPDATE orders
      SET status='DRIVER_FOUND',
          driver_id=$1,
          price=$2,
+         service_commission=$4,
+         pricing_snapshot=$5::jsonb,
          accepted_at=NOW(),
          driver_offer_status='ACCEPTED',
          driver_offer_responded_at=NOW()
      WHERE id=$3
      RETURNING *`,
-    [driver.id, existing.driver_offer_price_kzt, existing.id]
+    [driver.id, repriced.price, existing.id, repriced.serviceCommission,
+     JSON.stringify(repriced.pricingSnapshot)]
   )).rows[0];
   const updatedDriver = (await runQuery(
     executor,
@@ -876,18 +884,25 @@ export async function respondToClientCounterOffer({ orderId, driverUserId, accep
   assertOrderPriceOfferConsent(existing, expectedOffer);
   await assertAssignmentPolicy(driver, existing, executor);
 
+  // Согласованная цена идёт и в комиссию, и в снимок: проводка при
+  // завершении читает именно снимок, и без этого поездка за 800 попадала в
+  // книги как 700, а комиссия бралась со старой суммы.
+  const repriced = repricedOrderFields(existing, existing.driver_offer_price_kzt);
   const order = (await runQuery(
     executor,
     `UPDATE orders
      SET status='DRIVER_FOUND',
          driver_id=$1,
          price=$2,
+         service_commission=$4,
+         pricing_snapshot=$5::jsonb,
          accepted_at=NOW(),
          driver_offer_status='ACCEPTED',
          driver_offer_responded_at=NOW()
      WHERE id=$3
      RETURNING *`,
-    [driver.id, existing.driver_offer_price_kzt, existing.id]
+    [driver.id, repriced.price, existing.id, repriced.serviceCommission,
+     JSON.stringify(repriced.pricingSnapshot)]
   )).rows[0];
   const updatedDriver = (await runQuery(
     executor,
