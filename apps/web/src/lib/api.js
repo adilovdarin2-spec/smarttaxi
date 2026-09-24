@@ -7,7 +7,7 @@ import {
 } from './browserSession.js';
 
 // The public Railway API is the temporary default until the owner points the
-// BaiSapar domain at its replacement. Vite's development proxy keeps a bare
+// OneDriver domain at its replacement. Vite's development proxy keeps a bare
 // local preview same-origin, because the production API correctly rejects an
 // arbitrary localhost Origin. Local Docker/phone QA always supplies
 // VITE_API_URL explicitly.

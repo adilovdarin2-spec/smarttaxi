@@ -60,7 +60,7 @@ class StartupScreen extends StatelessWidget {
                     children: [
                       const Spacer(flex: 4),
                       Semantics(
-                        label: 'BaiSapar',
+                        label: 'OneDriver',
                         image: true,
                         child: Container(
                           key: const ValueKey('startup-brand-icon'),

@@ -81,7 +81,7 @@ try {
     assert.deepEqual(ownerErrors, [], 'Owner application must render documents without crashing');
     await admin.getByLabel('Регион допуска', { exact: true }).selectOption(region.id);
     await admin.getByLabel('Регион допуска', { exact: true }).scrollIntoViewIfNeeded();
-    const output = path.join(os.tmpdir(), 'baisapar-driver-onboarding-qa'); await mkdir(output, { recursive: true });
+    const output = path.join(os.tmpdir(), 'onedriver-driver-onboarding-qa'); await mkdir(output, { recursive: true });
     await admin.screenshot({ path: path.join(output, 'owner-region.png') });
     await approve.click();
     await admin.getByLabel('Регион допуска', { exact: true }).waitFor({ state: 'hidden' });

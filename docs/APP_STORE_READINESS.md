@@ -16,7 +16,7 @@ this document covers only what the code/config itself is ready for.
 Current Android hardening (verified 2026-07-15 against
 `apps/mobile/smarttaxi_app`, read-only):
 
-- package id is `kz.baisapar.app`;
+- package id is `kz.onedriver.app`;
 - target SDK is `35`, `minSdk` follows Flutter's own default
   (`flutter.minSdkVersion` in `build.gradle.kts`, not pinned separately);
 - app is portrait-locked in `AndroidManifest.xml`;

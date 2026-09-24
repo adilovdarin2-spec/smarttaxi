@@ -302,7 +302,7 @@ const statements = [
   )`,
   `CREATE TABLE IF NOT EXISTS service_settings (
     id INTEGER PRIMARY KEY DEFAULT 1,
-    service_name TEXT NOT NULL DEFAULT 'BaiSapar',
+    service_name TEXT NOT NULL DEFAULT 'OneDriver',
     city TEXT NOT NULL DEFAULT 'Atakent',
     currency TEXT NOT NULL DEFAULT 'KZT',
     currency_symbol TEXT NOT NULL DEFAULT '₸',
@@ -454,7 +454,7 @@ const statements = [
   "CREATE INDEX IF NOT EXISTS idx_driver_reviews_driver_id ON driver_reviews(driver_id)",
   "CREATE INDEX IF NOT EXISTS idx_client_reviews_client_id ON client_reviews(client_id)",
   `INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
-   VALUES (1, 'BaiSapar', 'Atakent', 'KZT', '₸')
+   VALUES (1, 'OneDriver', 'Atakent', 'KZT', '₸')
    ON CONFLICT (id) DO NOTHING`,
   `DO $$
   BEGIN
@@ -1318,7 +1318,14 @@ const statements = [
   BEGIN
     ALTER TABLE intercity_routes ADD CONSTRAINT intercity_average_price_positive CHECK (average_price_kzt IS NULL OR average_price_kzt > 0);
   EXCEPTION WHEN duplicate_object THEN NULL;
-  END $$`
+  END $$`,
+
+  // Renamed again, to OneDriver. Same rule as the two renames before it: only
+  // a row still carrying a previous default is touched, so an owner who typed
+  // their own name into admin settings keeps it. The older statements above
+  // stay as they were -- they have already run on every live database, and
+  // rewriting an applied migration only erases the record of what happened.
+  `UPDATE service_settings SET service_name='OneDriver' WHERE service_name IN ('BaiSapar','SmartTaxi')`
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies
@@ -1348,7 +1355,7 @@ async function ensureBaseSchema(executor) {
 
 export async function runMigrations(executor = pool) {
   const client = await executor.connect();
-  const lockName = "baisapar:database-migrations";
+  const lockName = "onedriver:database-migrations";
   let locked = false;
   try {
     // All replicas boot from the same image. A session advisory lock lets one

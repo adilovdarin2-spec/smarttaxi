@@ -270,7 +270,7 @@ export function startRecurringBookingsScheduler(io) {
   global.io = io;
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    runDistributedJob("baisapar:recurring-bookings", tick)
+    runDistributedJob("onedriver:recurring-bookings", tick)
       .catch((error) => console.error("[recurring-bookings] scheduler tick failed", error));
   }, 60_000);
   return intervalHandle;

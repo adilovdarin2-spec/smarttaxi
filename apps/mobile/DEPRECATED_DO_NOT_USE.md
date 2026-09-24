@@ -2,7 +2,7 @@
 
 This folder contains the old Expo/React Native prototype.
 
-Do not use it for current SmartTaxi mobile work. The active mobile app is:
+Do not use it for current OneDriver mobile work. The active mobile app is:
 
 ```text
 apps/mobile/smarttaxi_app

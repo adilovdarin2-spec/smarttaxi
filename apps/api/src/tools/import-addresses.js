@@ -42,7 +42,7 @@ async function overpass(body) {
           "Content-Type": "application/x-www-form-urlencoded",
           // Overpass rejects requests without a UA and asks that clients
           // identify themselves so operators can reach heavy users.
-          "User-Agent": "BaiSapar/1.0 (address import)"
+          "User-Agent": "OneDriver/1.0 (address import)"
         },
         body: new URLSearchParams({ data: body })
       });

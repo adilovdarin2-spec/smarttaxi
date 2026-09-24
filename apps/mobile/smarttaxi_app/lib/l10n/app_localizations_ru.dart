@@ -65,7 +65,7 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String get appName => 'BaiSapar';
+  String get appName => 'OneDriver';
 
   @override
   String get continueLabel => 'Продолжить';
@@ -294,7 +294,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerFaqA2 =>
-      'BaiSapar запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.';
+      'OneDriver запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.';
 
   @override
   String get passengerFaqQ3 => 'Как считается цена?';
@@ -416,7 +416,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerAboutDescription =>
-      'BaiSapar — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.';
+      'OneDriver — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.';
 
   @override
   String get passengerAboutRegionalModelTitle => 'Региональная модель';
@@ -441,7 +441,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerAboutVersionLabel(String version) {
-    return 'BaiSapar · версия $version';
+    return 'OneDriver · версия $version';
   }
 
   @override
@@ -617,7 +617,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerReferralsShareMessage(String code) {
-    return 'Заказывай такси в BaiSapar по моему коду $code и получи бонус на первую поездку!';
+    return 'Заказывай такси в OneDriver по моему коду $code и получи бонус на первую поездку!';
   }
 
   @override
@@ -818,7 +818,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerTripsEmptyText =>
-      'Создайте заказ, и BaiSapar откроет статус поездки здесь.';
+      'Создайте заказ, и OneDriver откроет статус поездки здесь.';
 
   @override
   String get passengerGoHomeAction => 'На главную';
@@ -865,7 +865,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerTripDateYesterday => 'Вчера';
 
   @override
-  String get passengerTripShareTextPrefix => 'Поездка BaiSapar';
+  String get passengerTripShareTextPrefix => 'Поездка OneDriver';
 
   @override
   String passengerSearchingSubtitleWithCount(int count) {
@@ -1115,7 +1115,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String passengerShareTripMessage(String routeSuffix, String link) {
-    return 'Слежу за поездкой BaiSapar$routeSuffix. Статус: $link';
+    return 'Слежу за поездкой OneDriver$routeSuffix. Статус: $link';
   }
 
   @override
@@ -1128,7 +1128,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerSosEmergencyLineText =>
-      'Экстренная линия BaiSapar, если что-то пошло не так';
+      'Экстренная линия OneDriver, если что-то пошло не так';
 
   @override
   String get passengerSupportWillBeNotifiedTitle => 'Поддержка получит сигнал';
@@ -1186,7 +1186,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerNotifSubtitle =>
-      'Статусы поездок и важные сообщения BaiSapar';
+      'Статусы поездок и важные сообщения OneDriver';
 
   @override
   String get passengerNotifCategoryOrders => 'Заказы';
@@ -1583,7 +1583,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerLogoutConfirmText =>
-      'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться BaiSapar.';
+      'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться OneDriver.';
 
   @override
   String get passengerCancelButton => 'Отмена';
@@ -1595,7 +1595,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get passengerAccountLabelFallback => 'Пользователь';
 
   @override
-  String get passengerClientOfBaiSapar => 'Клиент BaiSapar';
+  String get passengerClientOfOneDriver => 'Клиент OneDriver';
 
   @override
   String get passengerStatTripsLabel => 'Поездок';
@@ -1779,7 +1779,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerProfileSubtitle =>
-      'Аккаунт, поездки и настройки BaiSapar';
+      'Аккаунт, поездки и настройки OneDriver';
 
   @override
   String get passengerAddressEmptyHintTitle => 'Начните вводить адрес';
@@ -1800,7 +1800,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerNoLocationAccessText =>
-      'BaiSapar нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.';
+      'OneDriver нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.';
 
   @override
   String get passengerOpenSettingsButton => 'Открыть настройки';
@@ -1885,7 +1885,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerPointOutsideRegionError =>
-      'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны BaiSapar.';
+      'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны OneDriver.';
 
   @override
   String get passengerMapLoadingTitle => 'Карта загружается';
@@ -2075,7 +2075,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get passengerLegalHubSubtitle =>
-      'Официальные документы BaiSapar, редакция от 6 июля 2026 года';
+      'Официальные документы OneDriver, редакция от 6 июля 2026 года';
 
   @override
   String get passengerAllDocumentsButton => 'Все документы';
@@ -2224,7 +2224,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get smsNeverShareCode => 'Никому не сообщайте код.';
 
   @override
-  String get smsStaffNeverAsk => 'Сотрудники BaiSapar никогда не попросят его.';
+  String get smsStaffNeverAsk => 'Сотрудники OneDriver никогда не попросят его.';
 
   @override
   String get smsCodeValidity =>
@@ -2431,7 +2431,7 @@ class AppLocalizationsRu extends AppLocalizations {
       'Ваш пароль надёжно защищён и не передаётся третьим лицам';
 
   @override
-  String get defaultAccountLabel => 'Аккаунт BaiSapar';
+  String get defaultAccountLabel => 'Аккаунт OneDriver';
 
   @override
   String get appTagline => 'Ваш комфорт. Наша забота';
@@ -2452,7 +2452,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get driverDrawerMenuTooltip => 'Меню';
 
   @override
-  String get driverDrawerNameFallback => 'Водитель BaiSapar';
+  String get driverDrawerNameFallback => 'Водитель OneDriver';
 
   @override
   String get driverDrawerWorkSection => 'Работа';
@@ -2608,7 +2608,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverDocumentsSubtitle =>
-      'Загрузите документы для проверки администратором BaiSapar';
+      'Загрузите документы для проверки администратором OneDriver';
 
   @override
   String get driverDocumentsLoadError => 'Не удалось загрузить документы';
@@ -2764,7 +2764,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverProfileDocumentsNote =>
-      'Документы автомобиля и допуск к регионам проверяет администратор BaiSapar.';
+      'Документы автомобиля и допуск к регионам проверяет администратор OneDriver.';
 
   @override
   String get driverProfileTripHistoryTitle => 'История поездок';
@@ -2895,7 +2895,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverAboutDescription =>
-      'BaiSapar — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.';
+      'OneDriver — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.';
 
   @override
   String get driverAboutVersionLabel => 'Версия приложения';
@@ -3439,7 +3439,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverEmergencyLineSubtitle =>
-      'Экстренная линия BaiSapar, если что-то пошло не так';
+      'Экстренная линия OneDriver, если что-то пошло не так';
 
   @override
   String get driverSupportWillReceiveSignal => 'Поддержка получит сигнал';
@@ -3630,7 +3630,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get driverLogoutConfirmText =>
-      'Придётся снова войти по номеру телефона, чтобы продолжить работу в BaiSapar.';
+      'Придётся снова войти по номеру телефона, чтобы продолжить работу в OneDriver.';
 
   @override
   String get driverMustGoOfflineToChangeRegion =>
@@ -4431,7 +4431,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get updateRequiredText =>
-      'Вышла новая версия BaiSapar. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.';
+      'Вышла новая версия OneDriver. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.';
 
   @override
   String get updateButton => 'Обновить';

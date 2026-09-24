@@ -28,7 +28,7 @@ const ACCOUNTS = {
     password: env.DEFAULT_DRIVER_PASSWORD
   },
   owner: {
-    name: "BaiSapar Owner",
+    name: "OneDriver Owner",
     role: "OWNER",
     phone: "+77000000099",
     email: env.DEFAULT_ADMIN_EMAIL,
@@ -372,7 +372,7 @@ async function approveDriverRegions({ driver, regions, owner }) {
 async function seedSettings() {
   await query(`
     INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
-    VALUES (1, 'BaiSapar', 'Atakent', 'KZT', '₸')
+    VALUES (1, 'OneDriver', 'Atakent', 'KZT', '₸')
     ON CONFLICT (id) DO UPDATE
     SET service_name=EXCLUDED.service_name,
         city=EXCLUDED.city,

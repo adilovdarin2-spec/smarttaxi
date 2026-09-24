@@ -7,7 +7,7 @@ import os from 'node:os';
 // that a road connection is legal or physically passable.
 const base = process.env.QA_OSRM_URL || 'https://router.project-osrm.org';
 const points = [[68.5327223, 40.7248972], [68.5300275, 40.723856]];
-const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), 'baisapar-road-access-qa');
+const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), 'onedriver-road-access-qa');
 async function request(url, format = 'json') {
   const response = await fetch(url, { signal: AbortSignal.timeout(25000) });
   if (!response.ok) throw new Error(`${new URL(url).host}: HTTP ${response.status}`);

@@ -96,7 +96,7 @@ export async function expireSearchingOrders(io) {
 export function startOrderSearchSweeper(io) {
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    runDistributedJob("baisapar:order-search-sweeper", () => expireSearchingOrders(io))
+    runDistributedJob("onedriver:order-search-sweeper", () => expireSearchingOrders(io))
       .catch((error) => console.error("[orders] search sweep tick failed", error));
   }, SWEEP_INTERVAL_MS);
   intervalHandle.unref?.();

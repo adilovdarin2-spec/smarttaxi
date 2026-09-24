@@ -1,11 +1,11 @@
 {
-    "name": "BaiSapar",
-    "short_name": "BaiSapar",
+    "name": "OneDriver",
+    "short_name": "OneDriver",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0B4FD1",
     "theme_color": "#1D6FFF",
-    "description": "BaiSapar — такси для пассажиров и водителей.",
+    "description": "OneDriver — такси для пассажиров и водителей.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

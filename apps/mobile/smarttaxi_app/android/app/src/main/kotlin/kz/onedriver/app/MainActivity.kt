@@ -1,4 +1,4 @@
-package kz.baisapar.app
+package kz.onedriver.app
 
 import android.content.Intent
 import android.net.Uri
@@ -9,7 +9,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "baisapar/navigation")
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "onedriver/navigation")
             .setMethodCallHandler { call, result ->
                 if (call.method != "openUrl") {
                     result.notImplemented()

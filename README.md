@@ -1,6 +1,6 @@
-# BaiSapar v1.0
+# OneDriver v1.0
 
-BaiSapar is a production-oriented taxi dispatch starter for Atakent:
+OneDriver is a production-oriented taxi dispatch starter for Atakent:
 
 - `apps/api`: Express API with PostgreSQL, Redis, JWT auth, Socket.IO, audit logs, tariffs, orders, drivers, finance, health, maps fallback estimates.
 - `apps/web`: PWA-style web app for `/client`, `/driver`, `/owner`.

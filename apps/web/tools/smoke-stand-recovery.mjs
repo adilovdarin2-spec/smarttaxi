@@ -25,7 +25,7 @@ const owner = await request('/api/auth/login/password', { method: 'POST', body: 
 const { chromium } = createRequire(import.meta.url)(process.env.QA_PLAYWRIGHT_PACKAGE || 'playwright');
 const width = Number(process.env.QA_VIEWPORT_WIDTH || 360);
 assert([320, 360, 390].includes(width));
-const output = path.join(os.tmpdir(), 'baisapar-stand-recovery-qa', String(width));
+const output = path.join(os.tmpdir(), 'onedriver-stand-recovery-qa', String(width));
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true,
   ...(process.env.QA_BROWSER_EXECUTABLE ? { executablePath: process.env.QA_BROWSER_EXECUTABLE } : {}) });

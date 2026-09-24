@@ -1422,7 +1422,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
 
 /* Final blue/white product polish lock.
    This block intentionally lives at the end so older experimental CSS cannot
-   overpower the approved premium BaiSapar direction after auth. */
+   overpower the approved premium OneDriver direction after auth. */
 .taxi-client-shell {
   --gw-ink: #111827;
   --gw-muted: #6d7482;
@@ -1685,7 +1685,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: linear-gradient(180deg, rgba(255,255,255,.97), #ffffff) !important;
 }
 
-/* BaiSapar blue/white visual lock — keeps post-auth product screens coherent. */
+/* OneDriver blue/white visual lock — keeps post-auth product screens coherent. */
 :root {
   --st-premium-brand: #1d6fff;
   --st-premium-brand-2: #65a3ff;
@@ -3789,7 +3789,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
-/* BaiSapar final mobile shell: white/blue, scoped away from admin/operator UI. */
+/* OneDriver final mobile shell: white/blue, scoped away from admin/operator UI. */
 .brand-logo {
   width: 36px;
   height: 36px;
@@ -6083,7 +6083,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   to { background-position: -100% 0; }
 }
 
-/* Final BaiSapar client/admin polish */
+/* Final OneDriver client/admin polish */
 .taxi-client-shell {
   --taxi-bg: #f7fbff;
   --taxi-card-warm: #e8f1ff;
@@ -9604,7 +9604,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 }
 
-/* BaiSapar final blue/white visual lock.
+/* OneDriver final blue/white visual lock.
    Scoped overrides keep the existing flow intact while normalizing the visible client UI. */
 .taxi-client-shell {
   --st-brand: #0a64f5;
@@ -21680,7 +21680,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   background: radial-gradient(circle at 50% 0, rgba(29, 111, 255, .12), transparent 28rem), #f7fbff;
 }
 
-/* BaiSapar Urban Flow.
+/* OneDriver Urban Flow.
    One design language for the passenger journey: map first, one clear next
    action, and white surfaces that carry the information rather than compete
    with it. This layer intentionally stays scoped to the passenger shell. */
@@ -26240,7 +26240,7 @@ input::placeholder { color: rgba(245, 245, 245, .42); }
   }
 
   body:has(.phone-frame.taxi-pwa)::before {
-    content: "BaiSapar";
+    content: "OneDriver";
     position: fixed;
     left: max(4vw, 40px);
     top: 50%;

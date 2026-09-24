@@ -65,7 +65,7 @@ class AppLocalizationsUz extends AppLocalizations {
   }
 
   @override
-  String get appName => 'BaiSapar';
+  String get appName => 'OneDriver';
 
   @override
   String get continueLabel => 'Davom etish';
@@ -295,7 +295,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerFaqA2 =>
-      'BaiSapar administrator yoqqan hududlarda ishga tushiriladi. Shunday qilib safarlar nazoratli va halol bo\'lib qoladi.';
+      'OneDriver administrator yoqqan hududlarda ishga tushiriladi. Shunday qilib safarlar nazoratli va halol bo\'lib qoladi.';
 
   @override
   String get passengerFaqQ3 => 'Narx qanday hisoblanadi?';
@@ -420,7 +420,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerAboutDescription =>
-      'BaiSapar — faol hududlarda tez, tushunarli va halol safarlar uchun mintaqaviy taksi xizmati.';
+      'OneDriver — faol hududlarda tez, tushunarli va halol safarlar uchun mintaqaviy taksi xizmati.';
 
   @override
   String get passengerAboutRegionalModelTitle => 'Mintaqaviy model';
@@ -445,7 +445,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String passengerAboutVersionLabel(String version) {
-    return 'BaiSapar · $version-versiya';
+    return 'OneDriver · $version-versiya';
   }
 
   @override
@@ -623,7 +623,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String passengerReferralsShareMessage(String code) {
-    return 'BaiSapar-da mening $code kodim bilan taksi chaqiring va birinchi safaringiz uchun bonus oling!';
+    return 'OneDriver-da mening $code kodim bilan taksi chaqiring va birinchi safaringiz uchun bonus oling!';
   }
 
   @override
@@ -825,7 +825,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerTripsEmptyText =>
-      'Buyurtma bering, BaiSapar safar holatini shu yerda ko\'rsatadi.';
+      'Buyurtma bering, OneDriver safar holatini shu yerda ko\'rsatadi.';
 
   @override
   String get passengerGoHomeAction => 'Bosh sahifaga';
@@ -872,7 +872,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerTripDateYesterday => 'Kecha';
 
   @override
-  String get passengerTripShareTextPrefix => 'BaiSapar safari';
+  String get passengerTripShareTextPrefix => 'OneDriver safari';
 
   @override
   String passengerSearchingSubtitleWithCount(int count) {
@@ -1125,7 +1125,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String passengerShareTripMessage(String routeSuffix, String link) {
-    return 'BaiSapar safarini kuzatib turibman$routeSuffix. Holat: $link';
+    return 'OneDriver safarini kuzatib turibman$routeSuffix. Holat: $link';
   }
 
   @override
@@ -1138,7 +1138,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerSosEmergencyLineText =>
-      'Nimadir noto\'g\'ri ketsa — BaiSapar shoshilinch liniyasi';
+      'Nimadir noto\'g\'ri ketsa — OneDriver shoshilinch liniyasi';
 
   @override
   String get passengerSupportWillBeNotifiedTitle =>
@@ -1199,7 +1199,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerNotifSubtitle =>
-      'Safar holatlari va BaiSapar-ning muhim xabarlari';
+      'Safar holatlari va OneDriver-ning muhim xabarlari';
 
   @override
   String get passengerNotifCategoryOrders => 'Buyurtmalar';
@@ -1598,7 +1598,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerLogoutConfirmText =>
-      'BaiSapar\'dan foydalanishni davom ettirish uchun telefon raqamingiz orqali qayta kirishga to\'g\'ri keladi.';
+      'OneDriver\'dan foydalanishni davom ettirish uchun telefon raqamingiz orqali qayta kirishga to\'g\'ri keladi.';
 
   @override
   String get passengerCancelButton => 'Bekor qilish';
@@ -1610,7 +1610,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get passengerAccountLabelFallback => 'Foydalanuvchi';
 
   @override
-  String get passengerClientOfBaiSapar => 'BaiSapar mijozi';
+  String get passengerClientOfOneDriver => 'OneDriver mijozi';
 
   @override
   String get passengerStatTripsLabel => 'Safarlar';
@@ -1795,7 +1795,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerProfileSubtitle =>
-      'BaiSapar hisobi, safarlari va sozlamalari';
+      'OneDriver hisobi, safarlari va sozlamalari';
 
   @override
   String get passengerAddressEmptyHintTitle => 'Manzil kiritishni boshlang';
@@ -1816,7 +1816,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerNoLocationAccessText =>
-      'BaiSapar\'ga yaqin haydovchilarni topish uchun geolokatsiyaga kirish kerak. Telefon sozlamalarida ruxsat bering.';
+      'OneDriver\'ga yaqin haydovchilarni topish uchun geolokatsiyaga kirish kerak. Telefon sozlamalarida ruxsat bering.';
 
   @override
   String get passengerOpenSettingsButton => 'Sozlamalarni ochish';
@@ -1903,7 +1903,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerPointOutsideRegionError =>
-      'Bu nuqta tanlangan hududdan tashqarida. Hududni almashtiring yoki BaiSapar hududi ichidan nuqta tanlang.';
+      'Bu nuqta tanlangan hududdan tashqarida. Hududni almashtiring yoki OneDriver hududi ichidan nuqta tanlang.';
 
   @override
   String get passengerMapLoadingTitle => 'Karta yuklanmoqda';
@@ -2094,7 +2094,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get passengerLegalHubSubtitle =>
-      'BaiSapar rasmiy hujjatlari, 2026-yil 6-iyuldagi tahrir';
+      'OneDriver rasmiy hujjatlari, 2026-yil 6-iyuldagi tahrir';
 
   @override
   String get passengerAllDocumentsButton => 'Barcha hujjatlar';
@@ -2246,7 +2246,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get smsStaffNeverAsk =>
-      'BaiSapar xodimlari uni hech qachon so\'ramaydi.';
+      'OneDriver xodimlari uni hech qachon so\'ramaydi.';
 
   @override
   String get smsCodeValidity =>
@@ -2455,7 +2455,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Parolingiz ishonchli himoyalangan va uchinchi shaxslarga berilmaydi';
 
   @override
-  String get defaultAccountLabel => 'BaiSapar hisobi';
+  String get defaultAccountLabel => 'OneDriver hisobi';
 
   @override
   String get appTagline => 'Sizning qulayligingiz. Bizning g\'amxo\'rligimiz';
@@ -2476,7 +2476,7 @@ class AppLocalizationsUz extends AppLocalizations {
   String get driverDrawerMenuTooltip => 'Menyu';
 
   @override
-  String get driverDrawerNameFallback => 'BaiSapar haydovchisi';
+  String get driverDrawerNameFallback => 'OneDriver haydovchisi';
 
   @override
   String get driverDrawerWorkSection => 'Ish';
@@ -2633,7 +2633,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverDocumentsSubtitle =>
-      'BaiSapar administratori tekshiruvi uchun hujjatlarni yuklang';
+      'OneDriver administratori tekshiruvi uchun hujjatlarni yuklang';
 
   @override
   String get driverDocumentsLoadError => 'Hujjatlarni yuklab bo\'lmadi';
@@ -2792,7 +2792,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverProfileDocumentsNote =>
-      'Avtomobil hujjatlari va hududlarga ruxsatni BaiSapar administratori tekshiradi.';
+      'Avtomobil hujjatlari va hududlarga ruxsatni OneDriver administratori tekshiradi.';
 
   @override
   String get driverProfileTripHistoryTitle => 'Safarlar tarixi';
@@ -2926,7 +2926,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverAboutDescription =>
-      'BaiSapar — mintaqaviy taksi xizmati. Haydovchi ilovasi faqat administrator tasdiqlagan faol hududlardagi buyurtmalarni ko\'rsatadi.';
+      'OneDriver — mintaqaviy taksi xizmati. Haydovchi ilovasi faqat administrator tasdiqlagan faol hududlardagi buyurtmalarni ko\'rsatadi.';
 
   @override
   String get driverAboutVersionLabel => 'Ilova versiyasi';
@@ -3475,7 +3475,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverEmergencyLineSubtitle =>
-      'Nimadir noto\'g\'ri ketsa, BaiSapar shoshilinch liniyasi';
+      'Nimadir noto\'g\'ri ketsa, OneDriver shoshilinch liniyasi';
 
   @override
   String get driverSupportWillReceiveSignal =>
@@ -3665,7 +3665,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get driverLogoutConfirmText =>
-      'BaiSapar\'da ishni davom ettirish uchun telefon raqamingiz orqali qayta kirishga to\'g\'ri keladi.';
+      'OneDriver\'da ishni davom ettirish uchun telefon raqamingiz orqali qayta kirishga to\'g\'ri keladi.';
 
   @override
   String get driverMustGoOfflineToChangeRegion =>
@@ -4453,7 +4453,7 @@ class AppLocalizationsUz extends AppLocalizations {
 
   @override
   String get updateRequiredText =>
-      'BaiSapar\'ning yangi versiyasi chiqdi. Bu versiya endi qo\'llab-quvvatlanmaydi — foydalanishni davom ettirish uchun ilovani yangilang.';
+      'OneDriver\'ning yangi versiyasi chiqdi. Bu versiya endi qo\'llab-quvvatlanmaydi — foydalanishni davom ettirish uchun ilovani yangilang.';
 
   @override
   String get updateButton => 'Yangilash';

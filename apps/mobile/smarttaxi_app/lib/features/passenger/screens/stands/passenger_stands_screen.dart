@@ -336,7 +336,7 @@ class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
                         maxNativeZoom: widget.mapStyle.allowsTileTinting
                             ? 19
                             : AppConfig.satelliteMaxZoom,
-                        userAgentPackageName: 'kz.baisapar.app',
+                        userAgentPackageName: 'kz.onedriver.app',
                       ),
                       MarkerLayer(
                         markers: [

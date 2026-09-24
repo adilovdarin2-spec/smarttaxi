@@ -189,7 +189,7 @@ abstract class AppLocalizations {
   /// App name, shown in the OS task switcher
   ///
   /// In ru, this message translates to:
-  /// **'BaiSapar'**
+  /// **'OneDriver'**
   String get appName;
 
   /// No description provided for @continueLabel.
@@ -627,7 +627,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerFaqA2.
   ///
   /// In ru, this message translates to:
-  /// **'BaiSapar запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.'**
+  /// **'OneDriver запускается по регионам, которые включены администратором. Так поездки остаются контролируемыми и честными.'**
   String get passengerFaqA2;
 
   /// No description provided for @passengerFaqQ3.
@@ -843,7 +843,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerAboutDescription.
   ///
   /// In ru, this message translates to:
-  /// **'BaiSapar — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.'**
+  /// **'OneDriver — региональный сервис такси для быстрых, понятных и честных поездок внутри активных регионов.'**
   String get passengerAboutDescription;
 
   /// No description provided for @passengerAboutRegionalModelTitle.
@@ -885,7 +885,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerAboutVersionLabel.
   ///
   /// In ru, this message translates to:
-  /// **'BaiSapar · версия {version}'**
+  /// **'OneDriver · версия {version}'**
   String passengerAboutVersionLabel(String version);
 
   /// No description provided for @loadFailedTitle.
@@ -1197,7 +1197,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerReferralsShareMessage.
   ///
   /// In ru, this message translates to:
-  /// **'Заказывай такси в BaiSapar по моему коду {code} и получи бонус на первую поездку!'**
+  /// **'Заказывай такси в OneDriver по моему коду {code} и получи бонус на первую поездку!'**
   String passengerReferralsShareMessage(String code);
 
   /// No description provided for @passengerReferralsInvited.
@@ -1558,7 +1558,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerTripsEmptyText.
   ///
   /// In ru, this message translates to:
-  /// **'Создайте заказ, и BaiSapar откроет статус поездки здесь.'**
+  /// **'Создайте заказ, и OneDriver откроет статус поездки здесь.'**
   String get passengerTripsEmptyText;
 
   /// No description provided for @passengerGoHomeAction.
@@ -1648,7 +1648,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerTripShareTextPrefix.
   ///
   /// In ru, this message translates to:
-  /// **'Поездка BaiSapar'**
+  /// **'Поездка OneDriver'**
   String get passengerTripShareTextPrefix;
 
   /// No description provided for @passengerSearchingSubtitleWithCount.
@@ -2098,7 +2098,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerShareTripMessage.
   ///
   /// In ru, this message translates to:
-  /// **'Слежу за поездкой BaiSapar{routeSuffix}. Статус: {link}'**
+  /// **'Слежу за поездкой OneDriver{routeSuffix}. Статус: {link}'**
   String passengerShareTripMessage(String routeSuffix, String link);
 
   /// No description provided for @passengerSafetyTitle.
@@ -2116,7 +2116,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerSosEmergencyLineText.
   ///
   /// In ru, this message translates to:
-  /// **'Экстренная линия BaiSapar, если что-то пошло не так'**
+  /// **'Экстренная линия OneDriver, если что-то пошло не так'**
   String get passengerSosEmergencyLineText;
 
   /// No description provided for @passengerSupportWillBeNotifiedTitle.
@@ -2224,7 +2224,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerNotifSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Статусы поездок и важные сообщения BaiSapar'**
+  /// **'Статусы поездок и важные сообщения OneDriver'**
   String get passengerNotifSubtitle;
 
   /// No description provided for @passengerNotifCategoryOrders.
@@ -2914,7 +2914,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerLogoutConfirmText.
   ///
   /// In ru, this message translates to:
-  /// **'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться BaiSapar.'**
+  /// **'Придётся снова войти по номеру телефона, чтобы продолжить пользоваться OneDriver.'**
   String get passengerLogoutConfirmText;
 
   /// No description provided for @passengerCancelButton.
@@ -2935,11 +2935,11 @@ abstract class AppLocalizations {
   /// **'Пользователь'**
   String get passengerAccountLabelFallback;
 
-  /// No description provided for @passengerClientOfBaiSapar.
+  /// No description provided for @passengerClientOfOneDriver.
   ///
   /// In ru, this message translates to:
-  /// **'Клиент BaiSapar'**
-  String get passengerClientOfBaiSapar;
+  /// **'Клиент OneDriver'**
+  String get passengerClientOfOneDriver;
 
   /// No description provided for @passengerStatTripsLabel.
   ///
@@ -3268,7 +3268,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerProfileSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Аккаунт, поездки и настройки BaiSapar'**
+  /// **'Аккаунт, поездки и настройки OneDriver'**
   String get passengerProfileSubtitle;
 
   /// No description provided for @passengerAddressEmptyHintTitle.
@@ -3304,7 +3304,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerNoLocationAccessText.
   ///
   /// In ru, this message translates to:
-  /// **'BaiSapar нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.'**
+  /// **'OneDriver нужен доступ к геолокации, чтобы находить водителей рядом с вами. Разрешите доступ в настройках телефона.'**
   String get passengerNoLocationAccessText;
 
   /// No description provided for @passengerOpenSettingsButton.
@@ -3454,7 +3454,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerPointOutsideRegionError.
   ///
   /// In ru, this message translates to:
-  /// **'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны BaiSapar.'**
+  /// **'Эта точка вне выбранного региона. Смените регион или выберите точку внутри зоны OneDriver.'**
   String get passengerPointOutsideRegionError;
 
   /// No description provided for @passengerMapLoadingTitle.
@@ -3766,7 +3766,7 @@ abstract class AppLocalizations {
   /// No description provided for @passengerLegalHubSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Официальные документы BaiSapar, редакция от 6 июля 2026 года'**
+  /// **'Официальные документы OneDriver, редакция от 6 июля 2026 года'**
   String get passengerLegalHubSubtitle;
 
   /// No description provided for @passengerAllDocumentsButton.
@@ -4042,7 +4042,7 @@ abstract class AppLocalizations {
   /// No description provided for @smsStaffNeverAsk.
   ///
   /// In ru, this message translates to:
-  /// **'Сотрудники BaiSapar никогда не попросят его.'**
+  /// **'Сотрудники OneDriver никогда не попросят его.'**
   String get smsStaffNeverAsk;
 
   /// No description provided for @smsCodeValidity.
@@ -4420,7 +4420,7 @@ abstract class AppLocalizations {
   /// No description provided for @defaultAccountLabel.
   ///
   /// In ru, this message translates to:
-  /// **'Аккаунт BaiSapar'**
+  /// **'Аккаунт OneDriver'**
   String get defaultAccountLabel;
 
   /// No description provided for @appTagline.
@@ -4462,7 +4462,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverDrawerNameFallback.
   ///
   /// In ru, this message translates to:
-  /// **'Водитель BaiSapar'**
+  /// **'Водитель OneDriver'**
   String get driverDrawerNameFallback;
 
   /// No description provided for @driverDrawerWorkSection.
@@ -4738,7 +4738,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverDocumentsSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Загрузите документы для проверки администратором BaiSapar'**
+  /// **'Загрузите документы для проверки администратором OneDriver'**
   String get driverDocumentsSubtitle;
 
   /// No description provided for @driverDocumentsLoadError.
@@ -5032,7 +5032,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverProfileDocumentsNote.
   ///
   /// In ru, this message translates to:
-  /// **'Документы автомобиля и допуск к регионам проверяет администратор BaiSapar.'**
+  /// **'Документы автомобиля и допуск к регионам проверяет администратор OneDriver.'**
   String get driverProfileDocumentsNote;
 
   /// No description provided for @driverProfileTripHistoryTitle.
@@ -5272,7 +5272,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverAboutDescription.
   ///
   /// In ru, this message translates to:
-  /// **'BaiSapar — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.'**
+  /// **'OneDriver — региональный сервис такси. Водительское приложение показывает заказы только из активных регионов, подтверждённых администратором.'**
   String get driverAboutDescription;
 
   /// No description provided for @driverAboutVersionLabel.
@@ -6262,7 +6262,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverEmergencyLineSubtitle.
   ///
   /// In ru, this message translates to:
-  /// **'Экстренная линия BaiSapar, если что-то пошло не так'**
+  /// **'Экстренная линия OneDriver, если что-то пошло не так'**
   String get driverEmergencyLineSubtitle;
 
   /// No description provided for @driverSupportWillReceiveSignal.
@@ -6556,7 +6556,7 @@ abstract class AppLocalizations {
   /// No description provided for @driverLogoutConfirmText.
   ///
   /// In ru, this message translates to:
-  /// **'Придётся снова войти по номеру телефона, чтобы продолжить работу в BaiSapar.'**
+  /// **'Придётся снова войти по номеру телефона, чтобы продолжить работу в OneDriver.'**
   String get driverLogoutConfirmText;
 
   /// No description provided for @driverMustGoOfflineToChangeRegion.
@@ -7900,7 +7900,7 @@ abstract class AppLocalizations {
   /// No description provided for @updateRequiredText.
   ///
   /// In ru, this message translates to:
-  /// **'Вышла новая версия BaiSapar. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.'**
+  /// **'Вышла новая версия OneDriver. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.'**
   String get updateRequiredText;
 
   /// No description provided for @updateButton.

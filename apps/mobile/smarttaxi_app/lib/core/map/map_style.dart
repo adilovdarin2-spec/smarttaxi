@@ -106,7 +106,7 @@ const List<double> identityTileMatrix = <double>[
 /// anyone opens a taxi map for.
 final String satelliteStyleJson = jsonEncode(<String, Object?>{
   'version': 8,
-  'name': 'BaiSapar Satellite',
+  'name': 'OneDriver Satellite',
   'glyphs': AppConfig.mapGlyphsUrl,
   'sources': <String, Object?>{
     'satellite': <String, Object?>{

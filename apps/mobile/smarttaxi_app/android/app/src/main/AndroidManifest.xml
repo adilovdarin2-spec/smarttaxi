@@ -9,7 +9,7 @@
          orders silently never arrive on any modern device. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="BaiSapar"
+        android:label="OneDriver"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"

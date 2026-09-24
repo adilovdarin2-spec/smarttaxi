@@ -282,7 +282,7 @@ app.use("/api/stands", standsRoutes);
 app.use("/api/driver/stands", driverStandsRouter);
 app.use("/api/admin/stands", adminStandsRoutes);
 app.use("/api/admin/cancellation-reviews", cancellationReviewRoutes);
-app.get("/", (_req, res) => res.json({ app: "BaiSapar API", status: "ok" }));
+app.get("/", (_req, res) => res.json({ app: "OneDriver API", status: "ok" }));
 app.use(notFound);
 app.use(errorHandler);
 
@@ -326,7 +326,7 @@ async function bootstrap() {
 // wildcard, and a platform proxy that dials the container over IPv4 — which is
 // what Railway's edge does — gets a refused connection and serves 503 while the
 // container itself looks perfectly healthy in the logs.
-server.listen(env.API_PORT, "0.0.0.0", () => console.log(`[API] BaiSapar running on ${env.API_PORT}`));
+server.listen(env.API_PORT, "0.0.0.0", () => console.log(`[API] OneDriver running on ${env.API_PORT}`));
   // Detached, and after the listener is up: loading ~100k address rows must
   // never delay the health check or hold the port closed. It skips itself
   // once the table already holds what the files contain, so this does real

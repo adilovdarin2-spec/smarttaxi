@@ -20,7 +20,7 @@ const _knownExceptions = {
   // produced in _AppState above the MaterialApp — there is no Localizations
   // ancestor to read there. Reached only when the payload is corrupt, and the
   // same text exists as `defaultAccountLabel` for every screen with a context.
-  'lib/main.dart:Аккаунт BaiSapar',
+  'lib/main.dart:Аккаунт OneDriver',
 
   // Sent, not shown: the SOS message goes to the operator on duty and to the
   // admin panel, both of which are read in Russian whatever language the

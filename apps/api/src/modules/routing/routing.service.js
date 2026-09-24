@@ -35,7 +35,7 @@ function addressSearchUnavailable(message = "Address search provider is unavaila
 
 function nominatimHeaders() {
   return {
-    "User-Agent": "BaiSapar/1.0 support@baisapar.kz",
+    "User-Agent": "OneDriver/1.0 support@onedriver.kz",
     "Accept": "application/json"
   };
 }

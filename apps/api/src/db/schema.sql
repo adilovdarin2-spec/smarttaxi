@@ -328,7 +328,7 @@ CREATE TABLE IF NOT EXISTS financial_transactions (
 
 CREATE TABLE IF NOT EXISTS service_settings (
   id INTEGER PRIMARY KEY DEFAULT 1,
-  service_name TEXT NOT NULL DEFAULT 'BaiSapar',
+  service_name TEXT NOT NULL DEFAULT 'OneDriver',
   city TEXT NOT NULL DEFAULT 'Atakent',
   currency TEXT NOT NULL DEFAULT 'KZT',
   currency_symbol TEXT NOT NULL DEFAULT '₸',
@@ -672,7 +672,7 @@ SET name=EXCLUDED.name,
     updated_at=NOW();
 
 INSERT INTO service_settings(id, service_name, city, currency, currency_symbol)
-VALUES (1, 'BaiSapar', 'Atakent', 'KZT', '₸')
+VALUES (1, 'OneDriver', 'Atakent', 'KZT', '₸')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO tariffs(region_id,name,display_name,description,base_price,price_per_km,price_per_minute,min_price,service_commission_percent,cashback_percent,surge_multiplier,free_waiting_minutes,waiting_price_per_minute,cancellation_fee,sort_order,is_active)

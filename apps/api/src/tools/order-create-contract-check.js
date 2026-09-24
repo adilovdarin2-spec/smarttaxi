@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { spendOrderCashback, trySpendOrderCashback } from "../modules/orders/cashback-payment.service.js";
 
 const clientPayload = {
-  riderName: "Клиент BaiSapar",
+  riderName: "Клиент OneDriver",
   riderPhone: "+77000000000",
   pickupText: "Центр Атакента",
   dropoffText: "Рынок",

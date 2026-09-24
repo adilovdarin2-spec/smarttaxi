@@ -38,7 +38,7 @@ void main() {
     // that a rename cannot happen by halves: the namespace, the id and the
     // Kotlin package have to agree, or the manifest's ".MainActivity" resolves
     // to a class that does not exist and the app dies at launch.
-    const id = 'kz.baisapar.app';
+    const id = 'kz.onedriver.app';
     expect(gradle, contains('namespace = "$id"'));
     expect(gradle, contains('applicationId = "$id"'));
     expect(gradle, isNot(contains('kz.smarttaxi')));
@@ -61,7 +61,7 @@ void main() {
     ]) {
       final source = File(path).readAsStringSync();
       expect(source, contains("userAgentPackageName: '$id'"),
-          reason: '$path must identify BaiSapar to map tile providers');
+          reason: '$path must identify OneDriver to map tile providers');
       expect(
           source, isNot(contains("userAgentPackageName: 'com.smarttaxi.app'")),
           reason: '$path must not send the retired package id');

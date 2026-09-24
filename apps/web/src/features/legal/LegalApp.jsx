@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import legalDocuments from "../../legal/legal-content.json";
 
 // Public, unauthenticated pages for the 5 lawyer-approved legal documents
-// (baisapar.kz/legal, /legal/:id). Google Play's "App content" declaration
+// (onedriver.kz/legal, /legal/:id). Google Play's "App content" declaration
 // and Apple's App Review both require a live, publicly reachable privacy
 // policy URL — the in-app-only viewer in the mobile apps doesn't satisfy
 // that, since reviewers and prospective users need to open it in a browser
@@ -45,14 +45,14 @@ export default function LegalApp() {
             navigate("/legal");
           }}
         >
-          <span>BaiSapar</span>
+          <span>OneDriver</span>
         </a>
       </header>
       <main className="legal-main">
         {activeDoc ? <LegalDocumentView doc={activeDoc} onBack={() => navigate("/legal")} /> : <LegalHub onOpen={id => navigate(`/legal/${id}`)} />}
       </main>
       <footer className="legal-footer">
-        <span>© {new Date().getFullYear()} BaiSapar · baisapar.kz</span>
+        <span>© {new Date().getFullYear()} OneDriver · onedriver.kz</span>
       </footer>
       <style>{legalStyles}</style>
     </div>
@@ -64,7 +64,7 @@ function LegalHub({ onOpen }) {
     <>
       <h1>Юридические документы</h1>
       <p className="legal-lead">
-        Документы, регулирующие использование мобильного приложения и веб-сайта BaiSapar.
+        Документы, регулирующие использование мобильного приложения и веб-сайта OneDriver.
       </p>
       <div className="legal-doc-grid">
         {legalDocuments.map(doc => (

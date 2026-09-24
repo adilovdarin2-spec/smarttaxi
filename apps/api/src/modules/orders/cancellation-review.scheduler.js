@@ -53,7 +53,7 @@ export async function cancellationReviewTick() {
 export function startCancellationReviewScheduler() {
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    runDistributedJob("baisapar:cancellation-review", cancellationReviewTick)
+    runDistributedJob("onedriver:cancellation-review", cancellationReviewTick)
       .catch((error) => console.error("[cancellation-review] tick failed", error));
   }, TICK_INTERVAL_MS);
   intervalHandle.unref?.();

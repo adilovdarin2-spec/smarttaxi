@@ -4,7 +4,7 @@ class AppConfig {
   // (main.dart), and shown as-is in both shells' "О приложении"/Settings.
   static const appVersion = '1.0.0';
   // The public backend. This is the service's own hosting address until
-  // baisapar.kz is registered and pointed at it; a build that names no
+  // onedriver.kz is registered and pointed at it; a build that names no
   // API_BASE_URL must still reach a server that exists, because the previous
   // default was a domain that had stopped resolving and every such build
   // came up unable to load a single region.

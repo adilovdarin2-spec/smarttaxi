@@ -69,10 +69,10 @@ const MESSAGES = {
     zh: { title: "提现被拒绝", body: "提现申请被拒绝，详情请联系客服" }
   },
   accountBlockedRating: {
-    ru: { title: "Аккаунт временно заблокирован", body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку BaiSapar." },
-    kk: { title: "Аккаунт уақытша бұғатталды", body: "Орташа рейтинг ең төменгі деңгейден түсті. BaiSapar қолдау қызметіне хабарласыңыз." },
-    uz: { title: "Akkaunt vaqtincha bloklandi", body: "O'rtacha reyting eng past darajadan tushdi. BaiSapar qo'llab-quvvatlash xizmatiga murojaat qiling." },
-    zh: { title: "账户已临时封禁", body: "平均评分低于最低要求，请联系 BaiSapar 客服。" }
+    ru: { title: "Аккаунт временно заблокирован", body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку OneDriver." },
+    kk: { title: "Аккаунт уақытша бұғатталды", body: "Орташа рейтинг ең төменгі деңгейден түсті. OneDriver қолдау қызметіне хабарласыңыз." },
+    uz: { title: "Akkaunt vaqtincha bloklandi", body: "O'rtacha reyting eng past darajadan tushdi. OneDriver qo'llab-quvvatlash xizmatiga murojaat qiling." },
+    zh: { title: "账户已临时封禁", body: "平均评分低于最低要求，请联系 OneDriver 客服。" }
   },
   driverFound: {
     ru: { title: "Водитель найден", body: "Водитель уже в пути к вам" },
@@ -155,10 +155,10 @@ const MESSAGES = {
     zh: { title: "行程已结束", body: "行程费用：{price} ₸" }
   },
   tripCompletedNoPrice: {
-    ru: { title: "Поездка завершена", body: "Спасибо, что выбрали BaiSapar" },
-    kk: { title: "Сапар аяқталды", body: "BaiSapar-ды таңдағаныңызға рахмет" },
-    uz: { title: "Safar yakunlandi", body: "BaiSapar'ni tanlaganingiz uchun rahmat" },
-    zh: { title: "行程已结束", body: "感谢您选择 BaiSapar" }
+    ru: { title: "Поездка завершена", body: "Спасибо, что выбрали OneDriver" },
+    kk: { title: "Сапар аяқталды", body: "OneDriver-ды таңдағаныңызға рахмет" },
+    uz: { title: "Safar yakunlandi", body: "OneDriver'ni tanlaganingiz uchun rahmat" },
+    zh: { title: "行程已结束", body: "感谢您选择 OneDriver" }
   },
   cashbackEarned: {
     ru: { title: "Начислен кешбэк", body: "+{amount} ₸ за поездку — спишется на следующей оплате" },

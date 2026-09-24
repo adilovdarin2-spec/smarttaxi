@@ -11,7 +11,7 @@ async function request(path) {
 
 const health = await request("/api/health");
 assert.equal(health.ok, true, "health must be ok");
-assert.equal(health.app, "BaiSapar", "health must identify BaiSapar");
+assert.equal(health.app, "OneDriver", "health must identify OneDriver");
 
 const ready = await request("/api/health/ready");
 assert.equal(ready.ok, true, "ready must be ok");

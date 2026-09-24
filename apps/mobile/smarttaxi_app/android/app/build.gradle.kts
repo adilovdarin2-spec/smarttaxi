@@ -28,7 +28,7 @@ if (hasReleaseKeystore) {
 }
 
 android {
-    namespace = "kz.baisapar.app"
+    namespace = "kz.onedriver.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -38,7 +38,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "kz.baisapar.app"
+        applicationId = "kz.onedriver.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

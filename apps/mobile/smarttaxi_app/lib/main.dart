@@ -509,7 +509,7 @@ class _SmartTaxiAppState extends State<SmartTaxiApp> {
     if (_session != AppSession.splash) _maybeShowUpdateNudge();
     return MaterialApp(
       navigatorKey: _sessionNavigation.keyFor(_session),
-      title: 'BaiSapar',
+      title: 'OneDriver',
       debugShowCheckedModeBanner: false,
       theme: buildSmartTaxiTheme(),
       darkTheme: buildSmartTaxiDarkTheme(),
@@ -669,7 +669,7 @@ class _AuthWordmark extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'BaiSapar',
+              'OneDriver',
               style: TextStyle(
                 color: SmartTaxiColors.brandDeep,
                 fontSize: 38 * scale,
@@ -1790,7 +1790,7 @@ class _RuntimeFallbackScreen extends StatelessWidget {
                   const _RuntimeFallbackLogo(),
                   const SizedBox(height: 18),
                   const Text(
-                    'BaiSapar',
+                    'OneDriver',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
@@ -4422,8 +4422,8 @@ class _PremiumCard extends StatelessWidget {
 }
 
 String _userLabel(dynamic user) {
-  if (user is! Map) return 'Аккаунт BaiSapar';
-  return (user['login'] ?? user['name'] ?? user['phone'] ?? 'Аккаунт BaiSapar')
+  if (user is! Map) return 'Аккаунт OneDriver';
+  return (user['login'] ?? user['name'] ?? user['phone'] ?? 'Аккаунт OneDriver')
       .toString();
 }
 

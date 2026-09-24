@@ -52,7 +52,7 @@ export default function DriverNavigator({ order, route, routeUnavailable = false
     <header className="driver-navigator-top">
       <div className="driver-navigator-toolbar">
         <button ref={closeRef} type="button" onClick={onClose} aria-label="Вернуться к заказу"><Icon name="back" /></button>
-        <div><strong>{phaseLabel}</strong><span>BaiSapar · Навигация</span></div>
+        <div><strong>{phaseLabel}</strong><span>OneDriver · Навигация</span></div>
         <span className={`driver-navigator-gps ${notice ? "uncertain" : ""}`}>{notice ? "GPS / маршрут" : "GPS"}</span>
       </div>
       {notice ? <div className="driver-navigator-notice" role="status">

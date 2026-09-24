@@ -2478,7 +2478,7 @@ class _DriverShellState extends State<DriverShell> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'BaiSapar',
+                'OneDriver',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: context.palette.text,
                       fontWeight: FontWeight.w800,
@@ -4336,7 +4336,7 @@ class _SmartNavigatorMapState extends State<_SmartNavigatorMap> {
                             maxNativeZoom: widget.mapStyle.allowsTileTinting
                                 ? 19
                                 : AppConfig.satelliteMaxZoom,
-                            userAgentPackageName: 'kz.baisapar.app',
+                            userAgentPackageName: 'kz.onedriver.app',
                             errorTileCallback: (_, __, ___) =>
                                 widget.onTileError(),
                           ),
@@ -5682,7 +5682,7 @@ class _DriverFullScreenNavigatorState extends State<_DriverFullScreenNavigator>
                           maxNativeZoom: mapStyle.allowsTileTinting
                               ? 19
                               : AppConfig.satelliteMaxZoom,
-                          userAgentPackageName: 'kz.baisapar.app',
+                          userAgentPackageName: 'kz.onedriver.app',
                           errorTileCallback: (_, __, ___) {
                             if (_mapUnavailable) return;
                             _tileErrorCount++;
@@ -6185,7 +6185,7 @@ class _TripMapState extends State<_TripMap> {
                       maxNativeZoom: widget.mapStyle.allowsTileTinting
                           ? 19
                           : AppConfig.satelliteMaxZoom,
-                      userAgentPackageName: 'kz.baisapar.app'),
+                      userAgentPackageName: 'kz.onedriver.app'),
                 ),
                 if (widget.route.isNotEmpty)
                   PolylineLayer(polylines: [
@@ -7411,7 +7411,7 @@ class _RoadAlertMap extends StatelessWidget {
                       maxNativeZoom: mapStyle.allowsTileTinting
                           ? 19
                           : AppConfig.satelliteMaxZoom,
-                      userAgentPackageName: 'kz.baisapar.app',
+                      userAgentPackageName: 'kz.onedriver.app',
                       errorTileCallback: (_, __, ___) => onTileError(),
                     ),
                   ),

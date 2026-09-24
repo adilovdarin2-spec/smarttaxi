@@ -35,24 +35,24 @@ test("the old brand name cannot come back split across markup", () => {
 
 test("in-product screens use the name without placing the app icon in content", () => {
   const client = read("../src/features/client/ClientApp.jsx");
-  assert.ok(client.includes('<span className="auth-brand-name">BaiSapar</span>'));
+  assert.ok(client.includes('<span className="auth-brand-name">OneDriver</span>'));
 
   for (const path of SOURCES) {
     const source = read(path);
     assert.ok(!source.includes("<BrandLogo"), `${path} renders the app icon in product UI`);
-    assert.ok(!source.includes("baisapar_icon_512.png"), `${path} renders the app icon in product UI`);
+    assert.ok(!source.includes("onedriver_icon_512.png"), `${path} renders the app icon in product UI`);
   }
 
   // Launcher, PWA and native splash artwork remains packaged even though it is
   // intentionally absent from application screens.
   for (const file of [
-    "../public/brand/baisapar_icon_192.png",
-    "../public/brand/baisapar_icon_512.png",
-    "../public/brand/baisapar_icon_1024.png",
-    "../public/brand/baisapar_wordmark.svg",
-    "../public/brand/baisapar_wordmark_light.svg",
-    "../public/brand/baisapar_lockup.svg",
-    "../public/brand/baisapar_apple_touch_icon.png",
+    "../public/brand/onedriver_icon_192.png",
+    "../public/brand/onedriver_icon_512.png",
+    "../public/brand/onedriver_icon_1024.png",
+    "../public/brand/onedriver_wordmark.svg",
+    "../public/brand/onedriver_wordmark_light.svg",
+    "../public/brand/onedriver_lockup.svg",
+    "../public/brand/onedriver_apple_touch_icon.png",
   ]) {
     assert.ok(exists(file), `${file} is referenced but missing`);
   }
@@ -61,9 +61,9 @@ test("in-product screens use the name without placing the app icon in content", 
   // an SVG loaded through <img> cannot reach the page's webfonts at all, so
   // a <text> element there silently falls back to Arial.
   for (const file of [
-    "../public/brand/baisapar_wordmark.svg",
-    "../public/brand/baisapar_wordmark_light.svg",
-    "../public/brand/baisapar_lockup.svg",
+    "../public/brand/onedriver_wordmark.svg",
+    "../public/brand/onedriver_wordmark_light.svg",
+    "../public/brand/onedriver_lockup.svg",
   ]) {
     assert.ok(!read(file).includes("<text"), `${file} must be outlines, not text`);
   }
@@ -71,7 +71,7 @@ test("in-product screens use the name without placing the app icon in content", 
 
 test("public landing uses the new identity and links directly to the taxi app", () => {
   const landing = read("../src/features/landing/LandingPage.jsx");
-  assert.ok(landing.includes('src="/brand/baisapar_lockup.svg"'));
+  assert.ok(landing.includes('src="/brand/onedriver_lockup.svg"'));
   assert.ok(landing.includes('children = "В путь"'));
   assert.ok(landing.includes('href="/order">{children}'));
   assert.ok(landing.includes('href="/driver"'));
@@ -84,10 +84,10 @@ test("public landing uses the new identity and links directly to the taxi app", 
   }
 });
 
-test("the page announces itself as BaiSapar", () => {
+test("the page announces itself as OneDriver", () => {
   const html = read("../index.html");
-  assert.ok(html.includes("<title>BaiSapar</title>"));
-  assert.ok(html.includes('href="/brand/baisapar_icon_192.png"'));
+  assert.ok(html.includes("<title>OneDriver</title>"));
+  assert.ok(html.includes('href="/brand/onedriver_icon_192.png"'));
   assert.ok(html.includes('rel="apple-touch-icon"'));
   assert.ok(html.includes('rel="manifest"'));
   assert.ok(!html.includes("smarttaxi"));
@@ -95,7 +95,7 @@ test("the page announces itself as BaiSapar", () => {
   // "Add to home screen" reads the manifest, not the favicon, and a manifest
   // whose icons 404 gets the browser's own grey placeholder instead.
   const manifest = JSON.parse(read("../public/site.webmanifest"));
-  assert.equal(manifest.name, "BaiSapar");
+  assert.equal(manifest.name, "OneDriver");
   for (const icon of manifest.icons) {
     assert.ok(exists(`../public${icon.src}`), `${icon.src} is declared but missing`);
   }
@@ -105,5 +105,5 @@ test("the address marker carries this brand's initial", () => {
   // The marker a rider drops is drawn three times over: here, in the Flutter
   // painter, and in the approved reference the two are checked against.
   const marker = read("../src/features/map/MapView.jsx");
-  assert.ok(marker.includes('font-size="29" fill="url(#smarttaxiSquareMarkerGrad)">B</text>'));
+  assert.ok(marker.includes('font-size="29" fill="url(#smarttaxiSquareMarkerGrad)">O</text>'));
 });

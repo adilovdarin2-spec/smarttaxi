@@ -38,7 +38,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const browser = await chromium.launch({ headless: true,
   ...(process.env.QA_BROWSER_EXECUTABLE ? { executablePath: process.env.QA_BROWSER_EXECUTABLE } : {}) });
 const page = await browser.newPage({ viewport: { width: 600, height: 600 } });
-const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), 'baisapar-regional-building-qa');
+const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), 'onedriver-regional-building-qa');
 await mkdir(output, { recursive: true });
 const results = [];
 try {

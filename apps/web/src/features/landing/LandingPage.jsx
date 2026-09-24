@@ -22,7 +22,7 @@ export default function LandingPage() {
       <a className="landing-skip" href="#main">Перейти к содержимому</a>
       <header className="landing-header">
         <div className="landing-shell landing-header-row">
-          <a className="landing-brand" href="/" aria-label="BaiSapar — главная"><img src="/brand/baisapar_lockup.svg" alt="BaiSapar" width="170" height="32" /></a>
+          <a className="landing-brand" href="/" aria-label="OneDriver — главная"><img src="/brand/onedriver_lockup.svg" alt="OneDriver" width="170" height="32" /></a>
           <nav className="landing-nav" aria-label="Главная навигация"><a href="#how">Как это работает</a><a href="#tariffs">Тарифы</a><a href="/driver">Водителям</a></nav>
           <a className="landing-header-link" href="/order">Открыть такси <Arrow /></a>
         </div>
@@ -32,16 +32,16 @@ export default function LandingPage() {
           <div className="landing-hero-copy">
             <span className="landing-eyebrow"><span /> ВАШ ГОРОД. ВАШ РИТМ.</span>
             <h1 id="landing-title">Ваши планы.<br /><em>Наша дорога.</em></h1>
-            <p className="landing-lead">На работу, к близким или навстречу новому.<br className="landing-desktop-break" /> Поездки с BaiSapar — прямо в браузере.</p>
+            <p className="landing-lead">На работу, к близким или навстречу новому.<br className="landing-desktop-break" /> Поездки с OneDriver — прямо в браузере.</p>
             <div className="landing-hero-actions"><RideLink /><span>Откроется веб-приложение.<br />Ничего скачивать не нужно.</span></div>
-            <a className="landing-text-link" href="#how">Знакомьтесь с BaiSapar <span aria-hidden="true">↓</span></a>
+            <a className="landing-text-link" href="#how">Знакомьтесь с OneDriver <span aria-hidden="true">↓</span></a>
           </div>
           <div className="landing-hero-art" aria-hidden="true">
-            <div className="landing-art-top"><span>ХОРОШЕГО ПУТИ</span><img src="/brand/baisapar_mark_white.svg" alt="" width="42" height="42" /></div>
+            <div className="landing-art-top"><span>ХОРОШЕГО ПУТИ</span><img src="/brand/onedriver_mark_white.svg" alt="" width="42" height="42" /></div>
             <div className="landing-art-word">Поехали.</div>
             <div className="landing-road"><span /><span /><span /></div>
             <img className="landing-hero-car" src="/cars/tariff_comfort_unbranded_v2.png" alt="" width="768" height="512" fetchPriority="high" />
-            <div className="landing-art-bottom"><span>BaiSapar</span><span>Каждый день — новый маршрут <Arrow /></span></div>
+            <div className="landing-art-bottom"><span>OneDriver</span><span>Каждый день — новый маршрут <Arrow /></span></div>
           </div>
         </section>
         <div className="landing-shell"><div className="landing-highlights" aria-label="О сервисе"><div><Icon name="pin" /><span>Адрес или точка на карте</span></div><div><Icon name="cash" /><span>Стоимость в тенге</span></div><div><Icon name="route" /><span>Вся поездка в одном месте</span></div></div></div>
@@ -60,15 +60,15 @@ export default function LandingPage() {
           </div>
         </section>
         <section className="landing-shell landing-section landing-driver" aria-labelledby="landing-driver-title">
-          <div className="landing-driver-symbol" aria-hidden="true"><img src="/brand/baisapar_mark.svg" alt="" width="120" height="120" /></div>
-          <div><span className="landing-eyebrow">ПО ДРУГУЮ СТОРОНУ РУЛЯ</span><h2 id="landing-driver-title">Вы водитель?<br />Вам тоже сюда.</h2><p>Заказы, маршрут и статусы поездки — в водительской версии BaiSapar.</p></div>
+          <div className="landing-driver-symbol" aria-hidden="true"><img src="/brand/onedriver_mark.svg" alt="" width="120" height="120" /></div>
+          <div><span className="landing-eyebrow">ПО ДРУГУЮ СТОРОНУ РУЛЯ</span><h2 id="landing-driver-title">Вы водитель?<br />Вам тоже сюда.</h2><p>Заказы, маршрут и статусы поездки — в водительской версии OneDriver.</p></div>
           <a className="landing-driver-link" href="/driver">Кабинет водителя <Arrow /></a>
         </section>
-        <section className="landing-shell landing-final" aria-labelledby="landing-final-title"><div className="landing-banner"><div><span className="landing-eyebrow">BAISAPAR · ХОРОШЕГО ПУТИ</span><h2 id="landing-final-title">Куда сегодня?</h2><p>Ваш следующий маршрут начинается здесь.</p></div><RideLink light /></div></section>
+        <section className="landing-shell landing-final" aria-labelledby="landing-final-title"><div className="landing-banner"><div><span className="landing-eyebrow">ONEDRIVER · ХОРОШЕГО ПУТИ</span><h2 id="landing-final-title">Куда сегодня?</h2><p>Ваш следующий маршрут начинается здесь.</p></div><RideLink light /></div></section>
       </main>
       <footer className="landing-shell landing-footer">
-        <div className="landing-footer-top"><div><img src="/brand/baisapar_lockup.svg" alt="BaiSapar" width="170" height="32" /><p>Ваши планы. Наша дорога.</p></div><nav aria-label="Сервис"><a href="/order">Заказать поездку</a><a href="/driver">Водителям</a></nav><nav aria-label="Документы"><a href="/legal">Юридическая информация</a><a href="/legal/privacy">Конфиденциальность</a><a href="/legal/terms">Условия использования</a></nav></div>
-        <div className="landing-footer-bottom"><span>© {new Date().getFullYear()} BaiSapar</span><span>Казахстан</span></div>
+        <div className="landing-footer-top"><div><img src="/brand/onedriver_lockup.svg" alt="OneDriver" width="170" height="32" /><p>Ваши планы. Наша дорога.</p></div><nav aria-label="Сервис"><a href="/order">Заказать поездку</a><a href="/driver">Водителям</a></nav><nav aria-label="Документы"><a href="/legal">Юридическая информация</a><a href="/legal/privacy">Конфиденциальность</a><a href="/legal/terms">Условия использования</a></nav></div>
+        <div className="landing-footer-bottom"><span>© {new Date().getFullYear()} OneDriver</span><span>Казахстан</span></div>
       </footer>
     </div>
   );

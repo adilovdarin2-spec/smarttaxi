@@ -30,7 +30,7 @@ function fakeExecutor({ failMigration = false } = {}) {
 const success = fakeExecutor();
 await runMigrations(success);
 assert.match(success.calls[0].sql, /pg_advisory_lock/, "migration startup first acquires the database-wide lock");
-assert.deepEqual(success.calls[0].params, ["baisapar:database-migrations"]);
+assert.deepEqual(success.calls[0].params, ["onedriver:database-migrations"]);
 assert.match(success.calls.at(-1).sql, /pg_advisory_unlock/, "successful migrations release the lock");
 assert.equal(success.released, true, "successful migrations return the checked-out connection");
 

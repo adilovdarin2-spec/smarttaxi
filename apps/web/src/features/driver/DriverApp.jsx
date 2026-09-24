@@ -266,7 +266,7 @@ function DriverLogin({ auth, setAuth, onSubmit, loading, error }) {
         <div>
           <p className="driver-core-eyebrow">Кабинет водителя</p>
           <h1>Хорошая смена начинается здесь</h1>
-          <p>Вход только для одобренных водителей BaiSapar.</p>
+          <p>Вход только для одобренных водителей OneDriver.</p>
         </div>
         <form onSubmit={onSubmit} className="driver-core-form">
           <label>

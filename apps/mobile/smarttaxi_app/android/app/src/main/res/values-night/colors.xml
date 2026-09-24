@@ -4,5 +4,5 @@
          the app knows anything about the theme. Without this, a phone in dark
          mode opened the app on a full white flash and then dropped into a
          near-black UI. Matches SmartTaxiPalette.dark.appBackground. -->
-    <color name="baisapar_background">#05070C</color>
+    <color name="onedriver_background">#05070C</color>
 </resources>

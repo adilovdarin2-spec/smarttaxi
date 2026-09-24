@@ -1106,7 +1106,7 @@ export default function AdminApp() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = "baisapar-finance-transactions.csv";
+      link.download = "onedriver-finance-transactions.csv";
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1345,7 +1345,7 @@ export default function AdminApp() {
       <aside className="admin-control-sidebar" aria-label="Навигация панели">
         <div className="admin-brand">
           <div>
-            <strong>BaiSapar</strong>
+            <strong>OneDriver</strong>
             <span>Control Center</span>
           </div>
         </div>
@@ -1730,7 +1730,7 @@ function DashboardPage({ dashboard, health, onSelectPage, isOwner }) {
     <div className="admin-page-stack">
       <section className="admin-command-hero">
         <div>
-          <span className="admin-command-kicker">BaiSapar Control Center</span>
+          <span className="admin-command-kicker">OneDriver Control Center</span>
           <h2>Панель владельца, которая ведёт сервис по проблемам</h2>
           <p>
             Здесь собраны зоны, водители, заказы, тарифы, финансы, дорожные события, отзывы и аудит.
@@ -2058,7 +2058,7 @@ function RegionsPage({ regions, regionStatus, setRegionStatus, onAddRegion, onEd
     <div className="admin-page-stack">
       <PageHeader
         title="Регионы"
-        subtitle="Управление зонами работы BaiSapar"
+        subtitle="Управление зонами работы OneDriver"
         action={canManageOwnerOnly ? <button type="button" className="admin-primary-button" onClick={onAddRegion}>Добавить регион</button> : null}
       >
         <SegmentedFilter
@@ -2412,7 +2412,7 @@ function TariffsPage({
       </DataCard>
 
       {!regions.length ? (
-        <StatePanel title="Сначала настройте регионы" text="Тарифы привязываются к активным рабочим регионам BaiSapar." />
+        <StatePanel title="Сначала настройте регионы" text="Тарифы привязываются к активным рабочим регионам OneDriver." />
       ) : !visible.length ? (
         <StatePanel
           title="Тарифы пока не настроены"

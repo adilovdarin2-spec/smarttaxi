@@ -108,7 +108,7 @@ try {
           const bounds = await page.locator(selector).boundingBox();
           assert.ok(bounds.y >= -1 && bounds.y + bounds.height <= page.viewportSize().height + 1, `Both actions must be reachable by scrolling: ${JSON.stringify(bounds)}`);
         }
-        const output = path.join(os.tmpdir(), 'baisapar-assignment-policy-qa');
+        const output = path.join(os.tmpdir(), 'onedriver-assignment-policy-qa');
         await mkdir(output, { recursive: true });
         const screenshot = path.join(output, `rider-refused-${width}.png`);
         await page.screenshot({ path: screenshot });

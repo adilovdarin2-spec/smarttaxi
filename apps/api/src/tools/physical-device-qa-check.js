@@ -21,7 +21,7 @@ async function rejects(base, args) {
   }), error => error.code === 1 && /AssertionError/.test(error.stderr));
 }
 try {
-  await rejects('https://api.baisapar.kz', ['inspect']);
+  await rejects('https://api.onedriver.kz', ['inspect']);
   await rejects(local, ['unsupported']);
   await rejects(local, ['step', 'not-a-uuid', 'accept']);
   await rejects(local, ['step', '00000000-0000-0000-0000-000000000000', 'delete']);

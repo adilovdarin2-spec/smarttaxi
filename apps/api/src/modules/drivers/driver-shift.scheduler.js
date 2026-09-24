@@ -23,7 +23,7 @@ export async function driverShiftSweepTick() {
 export function startDriverShiftSweeper() {
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    runDistributedJob("baisapar:driver-shift-sweeper", () => driverShiftSweepTick())
+    runDistributedJob("onedriver:driver-shift-sweeper", () => driverShiftSweepTick())
       .catch((error) => console.error("[shifts] sweep tick failed", error));
   }, SWEEP_INTERVAL_MS);
   intervalHandle.unref?.();

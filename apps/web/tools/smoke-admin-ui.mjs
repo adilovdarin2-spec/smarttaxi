@@ -18,7 +18,7 @@ assert.equal(ready.env, 'development');
 assert.equal(ready.checks.sms, 'dev');
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.QA_PLAYWRIGHT_PACKAGE || 'playwright');
-const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), `baisapar-${role.toLowerCase()}-ui-qa`);
+const output = process.env.QA_OUTPUT_DIR || path.join(os.tmpdir(), `onedriver-${role.toLowerCase()}-ui-qa`);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true,
   ...(process.env.QA_BROWSER_EXECUTABLE ? { executablePath: process.env.QA_BROWSER_EXECUTABLE } : {}) });

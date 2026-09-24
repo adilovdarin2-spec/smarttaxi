@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "SmartTaxi",
-    "slug": "smarttaxi",
+    "name": "OneDriver",
+    "slug": "onedriver",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "smarttaxi",
+    "scheme": "onedriver",
     "userInterfaceStyle": "dark",
     "splash": {
       "backgroundColor": "#070707"
@@ -14,13 +14,13 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "kz.baisapar.app",
+      "bundleIdentifier": "kz.onedriver.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "SmartTaxi uses your location to set pickup points for orders."
+        "NSLocationWhenInUseUsageDescription": "OneDriver uses your location to set pickup points for orders."
       }
     },
     "android": {
-      "package": "kz.baisapar.app",
+      "package": "kz.onedriver.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"

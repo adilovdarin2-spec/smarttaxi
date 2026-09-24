@@ -37,7 +37,7 @@ export async function standsSweepTick(io) {
 export function startStandsSweeper(io) {
   if (intervalHandle) return intervalHandle;
   intervalHandle = setInterval(() => {
-    runDistributedJob("baisapar:stands-sweeper", () => standsSweepTick(io))
+    runDistributedJob("onedriver:stands-sweeper", () => standsSweepTick(io))
       .catch((error) => console.error("[stands] sweep tick failed", error));
   }, SWEEP_INTERVAL_MS);
   intervalHandle.unref?.();

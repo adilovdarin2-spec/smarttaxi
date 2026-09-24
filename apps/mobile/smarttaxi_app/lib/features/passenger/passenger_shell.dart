@@ -3899,7 +3899,7 @@ class _PassengerShellState extends State<PassengerShell>
                         Text(
                           widget.accountPhone.isNotEmpty
                               ? widget.accountPhone
-                              : l10n.passengerClientOfBaiSapar,
+                              : l10n.passengerClientOfOneDriver,
                           style: TextStyle(
                             color: palette.textSecondary,
                             fontSize: 13,
@@ -4581,7 +4581,7 @@ class _PassengerShellState extends State<PassengerShell>
                                       () => _tab = PassengerTab.legalSafety,
                                     ),
                             ),
-                            const TextSpan(text: ' BaiSapar.'),
+                            const TextSpan(text: ' OneDriver.'),
                           ],
                         ),
                       ),
@@ -5618,7 +5618,7 @@ class _PassengerShellState extends State<PassengerShell>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'BaiSapar',
+                'OneDriver',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: palette.text,
                       fontWeight: FontWeight.w800,
@@ -6290,7 +6290,7 @@ class _MapCanvasState extends State<_MapCanvas> {
                             maxNativeZoom: widget.mapStyle.allowsTileTinting
                                 ? 19
                                 : AppConfig.satelliteMaxZoom,
-                            userAgentPackageName: 'kz.baisapar.app',
+                            userAgentPackageName: 'kz.onedriver.app',
                             errorTileCallback: (_, __, ___) => onTileError(),
                           ),
                         ),
@@ -7951,7 +7951,7 @@ class _ApprovedMapPickerMarker extends StatelessWidget {
                           shaderCallback: (bounds) =>
                               _badgeGradient.createShader(bounds),
                           child: const Text(
-                            'B',
+                            'O',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 29 * _unit,
@@ -18002,7 +18002,7 @@ class _SmartDrawer extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'BaiSapar · v$_appVersion',
+              'OneDriver · v$_appVersion',
               style: TextStyle(
                 color: palette.textMuted,
                 fontSize: 11,
@@ -18185,7 +18185,7 @@ class _AppHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          Text('BaiSapar',
+          Text('OneDriver',
               style: TextStyle(
                   fontSize: 13,
                   color: palette.textSecondary,

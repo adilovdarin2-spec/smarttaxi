@@ -10,7 +10,7 @@ export function AppRecoveryScreen({ onReload }) {
         <span className="app-recovery-icon">
           <Icon name="route" size={30} />
         </span>
-        <p>BaiSapar</p>
+        <p>OneDriver</p>
         <h1>Не удалось открыть экран</h1>
         <p>
           Обновите приложение. Текущая поездка хранится на сервере — обновление

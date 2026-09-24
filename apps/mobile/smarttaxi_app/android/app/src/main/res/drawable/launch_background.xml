@@ -4,7 +4,7 @@
      background and monogram identical avoids a white flash between the
      operating-system window and Flutter's first frame. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/baisapar_blue" />
+    <item android:drawable="@color/onedriver_blue" />
     <item
         android:drawable="@drawable/ic_launcher_foreground"
         android:gravity="center"

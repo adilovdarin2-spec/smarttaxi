@@ -1,6 +1,6 @@
-# BaiSapar Flutter
+# OneDriver Flutter
 
-Пассажирское и водительское мобильное приложение BaiSapar. Бэкенд, PostgreSQL
+Пассажирское и водительское мобильное приложение OneDriver. Бэкенд, PostgreSQL
 и Redis запускаются из корня репозитория через Docker Compose.
 
 ## Локальный запуск с Docker

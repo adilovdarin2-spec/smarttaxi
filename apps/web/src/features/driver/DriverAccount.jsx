@@ -149,7 +149,7 @@ export function DriverAccountHome({
           <Icon name="user" size={30} />
         </span>
         <div>
-          <p>BaiSapar · водитель</p>
+          <p>OneDriver · водитель</p>
           <h1>{driver?.name || "Личный кабинет"}</h1>
           <span>{driver?.phone || "Телефон не указан"}</span>
         </div>

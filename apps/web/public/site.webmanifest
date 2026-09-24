@@ -1,6 +1,6 @@
 {
-  "name": "BaiSapar",
-  "short_name": "BaiSapar",
+  "name": "OneDriver",
+  "short_name": "OneDriver",
   "description": "Такси по районам Мактааральского района: цена до заказа, ближайший свободный водитель, вся поездка на карте.",
   "lang": "ru",
   "start_url": "/",
@@ -9,8 +9,8 @@
   "background_color": "#0B4FD1",
   "theme_color": "#1D6FFF",
   "icons": [
-    { "src": "/brand/baisapar_icon_192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/brand/baisapar_icon_512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "/brand/baisapar_icon_maskable_512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/brand/onedriver_icon_192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/brand/onedriver_icon_512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/brand/onedriver_icon_maskable_512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
