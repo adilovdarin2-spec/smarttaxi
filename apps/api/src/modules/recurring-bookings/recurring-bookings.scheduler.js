@@ -29,6 +29,13 @@ function shortId() {
 // whole TRIGGER_WINDOW_MINUTES window, so without this guard a single bad
 // day would fire ~15 notifications instead of one. Returns silently (no
 // second notification) once today's skip has already been recorded.
+// Какой текст соответствует какой причине. Всё, чего здесь нет, — про
+// водителя, и для этого остаётся прежняя формулировка.
+const SKIP_MESSAGE_KEYS = {
+  CLIENT_HAS_ACTIVE_ORDER: "recurringRiderBusy",
+  ROUTE_UNAVAILABLE: "recurringRouteFailed"
+};
+
 async function recordSkip(bookingId, reason) {
   const updated = (await query(
     `UPDATE recurring_bookings
@@ -42,7 +49,10 @@ async function recordSkip(bookingId, reason) {
   const clientRow = (await query("SELECT user_id FROM clients WHERE id=$1", [updated.client_id])).rows[0];
   if (clientRow?.user_id) {
     notifyUser(clientRow.user_id, {
-      key: "recurringNoDriver",
+      // Причина у пропуска не одна, и текст должен её называть. «Не удалось
+      // найти свободного водителя» в ответ на «вы сами были в поездке» —
+      // это неправда о водителе и о сервисе разом.
+      key: SKIP_MESSAGE_KEYS[reason] || "recurringNoDriver",
       type: "RECURRING_BOOKING_SKIPPED",
       data: { recurringBookingId: bookingId, reason }
     }).catch((error) => console.error("[push] notifyUser failed", error));

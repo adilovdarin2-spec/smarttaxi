@@ -118,6 +118,26 @@ assert(admin.includes("timeOfDay: String(row.time_of_day).slice(0, 5)"), "public
 assert(admin.includes("skippedToday: Boolean(row.skipped_today)"), "publicAdminRecurringBooking must surface skippedToday to the admin panel");
 assert(admin.includes("lastSkipReason: row.last_skip_reason || undefined"), "publicAdminRecurringBooking must surface the specific skip reason for admin diagnosis");
 
+// Текст пропуска должен называть настоящую причину.
+//
+// Ключ был один на все случаи: «не удалось найти свободного водителя». В
+// ответ на «вы сами в это время были в поездке» это неправда сразу о двух —
+// о водителе, который был свободен, и о сервисе, который не подвёл.
+assert(
+  scheduler.includes("SKIP_MESSAGE_KEYS"),
+  "у пропуска должен быть текст под причину, а не один на все"
+);
+assert(
+  /CLIENT_HAS_ACTIVE_ORDER: "recurringRiderBusy"/.test(scheduler),
+  "пропуск из-за собственной поездки пассажира не должен винить водителя"
+);
+{
+  const messages = fs.readFileSync(new URL("../modules/notifications/notification-messages.js", import.meta.url), "utf8");
+  for (const key of ["recurringNoDriver", "recurringRiderBusy", "recurringRouteFailed"]) {
+    assert(messages.includes(`${key}: {`), `нет текста уведомления ${key}`);
+  }
+}
+
 // orders.duration_min -- целое.
 //
 // Здесь клали результат деления секунд на 60, и вставка падала на любом

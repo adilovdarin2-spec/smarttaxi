@@ -238,6 +238,22 @@ const MESSAGES = {
     uz: { title: "Doimiy safar bugun bo'lmaydi", body: "Doimiy yo'nalishingiz uchun bo'sh haydovchi topilmadi. Keyingi safar qayta urinamiz." },
     zh: { title: "今天的固定行程无法进行", body: "没有找到可承接您固定路线的司机，下次会再试。" }
   },
+  // Пропуск не по вине водителя: человек в этот момент сам был в поездке.
+  // Говорить ему «не нашли свободного водителя» — называть не ту причину и
+  // валить на сервис то, чего не было.
+  recurringRiderBusy: {
+    ru: { title: "Регулярная поездка сегодня не состоится", body: "В это время у вас была другая поездка. Мы попробуем снова в следующий раз." },
+    kk: { title: "Тұрақты сапар бүгін болмайды", body: "Ол уақытта сізде басқа сапар болды. Келесі жолы қайта көреміз." },
+    uz: { title: "Doimiy safar bugun bo'lmaydi", body: "O'sha paytda sizda boshqa safar bor edi. Keyingi safar qayta urinamiz." },
+    zh: { title: "今天的固定行程无法进行", body: "当时您正在另一趟行程中，下次会再试。" }
+  },
+  // Маршрут не построился — это про дорогу и наши сервисы, а не про водителя.
+  recurringRouteFailed: {
+    ru: { title: "Регулярная поездка сегодня не состоится", body: "Не удалось построить маршрут. Мы попробуем снова в следующий раз." },
+    kk: { title: "Тұрақты сапар бүгін болмайды", body: "Бағытты құру мүмкін болмады. Келесі жолы қайта көреміз." },
+    uz: { title: "Doimiy safar bugun bo'lmaydi", body: "Yo'nalishni tuzib bo'lmadi. Keyingi safar qayta urinamiz." },
+    zh: { title: "今天的固定行程无法进行", body: "无法规划路线，下次会再试。" }
+  },
   recurringStarted: {
     ru: { title: "Регулярная поездка началась", body: "Водитель {name} едет по вашему регулярному маршруту" },
     kk: { title: "Тұрақты сапар басталды", body: "{name} жүргізуші тұрақты бағытыңызбен келе жатыр" },
