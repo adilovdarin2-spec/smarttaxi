@@ -717,6 +717,23 @@ export function reviewAdminPayoutRequest(payoutRequestId, payload) {
   });
 }
 
+// Пассажиры: список, оценки, которые ставят им водители, и блокировка.
+// Ничего этого раньше не было видно — оценки писались в базу и там оставались.
+export function getAdminClients(params = {}) {
+  return api(`/api/admin/clients${queryString(params)}`);
+}
+
+export function getAdminClient(clientId) {
+  return api(`/api/admin/clients/${clientId}`);
+}
+
+export function setAdminClientBlocked(clientId, payload) {
+  return api(`/api/admin/clients/${clientId}/block`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
 // Заявки водителей «я перевёл деньги, спишите долг». Шлюза за ними нет,
 // подтверждает их человек — и до этого их не было видно нигде.
 export function getAdminDriverTopupRequests(params = {}) {

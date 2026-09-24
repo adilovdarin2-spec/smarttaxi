@@ -4842,6 +4842,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get apiErrorUserNotFound => 'Аккаунт не найден. Войдите заново';
 
   @override
+  String get apiErrorClientBlocked =>
+      'Заказы для вашего аккаунта приостановлены. Свяжитесь с поддержкой';
+
+  @override
   String get apiErrorRegionNotFound =>
       'Эта точка не относится ни к одному рабочему району';
 }

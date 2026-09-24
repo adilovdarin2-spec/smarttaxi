@@ -1377,7 +1377,20 @@ const statements = [
            AND (n.created_at, n.id) > (t.created_at, t.id)
       )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS uniq_driver_topup_pending
-     ON driver_topup_requests(driver_id) WHERE status='PENDING'`
+     ON driver_topup_requests(driver_id) WHERE status='PENDING'`,
+
+  // --- Пассажир, на которого наконец можно посмотреть ---
+  //
+  // Водители ставят пассажирам оценки с тегами и комментарием; средняя
+  // ложится в clients.rating. Увидеть это не мог никто: списка пассажиров в
+  // панели не было вовсе. Рядом лежал столбец is_blocked -- его проверяли
+  // ровно в одном месте, при бронировании места на стоянке, а выставить не
+  // мог никто. Флаг, который нельзя поднять.
+  "ALTER TABLE clients ADD COLUMN IF NOT EXISTS block_reason TEXT",
+  "ALTER TABLE clients ADD COLUMN IF NOT EXISTS blocked_at TIMESTAMPTZ",
+  "ALTER TABLE clients ADD COLUMN IF NOT EXISTS blocked_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL",
+  "CREATE INDEX IF NOT EXISTS idx_clients_blocked ON clients(is_blocked) WHERE is_blocked",
+  "CREATE INDEX IF NOT EXISTS idx_client_reviews_created ON client_reviews(client_id, created_at DESC)"
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies

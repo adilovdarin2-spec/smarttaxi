@@ -2127,5 +2127,6 @@
   "apiErrorSupportMessageNotFound": "Это обращение уже закрыто",
   "apiErrorTariffNotFound": "Такого тарифа больше нет. Выберите другой",
   "apiErrorUserNotFound": "Аккаунт не найден. Войдите заново",
+  "apiErrorClientBlocked": "Заказы для вашего аккаунта приостановлены. Свяжитесь с поддержкой",
   "apiErrorRegionNotFound": "Эта точка не относится ни к одному рабочему району"
 }

@@ -68,6 +68,18 @@ const MESSAGES = {
     uz: { title: "To'lov rad etildi", body: "To'lov arizasi rad etildi. Tafsilotlar qo'llab-quvvatlashda" },
     zh: { title: "提现被拒绝", body: "提现申请被拒绝，详情请联系客服" }
   },
+  clientBlocked: {
+    ru: { title: "Доступ к заказам приостановлен", body: "Свяжитесь с поддержкой OneDriver" },
+    kk: { title: "Тапсырыс беру уақытша тоқтатылды", body: "OneDriver қолдау қызметіне хабарласыңыз" },
+    uz: { title: "Buyurtma berish vaqtincha to'xtatildi", body: "OneDriver qo'llab-quvvatlash xizmatiga murojaat qiling" },
+    zh: { title: "下单已暂停", body: "请联系 OneDriver 客服" }
+  },
+  clientUnblocked: {
+    ru: { title: "Доступ восстановлен", body: "Можно снова заказывать поездки" },
+    kk: { title: "Қолжетімділік қалпына келтірілді", body: "Қайтадан сапарға тапсырыс беруге болады" },
+    uz: { title: "Kirish tiklandi", body: "Yana safarga buyurtma berishingiz mumkin" },
+    zh: { title: "访问已恢复", body: "您可以重新下单了" }
+  },
   topupApplied: {
     ru: { title: "Пополнение зачтено", body: "{amount} ₸ списано с вашего долга" },
     kk: { title: "Толықтыру есепке алынды", body: "Қарызыңыздан {amount} ₸ шегерілді" },

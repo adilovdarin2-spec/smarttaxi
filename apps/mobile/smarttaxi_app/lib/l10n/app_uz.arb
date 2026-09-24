@@ -1963,5 +1963,6 @@
   "apiErrorSupportMessageNotFound": "Bu murojaat yopilgan",
   "apiErrorTariffNotFound": "Bunday tarif yo'q. Boshqasini tanlang",
   "apiErrorUserNotFound": "Akkaunt topilmadi. Qaytadan kiring",
+  "apiErrorClientBlocked": "Hisobingiz uchun buyurtmalar to'xtatilgan. Qo'llab-quvvatlash xizmatiga murojaat qiling",
   "apiErrorRegionNotFound": "Bu nuqta hech qaysi ish tumaniga tegishli emas"
 }

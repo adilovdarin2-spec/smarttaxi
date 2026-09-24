@@ -377,6 +377,15 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         RETURNING *
       `, [req.user.id])).rows[0];
       if (!rider) throw new AppError("Client profile not found", 404, "CLIENT_NOT_FOUND");
+      // Блокировка пассажира проверялась ровно в одном месте — при
+      // бронировании места на стоянке. Заказать машину заблокированный
+      // пассажир мог как ни в чём не бывало, то есть блокировка не значила
+      // почти ничего. Ставим её там, где она и должна стоять.
+      if (rider.is_blocked) {
+        throw new AppError("Client is blocked", 403, "CLIENT_BLOCKED", {
+          reason: rider.block_reason || null
+        });
+      }
 
       // A promo code and a rider-proposed price both change what's charged —
       // combining them would make the discount math ambiguous, so a promo

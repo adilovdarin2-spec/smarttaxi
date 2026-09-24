@@ -4867,6 +4867,10 @@ class AppLocalizationsUz extends AppLocalizations {
   String get apiErrorUserNotFound => 'Akkaunt topilmadi. Qaytadan kiring';
 
   @override
+  String get apiErrorClientBlocked =>
+      'Hisobingiz uchun buyurtmalar to\'xtatilgan. Qo\'llab-quvvatlash xizmatiga murojaat qiling';
+
+  @override
   String get apiErrorRegionNotFound =>
       'Bu nuqta hech qaysi ish tumaniga tegishli emas';
 }

@@ -8581,6 +8581,12 @@ abstract class AppLocalizations {
   /// **'Аккаунт не найден. Войдите заново'**
   String get apiErrorUserNotFound;
 
+  /// No description provided for @apiErrorClientBlocked.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заказы для вашего аккаунта приостановлены. Свяжитесь с поддержкой'**
+  String get apiErrorClientBlocked;
+
   /// No description provided for @apiErrorRegionNotFound.
   ///
   /// In ru, this message translates to:

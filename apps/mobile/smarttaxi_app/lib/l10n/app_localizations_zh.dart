@@ -4492,5 +4492,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiErrorUserNotFound => '找不到账户，请重新登录';
 
   @override
+  String get apiErrorClientBlocked => '您的账户已暂停下单，请联系客服';
+
+  @override
   String get apiErrorRegionNotFound => '该位置不属于任何服务区域';
 }

@@ -42,6 +42,7 @@ String? apiErrorMessage(String? code, AppLocalizations l10n) {
     'ORDER_NOT_PAID': l10n.apiErrorOrderNotPaid,
     'PAYOUT_REQUEST_NOT_FOUND': l10n.apiErrorPayoutRequestNotFound,
     'PAYOUT_REQUEST_NOT_PENDING': l10n.apiErrorPayoutRequestNotPending,
+    'CLIENT_BLOCKED': l10n.apiErrorClientBlocked,
     'REGION_NOT_FOUND': l10n.apiErrorRegionNotFound,
     'QUEUED_PRICE_OFFER_NOT_FOUND': l10n.apiErrorQueuedPriceOfferNotFound,
     'QUICK_MESSAGE_NOT_ALLOWED': l10n.apiErrorQuickMessageNotAllowed,

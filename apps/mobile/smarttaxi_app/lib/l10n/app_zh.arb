@@ -1963,5 +1963,6 @@
   "apiErrorSupportMessageNotFound": "该工单已关闭",
   "apiErrorTariffNotFound": "该车型已不存在，请另选一个",
   "apiErrorUserNotFound": "找不到账户，请重新登录",
+  "apiErrorClientBlocked": "您的账户已暂停下单，请联系客服",
   "apiErrorRegionNotFound": "该位置不属于任何服务区域"
 }

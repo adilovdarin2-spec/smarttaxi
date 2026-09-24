@@ -40,6 +40,8 @@ import {
   getAdminFinanceTransactions,
   getAdminLeaderboard,
   getAdminOrders,
+  getAdminClient,
+  getAdminClients,
   getAdminDriverTopupRequests,
   getAdminPayoutRequests,
   getAdminPromoCodes,
@@ -65,6 +67,7 @@ import {
   respondAdminSupport,
   reviewAdminDriverDocument,
   reviewAdminDriverTopupRequest,
+  setAdminClientBlocked,
   reviewAdminPayoutRequest,
   setAdminDriverCommissionOverride,
   setAdminPromoCodeStatus,
@@ -109,6 +112,7 @@ const navigation = [
   { key: "roadAlerts", label: "Дорога", eyebrow: "События и безопасность", ownerOnly: true },
   { key: "quality", label: "Качество", eyebrow: "Отзывы и рейтинг" },
   { key: "raffles", label: "Розыгрыши", eyebrow: "Конкурсы водителей" },
+  { key: "clients", label: "Пассажиры", eyebrow: "Оценки от водителей и блокировки" },
   { key: "referrals", label: "Рефералы", eyebrow: "Приглашения клиентов" },
   { key: "settings", label: "Настройки", eyebrow: "Параметры сервиса" },
   { key: "audit", label: "Журнал", eyebrow: "Действия системы" },
@@ -441,6 +445,9 @@ export default function AdminApp() {
   const [promoCodeStatus, setPromoCodeStatus] = useState("all");
   const [recurringBookingStatus, setRecurringBookingStatus] = useState("all");
   const [payoutStatus, setPayoutStatus] = useState("PENDING");
+  const [clientSearch, setClientSearch] = useState("");
+  const [clientFilter, setClientFilter] = useState("ALL");
+  const [clientDetail, setClientDetail] = useState({ loading: false, error: "", payload: null });
   const [ratingScope, setRatingScope] = useState("all");
   const [ratingRaffleId, setRatingRaffleId] = useState("");
   const [driverDetail, setDriverDetail] = useState({ loading: false, error: "", payload: null });
@@ -688,6 +695,13 @@ export default function AdminApp() {
         const data = await getAdminReferrals();
         return { referrals: data.referrals || [] };
       },
+      clients: async () => {
+        const data = await getAdminClients({
+          ...(clientSearch.trim() ? { search: clientSearch.trim() } : {}),
+          ...(clientFilter === "BLOCKED" ? { blocked: "true" } : {})
+        });
+        return { clients: data.clients || [], clientsTotal: data.total || 0 };
+      },
       raffles: async () => {
         const data = await getAdminRaffles();
         return { raffles: data.raffles || [] };
@@ -731,7 +745,7 @@ export default function AdminApp() {
     } catch (error) {
       if (isCurrent()) setPageState({ loading: false, error: readError(error), payload: null });
     }
-  }, [cancellationStatus, financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, pricingDateFrom, pricingDatePreset, pricingDateTo, pricingRegion, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
+  }, [clientFilter, clientSearch, cancellationStatus, financeDateFrom, financeDatePreset, financeDateTo, financeDriver, financeGroupBy, financeRegion, financeTariff, orderStatus, payoutStatus, pricingDateFrom, pricingDatePreset, pricingDateTo, pricingRegion, protectSession, ratingRaffleId, ratingScope, recurringBookingStatus, roadAlertRegion, roadAlertStatus, supportStatus, tariffDateFrom, tariffDatePreset, tariffDateTo, tariffRegion]);
 
   // Fetches the next page from the server and appends it to whatever's
   // already loaded under itemsKey (e.g. "orders"), rather than replacing
@@ -1275,6 +1289,25 @@ export default function AdminApp() {
     }[status]);
   }
 
+  async function openClientDetail(client) {
+    setModal({ type: "client", client });
+    setClientDetail({ loading: true, error: "", payload: null });
+    try {
+      const payload = await getAdminClient(client.id);
+      if (mountedRef.current) setClientDetail({ loading: false, error: "", payload });
+    } catch (error) {
+      if (mountedRef.current) setClientDetail({ loading: false, error: readError(error), payload: null });
+    }
+  }
+
+  async function setClientBlock(client, blocked, reason = "") {
+    await runAction(async () => {
+      await setAdminClientBlocked(client.id, { blocked, reason });
+      setModal(null);
+      await loadPage("clients");
+    }, blocked ? "Пассажиру закрыты заказы" : "Пассажиру снова доступны заказы");
+  }
+
   async function reviewTopup(topupRequest, status, { amountKzt, note } = {}) {
     await runAction(async () => {
       await reviewAdminDriverTopupRequest(topupRequest.id, {
@@ -1537,6 +1570,12 @@ export default function AdminApp() {
             onApprovePayout={payoutRequest => reviewPayout(payoutRequest, "APPROVED")}
             onMarkPaidPayout={payoutRequest => reviewPayout(payoutRequest, "PAID")}
             onRejectPayout={payoutRequest => setModal({ type: "payoutReject", payoutRequest })}
+            clientSearch={clientSearch}
+            setClientSearch={setClientSearch}
+            clientFilter={clientFilter}
+            setClientFilter={setClientFilter}
+            onOpenClient={openClientDetail}
+            onUnblockClient={client => setClientBlock(client, false)}
             onConfirmTopup={topupRequest => setModal({ type: "topupConfirm", topupRequest })}
             onDeclineTopup={topupRequest => setModal({ type: "topupDecline", topupRequest })}
             onSaveSettings={saveSettings}
@@ -1723,6 +1762,26 @@ export default function AdminApp() {
           error={actionState.error}
           onClose={() => setModal(null)}
           onConfirm={reason => reviewPayout(modal.payoutRequest, "REJECTED", reason)}
+        />
+      )}
+      {modal?.type === "client" && (
+        <ClientDetailPanel
+          client={modal.client}
+          detail={clientDetail}
+          busy={actionState.loading}
+          error={actionState.error}
+          onClose={() => setModal(null)}
+          onBlock={() => setModal({ type: "clientBlock", client: modal.client })}
+          onUnblock={() => setClientBlock(modal.client, false)}
+        />
+      )}
+      {modal?.type === "clientBlock" && (
+        <ClientBlockPanel
+          client={modal.client}
+          busy={actionState.loading}
+          error={actionState.error}
+          onClose={() => setModal({ type: "client", client: modal.client })}
+          onConfirm={reason => setClientBlock(modal.client, true, reason)}
         />
       )}
       {modal?.type === "topupConfirm" && (
@@ -2076,6 +2135,20 @@ function AdminPage(props) {
   if (active === "support") return <SupportPage messages={asArray(payload, "messages")} {...props} />;
   if (active === "promoCodes") return <PromoCodesPage promoCodes={asArray(payload, "promoCodes")} {...props} />;
   if (active === "recurringBookings") return <RecurringBookingsPage bookings={asArray(payload, "recurringBookings")} {...props} />;
+  if (active === "clients") {
+    return (
+      <ClientsPage
+        clients={asArray(payload, "clients")}
+        total={payload?.clientsTotal || 0}
+        search={props.clientSearch}
+        setSearch={props.setClientSearch}
+        filter={props.clientFilter}
+        setFilter={props.setClientFilter}
+        onOpen={props.onOpenClient}
+        onUnblock={props.onUnblockClient}
+      />
+    );
+  }
   if (active === "referrals") return <ReferralsPage referrals={asArray(payload, "referrals")} />;
   if (active === "raffles") return <RafflesPage raffles={asArray(payload, "raffles")} onAddRaffle={props.onAddRaffle} onDeleteRaffle={props.onDeleteRaffle} />;
   if (active === "payouts") {
@@ -3545,6 +3618,147 @@ function RecurringBookingsPage({ bookings, recurringBookingStatus, setRecurringB
         </section>
       )}
     </div>
+  );
+}
+
+// Пассажиры глазами владельца.
+//
+// Оценка без числа отзывов ничего не значит: у всех новых стоит 5.00 по
+// умолчанию, и «пятёрка» у человека без единой поездки — это не пятёрка, а
+// отсутствие данных. Поэтому рядом всегда стоит, на скольких отзывах она
+// посчитана, а решение принимают по самим отзывам, а не по средней.
+function ClientsPage({ clients, total, search, setSearch, filter, setFilter, onOpen, onUnblock }) {
+  return (
+    <div className="admin-page-stack">
+      <PageHeader title="Пассажиры" subtitle={`Оценки от водителей и доступ к заказам · всего ${total}`}>
+        <SegmentedFilter
+          value={filter}
+          onChange={setFilter}
+          items={[["ALL", "Все"], ["BLOCKED", "Заблокированные"]]}
+        />
+        <input
+          className="admin-control-select"
+          type="search"
+          value={search}
+          placeholder="Имя или номер"
+          aria-label="Найти пассажира"
+          onChange={event => setSearch(event.target.value)}
+        />
+      </PageHeader>
+      {!clients.length ? (
+        <StatePanel title="Никого не нашлось" text="Измените запрос или снимите фильтр." />
+      ) : (
+        <DataCard title="Список" text="Сначала заблокированные, затем те, у кого оценка ниже.">
+          <div className="admin-table premium">
+            {clients.map(client => (
+              <div className="admin-table-row drivers" key={client.id}>
+                <strong>{client.name || "Пассажир"}</strong>
+                <span>{client.phone}</span>
+                <span>
+                  {client.reviewCount > 0
+                    ? `${client.rating?.toFixed(2)} · ${client.reviewCount} отзыв(ов)`
+                    : "Оценок пока нет"}
+                </span>
+                <span>{client.tripCount} поездок · {client.cancelledCount} отмен</span>
+                <span>
+                  {client.isBlocked
+                    ? <Badge tone="danger">Заказы закрыты</Badge>
+                    : <Badge tone="muted">Активен</Badge>}
+                </span>
+                <span className="admin-row-actions">
+                  <button type="button" className="admin-secondary-button compact" onClick={() => onOpen(client)}>Открыть</button>
+                  {client.isBlocked && (
+                    <button type="button" className="admin-secondary-button compact" onClick={() => onUnblock(client)}>Разблокировать</button>
+                  )}
+                </span>
+              </div>
+            ))}
+          </div>
+        </DataCard>
+      )}
+    </div>
+  );
+}
+
+function ClientDetailPanel({ client, detail, busy, onClose, onBlock, onUnblock, error }) {
+  const payload = detail.payload;
+  const row = payload?.client || client;
+  const reviews = payload?.reviews || [];
+  return (
+    <ModalFrame title={row.name || "Пассажир"} onClose={onClose} error={error || detail.error}>
+      <div className="admin-detail-stack">
+        <div className="admin-card-facts">
+          <InfoLine label="Телефон" value={row.phone} />
+          <InfoLine
+            label="Оценка"
+            value={row.reviewCount > 0 ? `${row.rating?.toFixed(2)} на ${row.reviewCount} отзыве(ах)` : "Оценок пока нет"}
+          />
+          <InfoLine label="Поездок" value={String(row.tripCount ?? 0)} />
+          <InfoLine label="Отмен" value={String(row.cancelledCount ?? 0)} />
+          <InfoLine label="Бонусы" value={formatMoney(row.cashbackBalanceKzt ?? 0)} />
+          <InfoLine label="С нами с" value={formatDate(row.createdAt)} />
+        </div>
+        {row.isBlocked && (
+          <p className="admin-honest-note">
+            Заказы закрыты{row.blockedAt ? ` с ${formatDate(row.blockedAt)}` : ""}
+            {row.blockReason ? `. Причина: ${row.blockReason}` : ""}
+          </p>
+        )}
+        {detail.loading ? (
+          <StatePanel title="Загружаем отзывы" text="Секунду." />
+        ) : !reviews.length ? (
+          <StatePanel title="Отзывов нет" text="Водители ещё не оценивали этого пассажира." />
+        ) : (
+          <div className="admin-table premium">
+            {reviews.map(review => (
+              <div className="admin-table-row drivers" key={review.id}>
+                <strong>{review.rating} ★</strong>
+                <span>{review.driverName || "Водитель"}</span>
+                <span>{(review.tags || []).join(", ") || "—"}</span>
+                <span>{review.comment || "Без комментария"}</span>
+                <span>{formatDate(review.createdAt)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Закрыть</button>
+          {row.isBlocked ? (
+            <button type="button" className="admin-secondary-button" disabled={busy} onClick={onUnblock}>
+              Разблокировать
+            </button>
+          ) : (
+            <button type="button" className="admin-danger-button" disabled={busy} onClick={onBlock}>
+              Закрыть заказы
+            </button>
+          )}
+        </div>
+      </div>
+    </ModalFrame>
+  );
+}
+
+function ClientBlockPanel({ client, busy, onClose, onConfirm, error }) {
+  const [reason, setReason] = useState("");
+  return (
+    <ModalFrame title="Закрыть пассажиру заказы" onClose={onClose} error={error}>
+      <div className="admin-detail-stack">
+        <p>{client.name || "Пассажир"} ({client.phone}) больше не сможет создавать заказы и бронировать места на стоянке.</p>
+        <p className="admin-honest-note">
+          Если у него сейчас идёт поездка, сначала закройте её — иначе человек остался бы посреди дороги.
+        </p>
+        <label className="admin-textarea-field">
+          <span>Причина</span>
+          <textarea value={reason} onChange={event => setReason(event.target.value)} rows={4} placeholder="Например: несколько жалоб водителей" />
+        </label>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="button" className="admin-danger-button" disabled={busy || !reason.trim()} onClick={() => onConfirm(reason.trim())}>
+            {busy ? "Сохраняем..." : "Закрыть заказы"}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
   );
 }
 

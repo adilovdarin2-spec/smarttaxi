@@ -1960,5 +1960,6 @@
   "apiErrorSupportMessageNotFound": "Бұл өтініш жабылған",
   "apiErrorTariffNotFound": "Мұндай тариф жоқ. Басқасын таңдаңыз",
   "apiErrorUserNotFound": "Аккаунт табылмады. Қайта кіріңіз",
+  "apiErrorClientBlocked": "Аккаунтыңыз үшін тапсырыстар тоқтатылды. Қолдау қызметіне хабарласыңыз",
   "apiErrorRegionNotFound": "Бұл нүкте ешқандай жұмыс ауданына жатпайды"
 }

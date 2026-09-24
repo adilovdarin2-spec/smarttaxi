@@ -4815,6 +4815,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get apiErrorUserNotFound => 'Аккаунт табылмады. Қайта кіріңіз';
 
   @override
+  String get apiErrorClientBlocked =>
+      'Аккаунтыңыз үшін тапсырыстар тоқтатылды. Қолдау қызметіне хабарласыңыз';
+
+  @override
   String get apiErrorRegionNotFound =>
       'Бұл нүкте ешқандай жұмыс ауданына жатпайды';
 }

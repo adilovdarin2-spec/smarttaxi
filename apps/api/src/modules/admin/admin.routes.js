@@ -59,6 +59,7 @@ import { join } from "node:path";
 import { submitDriverApplication, reviewDriverApplication } from './driver-application.service.js';
 import { DRIVER_DEBT_CEILING_KZT, DRIVER_DEBT_WARNING_KZT } from "../drivers/driver-debt.js";
 import { getPricingDemand } from "./pricing-demand.service.js";
+import { getClientDetail, listClients, setClientBlocked } from "../clients/client-admin.service.js";
 import { listRatingCases, resolveRatingCase } from "../drivers/driver-rating-case.service.js";
 
 const router = Router();
@@ -1908,6 +1909,76 @@ router.get("/driver-documents/:id/file", requireAuth, requireRole("OWNER"), asyn
     const absolutePath = join(UPLOAD_ROOT, document.file_path);
     if (!existsSync(absolutePath)) throw new AppError("Document file is missing", 404, "DRIVER_DOCUMENT_FILE_MISSING");
     createReadStream(absolutePath).pipe(res);
+  } catch (error) { next(error); }
+});
+
+// Пассажиры: список, оценки от водителей и блокировка.
+//
+// Водители ставят пассажирам оценки с тегами и комментарием — это писалось в
+// базу и не показывалось никому. Столбец clients.is_blocked проверялся ровно
+// в одном месте, при бронировании места на стоянке, а выставить его не мог
+// никто.
+router.get("/clients", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      search: z.string().trim().max(80).optional().default(""),
+      blocked: z.enum(["true", "false"]).optional(),
+      limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+      offset: z.coerce.number().int().min(0).optional().default(0)
+    }).parse(req.query);
+    const result = await listClients({
+      search: params.search,
+      blocked: params.blocked === undefined ? null : params.blocked === "true",
+      limit: params.limit,
+      offset: params.offset
+    }, query);
+    res.json(result);
+  } catch (error) { next(error); }
+});
+
+router.get("/clients/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    res.json(await getClientDetail(params.id, query));
+  } catch (error) { next(error); }
+});
+
+router.patch("/clients/:id/block", requireAuth, requireRole("OWNER"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      blocked: z.boolean(),
+      reason: z.string().trim().max(300).optional().default("")
+    }).parse(req.body);
+
+    const result = await tx(async client => {
+      const updated = await setClientBlocked({
+        clientId: params.id,
+        blocked: body.blocked,
+        reason: body.reason,
+        actorUserId: req.user.id
+      }, client);
+      await writeAudit(client, {
+        action: body.blocked ? "client_blocked" : "client_unblocked",
+        actorUserId: req.user.id,
+        entityType: "client",
+        entityId: params.id,
+        metadata: { reason: body.reason },
+        req
+      });
+      const row = (await client.query("SELECT user_id FROM clients WHERE id=$1", [params.id])).rows[0];
+      return { client: updated, userId: row?.user_id || null };
+    });
+
+    if (result.userId) {
+      notifyUser(result.userId, {
+        key: body.blocked ? "clientBlocked" : "clientUnblocked",
+        body: body.blocked ? body.reason : undefined,
+        type: "CLIENT_BLOCK_STATUS"
+      }).catch(error => console.error("[push] notifyUser failed", error));
+    }
+
+    res.json({ client: result.client });
   } catch (error) { next(error); }
 });
 
