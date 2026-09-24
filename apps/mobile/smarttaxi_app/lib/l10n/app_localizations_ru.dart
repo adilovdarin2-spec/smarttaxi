@@ -2224,7 +2224,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get smsNeverShareCode => 'Никому не сообщайте код.';
 
   @override
-  String get smsStaffNeverAsk => 'Сотрудники OneDriver никогда не попросят его.';
+  String get smsStaffNeverAsk =>
+      'Сотрудники OneDriver никогда не попросят его.';
 
   @override
   String get smsCodeValidity =>
