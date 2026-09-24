@@ -11,6 +11,7 @@ import {
   getWalletSummary,
   listDriverTopupRequests,
   listWalletTransactions,
+  reviewDriverTopupRequest,
   reviewPayoutRequest
 } from "../modules/wallet/wallet.service.js";
 
@@ -41,6 +42,7 @@ function createExecutor() {
     ],
     payoutRequests: [],
     topupRequests: [],
+    debtAdjustments: [],
     financialTransactions: [
       { id: "ft-1", order_id: "order-1", driver_id: "driver-1", type: "ORDER_COMPLETED", payment_method: "KASPI_TRANSFER", gross_amount: 1000, service_commission: 150, driver_earning: 850, driver_debt_delta: 0, currency: "KZT", status: "POSTED", created_at: "2026-01-03T00:00:00.000Z", order_short_id: "A1" },
       { id: "ft-2", order_id: "order-2", driver_id: "driver-1", type: "ORDER_COMPLETED", payment_method: "CASH", gross_amount: 1000, service_commission: 150, driver_earning: 850, driver_debt_delta: 0, currency: "KZT", status: "POSTED", created_at: "2026-01-02T00:00:00.000Z", order_short_id: "A2" },
@@ -163,6 +165,36 @@ function createExecutor() {
       }
       if (s.startsWith("SELECT * FROM driver_topup_requests WHERE driver_id=$1")) {
         return { rows: state.topupRequests.filter(r => r.driver_id === params[0]) };
+      }
+      if (s.startsWith("SELECT id, amount_kzt FROM driver_topup_requests WHERE driver_id=$1 AND status='PENDING'")) {
+        return { rows: state.topupRequests.filter(r => r.driver_id === params[0] && r.status === "PENDING").slice(0, 1) };
+      }
+      if (s.startsWith("SELECT * FROM driver_topup_requests WHERE id=$1")) {
+        return { rows: state.topupRequests.filter(r => r.id === params[0]) };
+      }
+      if (s.startsWith("UPDATE driver_topup_requests")) {
+        const [id, status, actorUserId, appliedAmountKzt, note] = params;
+        const row = state.topupRequests.find(r => r.id === id);
+        row.status = status;
+        row.reviewed_by_user_id = actorUserId;
+        row.applied_amount_kzt = appliedAmountKzt;
+        row.review_note = note;
+        row.reviewed_at = "2026-01-04T00:08:00.000Z";
+        row.updated_at = "2026-01-04T00:08:00.000Z";
+        return { rows: [row] };
+      }
+      if (s.startsWith("SELECT * FROM drivers WHERE id=$1")) {
+        return { rows: state.drivers.filter(d => d.id === params[0]) };
+      }
+      if (s.startsWith("INSERT INTO financial_transactions")) {
+        const row = { id: `ft-${state.debtAdjustments.length + 1}`, driver_id: params[0], driver_debt_delta: params[2] };
+        state.debtAdjustments.push(row);
+        return { rows: [row] };
+      }
+      if (s.startsWith("UPDATE drivers SET debt=")) {
+        const driver = state.drivers.find(d => d.id === params[1]);
+        if (driver) driver.debt = Number(driver.debt || 0) + Number(params[0]);
+        return { rows: [driver] };
       }
       throw new Error(`Unexpected SQL in wallet check: ${s}`);
     }
@@ -325,6 +357,49 @@ function createExecutor() {
   const list = await listDriverTopupRequests("driver-1", executor);
   assert.equal(list.length, 1, "the created topup request shows up in the driver's list");
   assert.equal(list[0].id, created.id, "listed request matches the created one");
+
+  // Открытая заявка ровно одна. Человек жмёт второй раз, потому что после
+  // первого ничего не произошло, -- а владелец видел две заявки на одну и ту
+  // же сумму и мог списать долг дважды.
+  await assert.rejects(
+    () => createDriverTopupRequest({ driverId: "driver-1", amountKzt: 2000 }, executor),
+    { code: "TOPUP_REQUEST_ALREADY_PENDING" },
+    "вторая открытая заявка на пополнение не создаётся"
+  );
+
+  // Подтверждение закрывает заявку и списывает долг одним действием: два
+  // шага -- это шаг, который забывают, и шаг, который делают дважды.
+  const debtBefore = Number(executor.state.drivers.find(d => d.id === "driver-1").debt);
+  const reviewed = await reviewDriverTopupRequest(
+    { id: created.id, status: "COMPLETED", amountKzt: 1800, note: "Kaspi перевод", actorUserId: "owner-1" },
+    executor
+  );
+  assert.equal(reviewed.topupRequest.status, "COMPLETED");
+  assert.equal(reviewed.topupRequest.appliedAmountKzt, 1800, "списывается подтверждённая сумма, а не заявленная");
+  assert.equal(executor.state.debtAdjustments.length, 1, "подтверждение должно двигать долг ровно один раз");
+  assert.equal(executor.state.debtAdjustments[0].driver_debt_delta, -1800);
+  assert.equal(
+    Number(executor.state.drivers.find(d => d.id === "driver-1").debt),
+    debtBefore - 1800,
+    "долг водителя уменьшается на подтверждённую сумму"
+  );
+
+  await assert.rejects(
+    () => reviewDriverTopupRequest({ id: created.id, status: "COMPLETED", actorUserId: "owner-1" }, executor),
+    { code: "TOPUP_REQUEST_NOT_PENDING" },
+    "закрытую заявку нельзя подтвердить второй раз"
+  );
+
+  // Закрытая заявка освобождает место следующей.
+  const next = await createDriverTopupRequest({ driverId: "driver-1", amountKzt: 3000 }, executor);
+  assert.equal(next.status, "PENDING");
+  const declined = await reviewDriverTopupRequest(
+    { id: next.id, status: "CANCELLED", note: "Перевод не найден", actorUserId: "owner-1" },
+    executor
+  );
+  assert.equal(declined.topupRequest.status, "CANCELLED");
+  assert.equal(declined.transaction, null, "отказ не двигает долг");
+  assert.equal(executor.state.debtAdjustments.length, 1, "отказ не создаёт проводку");
 }
 
 console.log("Driver wallet checks ok");

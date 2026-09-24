@@ -2366,6 +2366,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get driverTopupErrorGeneric => '申请创建失败,请重试';
 
   @override
+  String get driverTopupErrorAlreadyPending => '申请已提交，请等待确认';
+
+  @override
   String get driverTopupSubmitButton => '提交申请';
 
   @override

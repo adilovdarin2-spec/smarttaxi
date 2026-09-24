@@ -2561,6 +2561,10 @@ class AppLocalizationsUz extends AppLocalizations {
       'So\'rov yaratilmadi. Qayta urinib ko\'ring';
 
   @override
+  String get driverTopupErrorAlreadyPending =>
+      'Ariza allaqachon yuborilgan — tasdiqlanishini kuting';
+
+  @override
   String get driverTopupSubmitButton => 'So\'rovni yuborish';
 
   @override

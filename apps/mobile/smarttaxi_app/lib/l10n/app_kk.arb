@@ -1048,6 +1048,7 @@
     }
   },
   "driverTopupErrorGeneric": "Сұраныс жасалмады. Қайталап көріңіз",
+  "driverTopupErrorAlreadyPending": "Өтінім жіберілген — растауды күтіңіз",
   "driverTopupSubmitButton": "Сұранысты жіберу",
   "driverWalletTransactionsTitle": "Операциялар",
   "driverWalletNoTransactions": "Аяқталған сапарлар әлі жоқ",

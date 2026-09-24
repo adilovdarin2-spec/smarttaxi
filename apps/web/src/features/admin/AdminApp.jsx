@@ -40,6 +40,7 @@ import {
   getAdminFinanceTransactions,
   getAdminLeaderboard,
   getAdminOrders,
+  getAdminDriverTopupRequests,
   getAdminPayoutRequests,
   getAdminPromoCodes,
   getAdminRaffles,
@@ -63,6 +64,7 @@ import {
   reopenAdminSupport,
   respondAdminSupport,
   reviewAdminDriverDocument,
+  reviewAdminDriverTopupRequest,
   reviewAdminPayoutRequest,
   setAdminDriverCommissionOverride,
   setAdminPromoCodeStatus,
@@ -692,8 +694,18 @@ export default function AdminApp() {
       },
       payouts: async () => {
         const status = payoutStatus !== "ALL" ? payoutStatus : undefined;
-        const data = await getAdminPayoutRequests({ status });
-        return { payoutRequests: data.payoutRequests || [] };
+        // Заявки на пополнение грузятся здесь же: это те же деньги и тот же
+        // человек, только в другую сторону. Отдельный раздел меню означал бы,
+        // что владелец должен догадаться туда зайти — а до сих пор эти заявки
+        // не показывались вообще нигде.
+        const [payouts, topups] = await Promise.all([
+          getAdminPayoutRequests({ status }),
+          getAdminDriverTopupRequests({ status: "PENDING" })
+        ]);
+        return {
+          payoutRequests: payouts.payoutRequests || [],
+          topupRequests: topups.topupRequests || []
+        };
       },
       audit: getAdminAudit,
       settings: async () => {
@@ -1263,6 +1275,20 @@ export default function AdminApp() {
     }[status]);
   }
 
+  async function reviewTopup(topupRequest, status, { amountKzt, note } = {}) {
+    await runAction(async () => {
+      await reviewAdminDriverTopupRequest(topupRequest.id, {
+        status,
+        ...(amountKzt ? { amountKzt } : {}),
+        ...(note ? { note } : {})
+      });
+      setModal(null);
+      await loadPage("payouts");
+    }, status === "COMPLETED"
+      ? "Пополнение зачтено, долг водителя уменьшен"
+      : "Заявка на пополнение закрыта без зачисления");
+  }
+
   async function respondSupport(message, response, resolve) {
     await runAction(async () => {
       await respondAdminSupport(message.id, { response, resolve });
@@ -1511,6 +1537,8 @@ export default function AdminApp() {
             onApprovePayout={payoutRequest => reviewPayout(payoutRequest, "APPROVED")}
             onMarkPaidPayout={payoutRequest => reviewPayout(payoutRequest, "PAID")}
             onRejectPayout={payoutRequest => setModal({ type: "payoutReject", payoutRequest })}
+            onConfirmTopup={topupRequest => setModal({ type: "topupConfirm", topupRequest })}
+            onDeclineTopup={topupRequest => setModal({ type: "topupDecline", topupRequest })}
             onSaveSettings={saveSettings}
             canEditSettings={user?.role === "OWNER"}
             onSendBroadcast={sendBroadcast}
@@ -1695,6 +1723,24 @@ export default function AdminApp() {
           error={actionState.error}
           onClose={() => setModal(null)}
           onConfirm={reason => reviewPayout(modal.payoutRequest, "REJECTED", reason)}
+        />
+      )}
+      {modal?.type === "topupConfirm" && (
+        <TopupConfirmPanel
+          topupRequest={modal.topupRequest}
+          busy={actionState.loading}
+          error={actionState.error}
+          onClose={() => setModal(null)}
+          onConfirm={(amountKzt, note) => reviewTopup(modal.topupRequest, "COMPLETED", { amountKzt, note })}
+        />
+      )}
+      {modal?.type === "topupDecline" && (
+        <TopupDeclinePanel
+          topupRequest={modal.topupRequest}
+          busy={actionState.loading}
+          error={actionState.error}
+          onClose={() => setModal(null)}
+          onConfirm={note => reviewTopup(modal.topupRequest, "CANCELLED", { note })}
         />
       )}
       {modal?.type === "driverBlock" && (
@@ -2041,6 +2087,9 @@ function AdminPage(props) {
         onApprove={props.onApprovePayout}
         onMarkPaid={props.onMarkPaidPayout}
         onReject={props.onRejectPayout}
+        topupRequests={asArray(payload, "topupRequests")}
+        onConfirmTopup={props.onConfirmTopup}
+        onDeclineTopup={props.onDeclineTopup}
       />
     );
   }
@@ -3755,9 +3804,44 @@ const payoutStatusTones = {
 
 const payoutMethodLabels = { KASPI_TRANSFER: "Перевод Kaspi", CASH: "Наличные" };
 
-function PayoutsPage({ payoutRequests, payoutStatus, setPayoutStatus, onApprove, onMarkPaid, onReject }) {
+function PayoutsPage({
+  payoutRequests, payoutStatus, setPayoutStatus, onApprove, onMarkPaid, onReject,
+  topupRequests = [], onConfirmTopup, onDeclineTopup
+}) {
   return (
     <div className="admin-page-stack">
+      {/* Пополнения идут первыми: водитель уже перевёл деньги и ждёт, пока
+          долг спишут, а выплата ждёт решения владельца в любом случае. */}
+      {topupRequests.length > 0 && (
+        <>
+          <PageHeader
+            title="Пополнения от водителей"
+            subtitle="Водитель перевёл деньги и ждёт, пока с него спишут долг"
+          />
+          <section className="admin-card-grid payouts">
+            {topupRequests.map(item => (
+              <article className="admin-application-card" key={item.id}>
+                <header>
+                  <div>
+                    <strong>{item.driverName || "Водитель"}</strong>
+                    <span>{item.driverPhone || "Телефон не указан"}</span>
+                  </div>
+                  <Badge tone="warning">Ждёт подтверждения</Badge>
+                </header>
+                <div className="admin-card-facts">
+                  <InfoLine label="Заявлено" value={formatMoney(item.amountKzt)} />
+                  <InfoLine label="Текущий долг" value={formatMoney(item.driverDebtKzt)} />
+                  <InfoLine label="Создана" value={formatDate(item.createdAt)} />
+                </div>
+                <footer>
+                  <button type="button" className="admin-danger-button compact" onClick={() => onDeclineTopup(item)}>Не подтверждать</button>
+                  <button type="button" className="admin-secondary-button compact" onClick={() => onConfirmTopup(item)}>Зачесть</button>
+                </footer>
+              </article>
+            ))}
+          </section>
+        </>
+      )}
       <PageHeader title="Выплаты" subtitle="Заявки водителей на вывод средств">
         <SegmentedFilter
           value={payoutStatus}
@@ -3807,6 +3891,73 @@ function PayoutsPage({ payoutRequests, payoutStatus, setPayoutStatus, onApprove,
         </section>
       )}
     </div>
+  );
+}
+
+// Подтверждение пополнения и списание долга — одно действие.
+//
+// Сумма подставляется заявленная, но правится: перевод мог прийти другой, и
+// списывать надо то, что пришло на самом деле, а не то, что человек написал.
+function TopupConfirmPanel({ topupRequest, busy, onClose, onConfirm, error }) {
+  const [amount, setAmount] = useState(String(topupRequest.amountKzt ?? ""));
+  const [note, setNote] = useState("");
+  const parsed = Number.parseInt(amount, 10);
+  const valid = Number.isFinite(parsed) && parsed > 0;
+  return (
+    <ModalFrame title="Зачесть пополнение" onClose={onClose} error={error}>
+      <div className="admin-detail-stack">
+        <p>
+          {topupRequest.driverName || "Водитель"} сообщил о переводе на {formatMoney(topupRequest.amountKzt)}.
+          Текущий долг — {formatMoney(topupRequest.driverDebtKzt)}.
+        </p>
+        <label className="admin-field">
+          <span>Сколько зачесть, ₸</span>
+          <input
+            type="number"
+            min="1"
+            value={amount}
+            onChange={event => setAmount(event.target.value)}
+          />
+        </label>
+        <label className="admin-textarea-field">
+          <span>Комментарий (необязательно)</span>
+          <textarea value={note} onChange={event => setNote(event.target.value)} rows={3} placeholder="Например: Kaspi перевод от 24.09" />
+        </label>
+        <p className="admin-honest-note">
+          Долг водителя уменьшится на эту сумму сразу, одной проводкой. Отдельно править долг в финансах не нужно.
+        </p>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="button" className="admin-primary-button" disabled={busy || !valid} onClick={() => onConfirm(parsed, note.trim())}>
+            {busy ? "Зачисляем..." : "Зачесть и закрыть заявку"}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
+  );
+}
+
+function TopupDeclinePanel({ topupRequest, busy, onClose, onConfirm, error }) {
+  const [note, setNote] = useState("");
+  return (
+    <ModalFrame title="Закрыть без зачисления" onClose={onClose} error={error}>
+      <div className="admin-detail-stack">
+        <p>
+          Заявка {topupRequest.driverName || "водителя"} на {formatMoney(topupRequest.amountKzt)} будет закрыта.
+          Долг не изменится, водитель получит уведомление.
+        </p>
+        <label className="admin-textarea-field">
+          <span>Причина</span>
+          <textarea value={note} onChange={event => setNote(event.target.value)} rows={3} placeholder="Например: перевод не найден" />
+        </label>
+        <div className="admin-modal-actions">
+          <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>
+          <button type="button" className="admin-danger-button" disabled={busy || !note.trim()} onClick={() => onConfirm(note.trim())}>
+            {busy ? "Закрываем..." : "Закрыть заявку"}
+          </button>
+        </div>
+      </div>
+    </ModalFrame>
   );
 }
 

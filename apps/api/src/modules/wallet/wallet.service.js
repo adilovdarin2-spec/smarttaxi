@@ -1,5 +1,5 @@
 import { AppError } from "../../common/errors.js";
-import { settleDriverDebtFromBalance } from "../finance/finance.service.js";
+import { adjustDriverDebt, settleDriverDebtFromBalance } from "../finance/finance.service.js";
 
 async function defaultQuery(sql, params) {
   const db = await import("../../db/pool.js");
@@ -260,25 +260,121 @@ export function publicTopupRequest(row) {
     method: row.method,
     status: row.status,
     providerReference: row.provider_reference || null,
+    appliedAmountKzt: row.applied_amount_kzt == null ? null : Number(row.applied_amount_kzt),
+    reviewNote: row.review_note || null,
+    reviewedAt: row.reviewed_at || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
 }
 
-// Records top-up intent only, same scaffold as client-wallet.service.js's
-// createTopupRequest -- there is no payment gateway wired to this yet.
-// Stays PENDING; an owner/finance user applies it via the existing
-// debt-adjustment admin action once the transfer is confirmed out-of-band.
+// Заявка водителя: «я перевёл деньги, спишите долг».
+//
+// Шлюза за этим нет и не было: деньги идут переводом на Kaspi, а владелец
+// подтверждает их руками. Раньше заявка на этом и заканчивалась -- ложилась
+// в PENDING и не показывалась нигде. Теперь её видно в панели, и закрыть её
+// можно там же, одним действием вместе со списанием долга.
+//
+// Открытая заявка у водителя ровно одна. Человек жмёт второй раз, потому что
+// после первого ничего не произошло, -- а владелец видел две заявки на одну
+// и ту же сумму и мог списать долг дважды. Уникальный частичный индекс в
+// базе держит то же правило на случай двух одновременных нажатий.
 export async function createDriverTopupRequest({ driverId, amountKzt }, executor = defaultQuery) {
   if (!Number.isInteger(amountKzt) || amountKzt < MIN_TOPUP_KZT) {
     throw new AppError(`Minimum top-up is ${MIN_TOPUP_KZT} KZT`, 400, "TOPUP_BELOW_MINIMUM");
   }
-  const created = (await run(executor, `
-    INSERT INTO driver_topup_requests(driver_id, amount_kzt, method, status)
-    VALUES($1,$2,'KASPI_PAY','PENDING')
-    RETURNING *
-  `, [driverId, amountKzt])).rows[0];
+  const open = (await run(
+    executor,
+    "SELECT id, amount_kzt FROM driver_topup_requests WHERE driver_id=$1 AND status='PENDING' LIMIT 1",
+    [driverId]
+  )).rows[0];
+  if (open) {
+    throw new AppError("A top-up request is already waiting for confirmation", 409, "TOPUP_REQUEST_ALREADY_PENDING", {
+      topupRequestId: open.id,
+      amountKzt: Number(open.amount_kzt)
+    });
+  }
+  let created;
+  try {
+    created = (await run(executor, `
+      INSERT INTO driver_topup_requests(driver_id, amount_kzt, method, status)
+      VALUES($1,$2,'KASPI_PAY','PENDING')
+      RETURNING *
+    `, [driverId, amountKzt])).rows[0];
+  } catch (error) {
+    // Два нажатия подряд: индекс успел раньше этой проверки.
+    if (error?.code === "23505") {
+      throw new AppError("A top-up request is already waiting for confirmation", 409, "TOPUP_REQUEST_ALREADY_PENDING");
+    }
+    throw error;
+  }
   return publicTopupRequest(created);
+}
+
+export async function listDriverTopupRequestsForReview({ status = "PENDING", limit = 100 }, executor = defaultQuery) {
+  const result = await run(executor, `
+    SELECT t.*, d.name driver_name, d.phone driver_phone, d.debt driver_debt, d.current_region_id
+    FROM driver_topup_requests t
+    JOIN drivers d ON d.id = t.driver_id
+    WHERE ($1::text IS NULL OR t.status = $1)
+    ORDER BY t.created_at ASC
+    LIMIT $2
+  `, [status || null, limit]);
+  return result.rows.map(row => ({
+    ...publicTopupRequest(row),
+    driverName: row.driver_name,
+    driverPhone: row.driver_phone,
+    driverDebtKzt: Number(row.driver_debt || 0)
+  }));
+}
+
+// Подтверждение и списание долга -- одно действие.
+//
+// Раньше владельцу предлагалось увидеть заявку (негде) и отдельно поправить
+// долг в финансах. Два шага, между которыми можно забыть второй или сделать
+// его дважды. Здесь заявка закрывается и долг уменьшается в одной
+// транзакции, а сколько именно списали -- записано в самой заявке.
+export async function reviewDriverTopupRequest({ id, status, amountKzt = null, note = "", actorUserId }, executor = defaultQuery) {
+  if (!["COMPLETED", "CANCELLED"].includes(status)) {
+    throw new AppError("Invalid top-up request status", 400, "INVALID_TOPUP_STATUS");
+  }
+  const request = (await run(
+    executor,
+    "SELECT * FROM driver_topup_requests WHERE id=$1 FOR UPDATE",
+    [id]
+  )).rows[0];
+  if (!request) throw new AppError("Top-up request not found", 404, "TOPUP_REQUEST_NOT_FOUND");
+  if (request.status !== "PENDING") {
+    throw new AppError("Only pending top-up requests can be reviewed", 409, "TOPUP_REQUEST_NOT_PENDING");
+  }
+
+  let transaction = null;
+  let appliedKzt = null;
+  if (status === "COMPLETED") {
+    // Пришло может быть не ровно столько, сколько водитель написал в заявке,
+    // поэтому списывается подтверждённая сумма, а не заявленная.
+    appliedKzt = Math.round(Number(amountKzt ?? request.amount_kzt));
+    if (!Number.isFinite(appliedKzt) || appliedKzt <= 0) {
+      throw new AppError("Confirmed top-up amount must be positive", 400, "INVALID_TOPUP_AMOUNT");
+    }
+    transaction = await adjustDriverDebt({
+      driverId: request.driver_id,
+      amount: -appliedKzt,
+      reason: note || "Пополнение переводом, подтверждено владельцем",
+      metadata: { topupRequestId: request.id, requestedKzt: Number(request.amount_kzt) },
+      actorUserId
+    }, executor);
+  }
+
+  const updated = (await run(executor, `
+    UPDATE driver_topup_requests
+       SET status=$2, reviewed_at=NOW(), reviewed_by_user_id=$3,
+           applied_amount_kzt=$4, review_note=$5, updated_at=NOW()
+     WHERE id=$1
+     RETURNING *
+  `, [id, status, actorUserId || null, appliedKzt, String(note || "").trim() || null])).rows[0];
+
+  return { topupRequest: publicTopupRequest(updated), transaction };
 }
 
 export async function listDriverTopupRequests(driverId, executor = defaultQuery) {

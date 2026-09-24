@@ -1349,7 +1349,35 @@ const statements = [
        'CLIENT_MISSING','DRIVER_MISSING','ROUTE_UNAVAILABLE',
        'DRIVER_OUT_OF_REGION','DRIVER_NOT_READY','DRIVER_BUSY','DRIVER_DEBT_LIMIT',
        'CLIENT_HAS_ACTIVE_ORDER'
-     ]))`
+     ]))`,
+
+  // --- Заявки водителя на пополнение: их наконец кто-то видит ---
+  //
+  // Водитель переводит деньги на Kaspi и жмёт «я пополнил». Заявка ложилась
+  // в PENDING и не показывалась нигде: ни списка, ни уведомления, ни способа
+  // её закрыть. Кнопка была, адресата у неё не было.
+  //
+  // Плюс заявок можно было наделать сколько угодно. Человек жмёт второй раз,
+  // потому что после первого ничего не произошло, — а владелец видит две
+  // заявки на одну и ту же сумму и может списать долг дважды.
+  "ALTER TABLE driver_topup_requests ADD COLUMN IF NOT EXISTS reviewed_at TIMESTAMPTZ",
+  "ALTER TABLE driver_topup_requests ADD COLUMN IF NOT EXISTS reviewed_by_user_id UUID REFERENCES users(id) ON DELETE SET NULL",
+  "ALTER TABLE driver_topup_requests ADD COLUMN IF NOT EXISTS applied_amount_kzt INTEGER",
+  "ALTER TABLE driver_topup_requests ADD COLUMN IF NOT EXISTS review_note TEXT",
+  // Схлопываем то, что уже накопилось, иначе уникальный индекс ниже не
+  // создастся и API не поднимется. Оставляем самую свежую заявку водителя.
+  `UPDATE driver_topup_requests t
+      SET status='CANCELLED',
+          review_note='Закрыта автоматически: осталась одна, самая свежая заявка',
+          updated_at=NOW()
+    WHERE status='PENDING'
+      AND EXISTS (
+        SELECT 1 FROM driver_topup_requests n
+         WHERE n.driver_id=t.driver_id AND n.status='PENDING'
+           AND (n.created_at, n.id) > (t.created_at, t.id)
+      )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS uniq_driver_topup_pending
+     ON driver_topup_requests(driver_id) WHERE status='PENDING'`
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies

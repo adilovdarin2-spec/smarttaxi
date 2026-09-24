@@ -717,6 +717,19 @@ export function reviewAdminPayoutRequest(payoutRequestId, payload) {
   });
 }
 
+// Заявки водителей «я перевёл деньги, спишите долг». Шлюза за ними нет,
+// подтверждает их человек — и до этого их не было видно нигде.
+export function getAdminDriverTopupRequests(params = {}) {
+  return api(`/api/admin/driver-topup-requests${queryString(params)}`);
+}
+
+export function reviewAdminDriverTopupRequest(topupRequestId, payload) {
+  return api(`/api/admin/driver-topup-requests/${topupRequestId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload)
+  });
+}
+
 export function getAdminPromoCodes() {
   return api("/api/admin/promo-codes");
 }

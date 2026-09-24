@@ -1051,6 +1051,7 @@
     }
   },
   "driverTopupErrorGeneric": "申请创建失败,请重试",
+  "driverTopupErrorAlreadyPending": "申请已提交，请等待确认",
   "driverTopupSubmitButton": "提交申请",
   "driverWalletTransactionsTitle": "交易记录",
   "driverWalletNoTransactions": "暂无已完成的行程",

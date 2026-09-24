@@ -59,9 +59,16 @@ class _DriverTopupRequestSheetState extends State<DriverTopupRequestSheet> {
       final code = apiErrorCode(error);
       setState(() {
         _submitting = false;
-        _error = code == 'TOPUP_BELOW_MINIMUM'
-            ? l10n.driverTopupErrorBelowMin('${widget.minTopupKzt} ₸')
-            : l10n.driverTopupErrorGeneric;
+        // Открытая заявка одна: человек жмёт второй раз, потому что после
+        // первого ничего видимого не произошло. Сказать «попробуйте ещё раз»
+        // здесь -- значит звать его на третье нажатие.
+        _error = switch (code) {
+          'TOPUP_BELOW_MINIMUM' =>
+            l10n.driverTopupErrorBelowMin('${widget.minTopupKzt} ₸'),
+          'TOPUP_REQUEST_ALREADY_PENDING' =>
+            l10n.driverTopupErrorAlreadyPending,
+          _ => l10n.driverTopupErrorGeneric,
+        };
       });
     }
   }

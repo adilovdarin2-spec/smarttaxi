@@ -2544,6 +2544,10 @@ class AppLocalizationsKk extends AppLocalizations {
   String get driverTopupErrorGeneric => 'Сұраныс жасалмады. Қайталап көріңіз';
 
   @override
+  String get driverTopupErrorAlreadyPending =>
+      'Өтінім жіберілген — растауды күтіңіз';
+
+  @override
   String get driverTopupSubmitButton => 'Сұранысты жіберу';
 
   @override

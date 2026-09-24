@@ -134,6 +134,8 @@ export function accountError(error) {
     PAYOUT_REQUEST_NOT_PENDING: "Заявка уже обработана. Обновите список.",
     PAYOUT_BELOW_MINIMUM: "Сумма меньше минимальной выплаты.",
     TOPUP_BELOW_MINIMUM: "Минимальная сумма пополнения — 500 ₸.",
+    TOPUP_REQUEST_ALREADY_PENDING:
+      "Заявка уже отправлена — дождитесь подтверждения.",
     INVALID_PHONE: "Проверьте номер телефона.",
     UNSUPPORTED_FILE_TYPE: "Поддерживаются только JPG, PNG и PDF.",
     LIMIT_FILE_SIZE: "Размер файла не должен превышать 8 МБ.",

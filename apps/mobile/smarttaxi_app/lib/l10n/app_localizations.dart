@@ -4609,6 +4609,12 @@ abstract class AppLocalizations {
   /// **'Не удалось создать заявку. Попробуйте ещё раз'**
   String get driverTopupErrorGeneric;
 
+  /// No description provided for @driverTopupErrorAlreadyPending.
+  ///
+  /// In ru, this message translates to:
+  /// **'Заявка уже отправлена — дождитесь подтверждения'**
+  String get driverTopupErrorAlreadyPending;
+
   /// No description provided for @driverTopupSubmitButton.
   ///
   /// In ru, this message translates to:

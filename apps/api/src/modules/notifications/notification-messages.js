@@ -68,6 +68,24 @@ const MESSAGES = {
     uz: { title: "To'lov rad etildi", body: "To'lov arizasi rad etildi. Tafsilotlar qo'llab-quvvatlashda" },
     zh: { title: "提现被拒绝", body: "提现申请被拒绝，详情请联系客服" }
   },
+  topupApplied: {
+    ru: { title: "Пополнение зачтено", body: "{amount} ₸ списано с вашего долга" },
+    kk: { title: "Толықтыру есепке алынды", body: "Қарызыңыздан {amount} ₸ шегерілді" },
+    uz: { title: "To'ldirish hisobga olindi", body: "Qarzingizdan {amount} ₸ yechildi" },
+    zh: { title: "充值已入账", body: "已从您的欠款中扣除 {amount} ₸" }
+  },
+  topupRejected: {
+    ru: { title: "Пополнение не подтверждено", body: "Заявка закрыта без зачисления. Подробности — в поддержке" },
+    kk: { title: "Толықтыру расталмады", body: "Өтінім есепке алынбай жабылды. Егжей-тегжейі қолдау қызметінде" },
+    uz: { title: "To'ldirish tasdiqlanmadi", body: "Ariza hisobga olinmasdan yopildi. Tafsilotlar qo'llab-quvvatlashda" },
+    zh: { title: "充值未确认", body: "申请已关闭且未入账，详情请联系客服" }
+  },
+  topupRequested: {
+    ru: { title: "Водитель сообщил о пополнении", body: "{name} перевёл(а) {amount} ₸ — подтвердите в панели" },
+    kk: { title: "Жүргізуші толықтыру туралы хабарлады", body: "{name} {amount} ₸ аударды — панельде растаңыз" },
+    uz: { title: "Haydovchi to'ldirish haqida xabar berdi", body: "{name} {amount} ₸ o'tkazdi — panelda tasdiqlang" },
+    zh: { title: "司机报告已充值", body: "{name} 转账 {amount} ₸，请在后台确认" }
+  },
   accountBlockedRating: {
     ru: { title: "Аккаунт временно заблокирован", body: "Средний рейтинг опустился ниже минимального. Обратитесь в поддержку OneDriver." },
     kk: { title: "Аккаунт уақытша бұғатталды", body: "Орташа рейтинг ең төменгі деңгейден түсті. OneDriver қолдау қызметіне хабарласыңыз." },

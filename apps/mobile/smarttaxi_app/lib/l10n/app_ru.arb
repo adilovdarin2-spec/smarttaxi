@@ -1051,6 +1051,7 @@
     }
   },
   "driverTopupErrorGeneric": "Не удалось создать заявку. Попробуйте ещё раз",
+  "driverTopupErrorAlreadyPending": "Заявка уже отправлена — дождитесь подтверждения",
   "driverTopupSubmitButton": "Отправить заявку",
   "driverWalletTransactionsTitle": "Операции",
   "driverWalletNoTransactions": "Пока нет завершённых поездок",

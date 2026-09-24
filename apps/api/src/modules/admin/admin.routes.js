@@ -36,7 +36,7 @@ import {
   getFinanceSummary,
   getTransactions
 } from "../finance/finance.service.js";
-import { publicPayoutRequest, reviewPayoutRequest } from "../wallet/wallet.service.js";
+import { listDriverTopupRequestsForReview, publicPayoutRequest, reviewDriverTopupRequest, reviewPayoutRequest } from "../wallet/wallet.service.js";
 import { broadcastNotification, notifyUser } from "../notifications/notification.service.js";
 import {
   getDriverDocumentFileById,
@@ -1908,6 +1908,74 @@ router.get("/driver-documents/:id/file", requireAuth, requireRole("OWNER"), asyn
     const absolutePath = join(UPLOAD_ROOT, document.file_path);
     if (!existsSync(absolutePath)) throw new AppError("Document file is missing", 404, "DRIVER_DOCUMENT_FILE_MISSING");
     createReadStream(absolutePath).pipe(res);
+  } catch (error) { next(error); }
+});
+
+// Заявки водителей на пополнение: «я перевёл, спишите долг».
+//
+// Шлюза за этим нет — деньги идут переводом на Kaspi, подтверждает их
+// человек. Раньше заявка ложилась в базу и не показывалась нигде: ни списка,
+// ни уведомления, ни способа закрыть. Кнопка у водителя была, адресата у неё
+// не было.
+router.get("/driver-topup-requests", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({
+      status: z.enum(["PENDING", "COMPLETED", "FAILED", "CANCELLED"]).optional().default("PENDING"),
+      limit: z.coerce.number().int().min(1).max(200).optional().default(100)
+    }).parse(req.query);
+    const topupRequests = await listDriverTopupRequestsForReview(params, query);
+    res.json({ topupRequests });
+  } catch (error) { next(error); }
+});
+
+// Подтверждение и списание долга — одно действие, одна транзакция. Два шага
+// («увидеть заявку» и «отдельно поправить долг в финансах») — это шаг,
+// который забывают, и шаг, который делают дважды.
+router.patch("/driver-topup-requests/:id", requireAuth, requireRole("OWNER", "FINANCE"), async (req, res, next) => {
+  try {
+    const params = z.object({ id: z.string().uuid() }).parse(req.params);
+    const body = z.object({
+      status: z.enum(["COMPLETED", "CANCELLED"]),
+      amountKzt: z.coerce.number().int().positive().max(10_000_000).optional(),
+      note: z.string().trim().max(300).optional().default("")
+    }).parse(req.body);
+
+    const result = await tx(async client => {
+      const reviewed = await reviewDriverTopupRequest({
+        id: params.id,
+        status: body.status,
+        amountKzt: body.amountKzt ?? null,
+        note: body.note,
+        actorUserId: req.user.id
+      }, client);
+      await writeAudit(client, {
+        action: "driver_topup_reviewed",
+        actorUserId: req.user.id,
+        entityType: "driver_topup_request",
+        entityId: params.id,
+        metadata: {
+          status: body.status,
+          appliedAmountKzt: reviewed.topupRequest.appliedAmountKzt,
+          note: body.note
+        },
+        req
+      });
+      const driverUser = (await client.query(
+        "SELECT user_id FROM drivers WHERE id=$1",
+        [reviewed.topupRequest.driverId]
+      )).rows[0];
+      return { ...reviewed, driverUserId: driverUser?.user_id || null };
+    });
+
+    if (result.driverUserId) {
+      const message = body.status === "COMPLETED"
+        ? { key: "topupApplied", params: { amount: result.topupRequest.appliedAmountKzt } }
+        : { key: "topupRejected", body: body.note };
+      notifyUser(result.driverUserId, { ...message, type: "DRIVER_TOPUP_STATUS" })
+        .catch((error) => console.error("[push] notifyUser failed", error));
+    }
+
+    res.json({ topupRequest: result.topupRequest, transaction: result.transaction });
   } catch (error) { next(error); }
 });
 

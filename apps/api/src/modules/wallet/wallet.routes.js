@@ -4,6 +4,7 @@ import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
+import { notifyUser } from "../notifications/notification.service.js";
 import {
   MIN_PAYOUT_KZT,
   MIN_TOPUP_KZT,
@@ -208,6 +209,19 @@ router.post("/topup-requests", requireAuth, requireRole("DRIVER"), async (req, r
       metadata: { amountKzt: body.amountKzt },
       req
     });
+    // Заявку должен кто-то увидеть. Без этого она ложилась в базу и ждала,
+    // пока водитель позвонит владельцу сам. Лучшими усилиями и в стороне:
+    // упавшее уведомление не должно ронять саму заявку.
+    (async () => {
+      const operators = (await query("SELECT id FROM users WHERE role IN ('OWNER','FINANCE') AND is_active=true")).rows;
+      await Promise.all(operators.map(op => notifyUser(op.id, {
+        key: "topupRequested",
+        params: { name: driver.name || "", amount: body.amountKzt },
+        type: "DRIVER_TOPUP_REQUESTED",
+        data: { topupRequestId: topupRequest.id, driverId: driver.id }
+      })));
+    })().catch(error => console.error("[push] driver topup notify failed", error));
+
     res.status(201).json({ topupRequest });
   } catch (e) { next(e); }
 });
