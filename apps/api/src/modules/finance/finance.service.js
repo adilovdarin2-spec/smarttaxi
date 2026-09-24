@@ -1,5 +1,6 @@
 import { refundKaspiPayment } from "../payments/payment-provider.js";
 import { awardReferralBonusOnFirstCompletedOrder } from "../referrals/referrals.service.js";
+import { releasePromoRedemption } from "../orders/promo.service.js";
 import { AppError } from "../../common/errors.js";
 
 async function defaultQuery(sql, params) {
@@ -232,6 +233,13 @@ export async function settleConfirmedOrderEarnings(order, executor, actorUserId 
 export async function createOrderCancelledTransaction(order, actorUserId = null, executor = defaultQuery) {
   const existing = await getPostedTransaction(order.id, "ORDER_CANCELLED", executor);
   if (existing) return existing;
+
+  // Промокод возвращается человеку: поездки не было. Здесь, рядом с
+  // возвратом денег, потому что это одна и та же мысль -- отменённый заказ
+  // не должен ничего стоить тому, кто его сделал. Все три пути отмены
+  // (пассажир, водитель, оператор) и истёкший поиск проходят через эту
+  // функцию, так что место одно.
+  await releasePromoRedemption({ orderId: order.id, executor: { query: (sql, params) => run(executor, sql, params) } });
 
   const amounts = orderAmounts(order);
 

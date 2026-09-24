@@ -1325,7 +1325,20 @@ const statements = [
   // their own name into admin settings keeps it. The older statements above
   // stay as they were -- they have already run on every live database, and
   // rewriting an applied migration only erases the record of what happened.
-  `UPDATE service_settings SET service_name='OneDriver' WHERE service_name IN ('BaiSapar','SmartTaxi')`
+  `UPDATE service_settings SET service_name='OneDriver' WHERE service_name IN ('BaiSapar','SmartTaxi')`,
+
+  // Промокод, сгоревший на поездке, которой не было.
+  //
+  // Строка о применении промокода писалась при создании заказа и не
+  // снималась никогда. Заказ отменили -- водитель не нашёлся, водитель
+  // отказался, оператор закрыл, истёк поиск -- а промокод "уже использован"
+  // и второй раз человеку не даётся. Поездки не было, денег не было, а
+  // скидки больше нет.
+  //
+  // Снимаем, а не удаляем: сколько скидки было обещано и когда её вернули --
+  // это след, который стоит сохранить.
+  "ALTER TABLE promo_code_redemptions ADD COLUMN IF NOT EXISTS released_at TIMESTAMPTZ",
+  "CREATE INDEX IF NOT EXISTS idx_promo_redemptions_active ON promo_code_redemptions(promo_code_id, client_id) WHERE released_at IS NULL"
 ];
 
 // The base tables live in schema.sql, which a local Postgres container applies

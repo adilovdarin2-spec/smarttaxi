@@ -1290,7 +1290,10 @@ router.delete("/promo-codes/:id", requireAuth, requireRole("OWNER", "FINANCE"), 
       const promo = (await client.query("SELECT * FROM promo_codes WHERE id=$1 FOR UPDATE", [params.id])).rows[0];
       if (!promo) throw new AppError("Promo code not found", 404, "PROMO_NOT_FOUND");
       const redemption = (await client.query(
-        "SELECT id FROM promo_code_redemptions WHERE promo_code_id=$1 LIMIT 1",
+        // Снятые строки не в счёт: заказ отменили, поездки не было, промокод
+        // человеку вернули. Отказывать в удалении из-за них значило бы
+        // говорить "уже использован" про то, чем никто не воспользовался.
+        "SELECT id FROM promo_code_redemptions WHERE promo_code_id=$1 AND released_at IS NULL LIMIT 1",
         [params.id]
       )).rows[0];
       if (redemption) {

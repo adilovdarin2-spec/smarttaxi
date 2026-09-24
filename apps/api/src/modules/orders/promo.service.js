@@ -30,14 +30,14 @@ export async function findValidPromoCode({ code, regionId, clientId, orderPriceK
   }
   if (promo.usage_limit != null) {
     const total = (await executor.query(
-      "SELECT COUNT(*)::int AS count FROM promo_code_redemptions WHERE promo_code_id=$1",
+      "SELECT COUNT(*)::int AS count FROM promo_code_redemptions WHERE promo_code_id=$1 AND released_at IS NULL",
       [promo.id]
     )).rows[0].count;
     if (total >= promo.usage_limit) throw new AppError("Promo code usage limit reached", 409, "PROMO_LIMIT_REACHED");
   }
   if (clientId) {
     const used = (await executor.query(
-      "SELECT COUNT(*)::int AS count FROM promo_code_redemptions WHERE promo_code_id=$1 AND client_id=$2",
+      "SELECT COUNT(*)::int AS count FROM promo_code_redemptions WHERE promo_code_id=$1 AND client_id=$2 AND released_at IS NULL",
       [promo.id, clientId]
     )).rows[0].count;
     if (used >= promo.per_client_limit) {
@@ -63,4 +63,26 @@ export async function recordPromoRedemption({ promoId, clientId, orderId, discou
      VALUES($1,$2,$3,$4)`,
     [promoId, clientId, orderId, discountAmountKzt]
   );
+}
+
+// Поездки не было -- промокод возвращается человеку.
+//
+// Строка о применении писалась при создании заказа и не снималась никогда:
+// водитель не нашёлся, водитель отказался, оператор закрыл заказ, истёк
+// поиск -- а промокод "уже использован". Человек не ехал, денег не платил, а
+// скидки лишился. Считаем использованными только неснятые строки; сама
+// строка остаётся -- сколько скидки было обещано и когда её вернули, это
+// след, который стоит сохранить.
+//
+// Идемпотентна: отмена может прийти дважды, released_at ставится один раз.
+export async function releasePromoRedemption({ orderId, executor }) {
+  if (!orderId) return 0;
+  const released = await executor.query(
+    `UPDATE promo_code_redemptions
+        SET released_at=NOW()
+      WHERE order_id=$1 AND released_at IS NULL
+      RETURNING id`,
+    [orderId]
+  );
+  return released.rowCount;
 }

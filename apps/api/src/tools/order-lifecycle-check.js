@@ -152,7 +152,8 @@ function createExecutor() {
     tariffs: [{ region_id: "region-1", name: "Economy", cancellation_fee: 500, no_show_fee: 800 }],
     clients: [{ id: "client-1", cashback_balance: 300 }, { id: "client-rich", cashback_balance: 5000 }],
     drivers: [{ id: "driver-1", balance: 1000 }],
-    cashbackTransactions: []
+    cashbackTransactions: [],
+    promoReleases: []
   };
   return {
     state,
@@ -203,6 +204,13 @@ function createExecutor() {
         };
         state.financialTransactions.push(row);
         return { rows: [row] };
+      }
+      if (/UPDATE promo_code_redemptions/i.test(sql)) {
+        // Отмена возвращает промокод человеку. Заказы в этой проверке без
+        // промокода, поэтому снимать нечего — но запрос всё равно должен
+        // пройти через тот же исполнитель, что и возврат денег.
+        state.promoReleases.push(params[0]);
+        return { rows: [], rowCount: 0 };
       }
       throw new Error(`Unexpected SQL in order lifecycle check: ${sql}`);
     }
