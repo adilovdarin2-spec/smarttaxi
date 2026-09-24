@@ -89,6 +89,36 @@ assert(
   reviewBody.includes("amountKzt ?? request.amount_kzt"),
   "списывается подтверждённая сумма: перевод мог прийти не тот, что записан в заявке"
 );
+// Долг не уходит ниже нуля, поэтому зачесть больше долга -- значит записать в
+// книгу минус, которого у водителя не случится.
+assert(
+  reviewBody.includes("TOPUP_EXCEEDS_DEBT"),
+  "зачесть больше текущего долга нельзя: лишнее растворилось бы между книгой и водителем"
+);
+assert(
+  reviewBody.indexOf("TOPUP_EXCEEDS_DEBT") < reviewBody.indexOf("adjustDriverDebt"),
+  "отказ должен случиться до проводки"
+);
+
+// И сама проводка должна говорить то, что произошло: раньше списание было
+// GREATEST(0, debt + delta), а в книгу писалась исходная сумма.
+{
+  const finance = read(root, "modules", "finance", "finance.service.js");
+  const at = finance.indexOf("export async function adjustDriverDebt");
+  const body = finance.slice(at, finance.indexOf(String.fromCharCode(10) + "export ", at + 1));
+  assert(
+    body.includes("appliedDelta"),
+    "в книгу должна писаться применённая разница, а не запрошенная"
+  );
+  assert(
+    body.includes("[appliedDelta, driverId]"),
+    "списание должно идти от применённой разницы"
+  );
+  assert(
+    !body.includes("    numericAmount," ),
+    "в проводку больше не должна попадать запрошенная сумма: она расходится со списанием"
+  );
+}
 
 // --- Отказ ничего не двигает ------------------------------------------------
 const applyAt = reviewBody.indexOf("adjustDriverDebt");

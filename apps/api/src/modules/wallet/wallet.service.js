@@ -357,6 +357,22 @@ export async function reviewDriverTopupRequest({ id, status, amountKzt = null, n
     if (!Number.isFinite(appliedKzt) || appliedKzt <= 0) {
       throw new AppError("Confirmed top-up amount must be positive", 400, "INVALID_TOPUP_AMOUNT");
     }
+    // Больше долга зачесть нельзя. Долг не уходит ниже нуля, поэтому лишнее
+    // просто растворилось бы: в книге -2000, у водителя ноль. А положить
+    // остаток на balance -- это уже не такси, а приём вкладов: balance
+    // выводится заявкой на выплату.
+    const driverRow = (await run(
+      executor,
+      "SELECT debt FROM drivers WHERE id=$1 FOR UPDATE",
+      [request.driver_id]
+    )).rows[0];
+    const outstanding = Math.round(Number(driverRow?.debt || 0));
+    if (appliedKzt > outstanding) {
+      throw new AppError("Confirmed amount is larger than the driver's debt", 409, "TOPUP_EXCEEDS_DEBT", {
+        outstandingDebtKzt: outstanding,
+        requestedKzt: appliedKzt
+      });
+    }
     transaction = await adjustDriverDebt({
       driverId: request.driver_id,
       amount: -appliedKzt,

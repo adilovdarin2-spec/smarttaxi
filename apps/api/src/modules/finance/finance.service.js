@@ -530,6 +530,15 @@ export async function adjustDriverDebt({
   const driver = (await run(executor, "SELECT * FROM drivers WHERE id=$1 FOR UPDATE", [driverId])).rows[0];
   if (!driver) throw new AppError("Driver not found", 404, "DRIVER_NOT_FOUND");
 
+  // Долг не уходит ниже нуля -- и проводка должна говорить то же самое.
+  //
+  // Списание было GREATEST(0, debt + delta), а в книгу писалась исходная
+  // сумма. Списали 2000 с долга в 500 -- в книге -2000, у водителя ноль, и
+  // тот, кто сведёт одно с другим, найдёт полторы тысячи, которых никогда не
+  // было. Записываем то, что произошло на самом деле.
+  const currentDebt = roundMoney(driver.debt || 0);
+  const appliedDelta = numericAmount < 0 ? Math.max(numericAmount, -currentDebt) : numericAmount;
+
   const result = await run(executor, `
     INSERT INTO financial_transactions(
       driver_id, region_id, type, payment_method, gross_amount, service_commission,
@@ -540,16 +549,18 @@ export async function adjustDriverDebt({
   `, [
     driverId,
     regionId || driver.current_region_id || null,
-    numericAmount,
+    appliedDelta,
     JSON.stringify({
       ...metadata,
       reason: cleanReason,
+      // Если запросили больше, чем было, это видно рядом, а не теряется.
+      ...(appliedDelta !== numericAmount ? { requestedDelta: numericAmount, debtBefore: currentDebt } : {}),
       source: "ADMIN_MANUAL_ADJUSTMENT"
     }),
     actorUserId
   ]);
 
-  await run(executor, "UPDATE drivers SET debt=GREATEST(0, debt+$1) WHERE id=$2", [numericAmount, driverId]);
+  await run(executor, "UPDATE drivers SET debt=GREATEST(0, debt+$1) WHERE id=$2", [appliedDelta, driverId]);
   return transactionRow(result.rows[0]);
 }
 

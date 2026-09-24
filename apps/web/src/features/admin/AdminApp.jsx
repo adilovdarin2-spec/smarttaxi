@@ -4139,6 +4139,7 @@ function TopupConfirmPanel({ topupRequest, busy, onClose, onConfirm, error }) {
         </label>
         <p className="admin-honest-note">
           Долг водителя уменьшится на эту сумму сразу, одной проводкой. Отдельно править долг в финансах не нужно.
+          Больше текущего долга зачесть нельзя — лишнее просто не с чего списать.
         </p>
         <div className="admin-modal-actions">
           <button type="button" className="admin-secondary-button" onClick={onClose}>Отмена</button>

@@ -186,6 +186,10 @@ function createExecutor() {
       if (s.startsWith("SELECT * FROM drivers WHERE id=$1")) {
         return { rows: state.drivers.filter(d => d.id === params[0]) };
       }
+      if (s.startsWith("SELECT debt FROM drivers WHERE id=$1")) {
+        const driver = state.drivers.find(d => d.id === params[0]);
+        return { rows: driver ? [{ debt: driver.debt }] : [] };
+      }
       if (s.startsWith("INSERT INTO financial_transactions")) {
         const row = { id: `ft-${state.debtAdjustments.length + 1}`, driver_id: params[0], driver_debt_delta: params[2] };
         state.debtAdjustments.push(row);
@@ -370,17 +374,30 @@ function createExecutor() {
   // Подтверждение закрывает заявку и списывает долг одним действием: два
   // шага -- это шаг, который забывают, и шаг, который делают дважды.
   const debtBefore = Number(executor.state.drivers.find(d => d.id === "driver-1").debt);
+
+  // Больше долга зачесть нельзя: долг не уходит ниже нуля, и лишнее просто
+  // растворилось бы -- в книге минус, у водителя ноль.
+  await assert.rejects(
+    () => reviewDriverTopupRequest(
+      { id: created.id, status: "COMPLETED", amountKzt: debtBefore + 1, actorUserId: "owner-1" },
+      executor
+    ),
+    { code: "TOPUP_EXCEEDS_DEBT" },
+    "зачесть больше текущего долга нельзя"
+  );
+  assert.equal(executor.state.debtAdjustments.length, 0, "отказ не должен оставлять проводку");
+
   const reviewed = await reviewDriverTopupRequest(
-    { id: created.id, status: "COMPLETED", amountKzt: 1800, note: "Kaspi перевод", actorUserId: "owner-1" },
+    { id: created.id, status: "COMPLETED", amountKzt: 1200, note: "Kaspi перевод", actorUserId: "owner-1" },
     executor
   );
   assert.equal(reviewed.topupRequest.status, "COMPLETED");
-  assert.equal(reviewed.topupRequest.appliedAmountKzt, 1800, "списывается подтверждённая сумма, а не заявленная");
+  assert.equal(reviewed.topupRequest.appliedAmountKzt, 1200, "списывается подтверждённая сумма, а не заявленная");
   assert.equal(executor.state.debtAdjustments.length, 1, "подтверждение должно двигать долг ровно один раз");
-  assert.equal(executor.state.debtAdjustments[0].driver_debt_delta, -1800);
+  assert.equal(executor.state.debtAdjustments[0].driver_debt_delta, -1200);
   assert.equal(
     Number(executor.state.drivers.find(d => d.id === "driver-1").debt),
-    debtBefore - 1800,
+    debtBefore - 1200,
     "долг водителя уменьшается на подтверждённую сумму"
   );
 
