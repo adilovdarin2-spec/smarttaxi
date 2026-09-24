@@ -76,6 +76,27 @@ assert(
   "«уже использован» не должно говориться про снятую строку"
 );
 
+// --- Сначала «у вас уже есть поездка», потом промокод ----------------------
+//
+// В обратном порядке пассажир с активным заказом, нажавший «заказать» второй
+// раз, получал «промокод уже использован»: код он применил к первому заказу.
+// Человек читает это как «я лишился скидки» и идёт разбираться, хотя причина
+// другая и он её уже знает.
+{
+  const orders = read("modules", "orders", "orders.routes.js");
+  const at = orders.indexOf('router.post("/", requireAuth, requireRole("CLIENT")');
+  const rest = orders.slice(at + 1);
+  const next = rest.indexOf(String.fromCharCode(10) + "router.");
+  const handler = rest.slice(0, next < 0 ? rest.length : next);
+  const activeAt = handler.indexOf("CLIENT_HAS_ACTIVE_ORDER");
+  const promoAt = handler.indexOf("findValidPromoCode");
+  assert(activeAt > 0 && promoAt > 0, "в создании заказа пропала одна из двух проверок");
+  assert(
+    activeAt < promoAt,
+    "проверка активного заказа должна стоять до промокода: иначе человеку называют не ту причину"
+  );
+}
+
 // --- Колонка заведена ------------------------------------------------------
 assert(
   migrations.includes("ALTER TABLE promo_code_redemptions ADD COLUMN IF NOT EXISTS released_at"),

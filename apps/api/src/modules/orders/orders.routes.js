@@ -387,6 +387,29 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         });
       }
 
+      // Сначала «у вас уже есть поездка», и только потом промокод.
+      //
+      // В обратном порядке пассажир с активным заказом, нажавший «заказать»
+      // второй раз, получал «промокод уже использован»: код-то он применил к
+      // первому заказу. Человек читает это как «я лишился скидки» и идёт
+      // разбираться, хотя настоящая причина другая и он её уже знает.
+      // Заодно не держим блокировку на строке промокода ради проверки,
+      // которая всё равно откажет.
+      const activeOrder = (await client.query(`
+        SELECT id, short_id, status
+        FROM orders
+        WHERE client_id=$1 AND status = ANY($2::text[])
+        ORDER BY created_at DESC
+        LIMIT 1
+      `, [rider.id, CLIENT_ACTIVE_ORDER_STATUSES])).rows[0];
+      if (activeOrder) {
+        throw new AppError("Client already has an active order", 409, "CLIENT_HAS_ACTIVE_ORDER", {
+          orderId: activeOrder.id,
+          shortId: activeOrder.short_id,
+          status: activeOrder.status
+        });
+      }
+
       // A promo code and a rider-proposed price both change what's charged —
       // combining them would make the discount math ambiguous, so a promo
       // only applies when the rider accepted the calculated estimate as-is.
@@ -404,21 +427,6 @@ router.post("/", requireAuth, requireRole("CLIENT"), rateLimit({ prefix: "orders
         finalPrice -= promoDiscountKzt;
         const commissionPercent = commissionPercentForOrder(pricing.tariff, body.paymentMethod);
         serviceCommission = Math.round((finalPrice * commissionPercent) / 100);
-      }
-
-      const activeOrder = (await client.query(`
-        SELECT id, short_id, status
-        FROM orders
-        WHERE client_id=$1 AND status = ANY($2::text[])
-        ORDER BY created_at DESC
-        LIMIT 1
-      `, [rider.id, CLIENT_ACTIVE_ORDER_STATUSES])).rows[0];
-      if (activeOrder) {
-        throw new AppError("Client already has an active order", 409, "CLIENT_HAS_ACTIVE_ORDER", {
-          orderId: activeOrder.id,
-          shortId: activeOrder.short_id,
-          status: activeOrder.status
-        });
       }
 
       const created = await insertOrderWithShortId(client, [
