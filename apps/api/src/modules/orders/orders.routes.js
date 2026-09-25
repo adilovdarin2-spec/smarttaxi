@@ -1452,6 +1452,37 @@ async function updateStatus(req, res, next, status) {
           }
         }
 
+        // Симметрия к доплате выше: цена могла не только вырасти, но и упасть.
+        //
+        // Бонусами оплачивается названная при заказе сумма — вся, сразу. А
+        // потом водитель может предложить свою цену, и пассажир согласиться:
+        // предложить можно вплоть до 70 процентов от оценки. Заказ за 700,
+        // сторгованный до 500, оставлял 200 ₸ бонусов списанными ни за что —
+        // ветка ниже смотрела только в одну сторону.
+        if (
+          updated.payment_method === "CASHBACK" &&
+          updated.client_id &&
+          Number(updated.cashback_used) > Number(updated.price)
+        ) {
+          const overpaidKzt = Number(updated.cashback_used) - Number(updated.price);
+          const returned = await client.query(
+            "UPDATE clients SET cashback_balance=cashback_balance+$1 WHERE id=$2 RETURNING cashback_balance",
+            [overpaidKzt, updated.client_id]
+          );
+          await client.query(`
+            INSERT INTO cashback_transactions(client_id,order_id,type,amount,balance_after)
+            VALUES($1,$2,'ORDER_PAYMENT_REFUND',$3,$4)
+          `, [updated.client_id, updated.id, overpaidKzt, returned.rows[0].cashback_balance]);
+          updated = (await client.query(
+            "UPDATE orders SET cashback_used=price WHERE id=$1 RETURNING *",
+            [updated.id]
+          )).rows[0];
+          await client.query(
+            "UPDATE payments SET amount=$1, updated_at=NOW() WHERE order_id=$2 AND method='CASHBACK' AND status='PAID'",
+            [updated.price, updated.id]
+          );
+        }
+
         // A ride paid entirely with previously-earned bonuses does not mint
         // another round of bonuses from the same stored value.
         const cashback = Number(updated.cashback_used) > 0
