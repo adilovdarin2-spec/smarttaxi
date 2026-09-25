@@ -220,6 +220,43 @@ async function main() {
     }
   }
 
+  // --- 6. Гонки: двое жмут одно и то же одновременно -----------------------
+  //
+  // Это ломается не на первом пользователе, а в день, когда их станет много.
+  // Проверяем то, где двойное срабатывание стоило бы машины или денег.
+  console.log("\n6. Одновременные нажатия");
+  await clearActiveOrder(client);
+  {
+    const created = await call("/api/orders", { token: client, body: orderBody() });
+    const order = created.data.order;
+    const both = await Promise.all([
+      call(`/api/orders/${order.id}/accept`, { token: driver, body: {} }),
+      call(`/api/orders/${order.id}/accept`, { token: driver, body: {} })
+    ]);
+    check(both.filter(r => r.status === 200).length === 1, "заказ достаётся ровно одному принятию", both.map(r => r.status));
+    const refusal = (both.find(r => r.status !== 200) || {}).data?.error;
+    check(Boolean(refusal), "второе принятие получает внятный отказ", refusal);
+    await driveToCompletion(order.id, driver);
+  }
+  {
+    const wallet = (await call("/api/drivers/me/wallet", { token: driver })).data;
+    const debt = Number(wallet.debtKzt);
+    if (debt <= 0) {
+      console.log("  skip двойное подтверждение пополнения: у водителя нет долга");
+    } else {
+      const amount = Math.min(debt, Number(wallet.minTopupKzt || 500));
+      const { data } = await call("/api/drivers/me/wallet/topup-requests", { token: driver, body: { amountKzt: amount } });
+      const id = data.topupRequest?.id;
+      const both = await Promise.all([
+        call(`/api/admin/driver-topup-requests/${id}`, { token: owner, method: "PATCH", body: { status: "COMPLETED", amountKzt: amount } }),
+        call(`/api/admin/driver-topup-requests/${id}`, { token: owner, method: "PATCH", body: { status: "COMPLETED", amountKzt: amount } })
+      ]);
+      check(both.filter(r => r.status === 200).length === 1, "пополнение зачитывается ровно один раз", both.map(r => r.status));
+      const after = (await call("/api/drivers/me/wallet", { token: driver })).data;
+      check(Number(after.debtKzt) === debt - amount, "долг упал на одну сумму, а не на две", after.debtKzt);
+    }
+  }
+
   console.log(failures === 0 ? "\nMoney flows smoke ok" : `\nMoney flows smoke: ${failures} проверок не прошло`);
   if (failures > 0) process.exitCode = 1;
 }
