@@ -4746,7 +4746,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get apiErrorQuickMessageNotAllowed =>
-      'Это сообщение недоступно в вашей роли';
+      'Это сообщение сейчас недоступно';
 
   @override
   String get apiErrorRecurringBookingNotFound =>

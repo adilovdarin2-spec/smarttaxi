@@ -4772,8 +4772,7 @@ class AppLocalizationsUz extends AppLocalizations {
       'Faqat ko\'rib chiqilmagan arizani bekor qilish mumkin';
 
   @override
-  String get apiErrorQuickMessageNotAllowed =>
-      'Bu xabar sizning rolingizda mavjud emas';
+  String get apiErrorQuickMessageNotAllowed => 'Bu xabar hozir mavjud emas';
 
   @override
   String get apiErrorRecurringBookingNotFound => 'Bu doimiy safar o\'chirilgan';

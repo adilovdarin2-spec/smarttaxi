@@ -2101,7 +2101,7 @@
   "apiErrorOrderNotPaid": "Сначала подтвердите оплату поездки",
   "apiErrorPayoutRequestNotFound": "Эта заявка на вывод уже закрыта",
   "apiErrorPayoutRequestNotPending": "Отменить можно только заявку, которую ещё не рассмотрели",
-  "apiErrorQuickMessageNotAllowed": "Это сообщение недоступно в вашей роли",
+  "apiErrorQuickMessageNotAllowed": "Это сообщение сейчас недоступно",
   "apiErrorRecurringBookingNotFound": "Эта постоянная поездка уже удалена",
   "apiErrorRecurringBookingAlreadyResponded": "На эту поездку уже ответили",
   "apiErrorRecurringBookingCancelled": "Эта постоянная поездка отменена",

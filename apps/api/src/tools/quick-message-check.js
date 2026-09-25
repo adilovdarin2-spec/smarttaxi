@@ -81,4 +81,34 @@ assert(quickMessageRouteBody.includes('if (!driver || driver.id !== order.driver
 // Response echoes back messageKey/text/delivered — the client contract.
 assert(quickMessageRouteBody.includes('res.status(201).json({ delivered: true, messageKey: body.messageKey, text })'), "quick-message response contract (delivered/messageKey/text) must not change without updating client docs");
 
+
+// Кто что говорит — уже решено. Осталось когда.
+//
+// «Уже выхожу» и «Жду у входа» от человека, который сидит в машине, водитель
+// получал как есть и должен был сам сообразить, что это неправда. «Я приехал»
+// и «Пожалуйста, выходите» от водителя в середине поездки — то же самое с
+// другой стороны. Сервер принимал и то и другое.
+{
+  const { quickMessageAllowedAtStage } = await import("../modules/orders/orders.routes.js");
+  for (const key of ["COMING_OUT", "WAITING_AT_ENTRANCE", "RUNNING_LATE_2MIN", "I_ARRIVED", "ON_MY_WAY", "PLEASE_COME_OUT"]) {
+    assert(
+      quickMessageAllowedAtStage(key, "DRIVER_ARRIVED"),
+      `${key} должно быть доступно до посадки`
+    );
+    assert(
+      !quickMessageAllowedAtStage(key, "TRIP_STARTED"),
+      `${key} говорят до посадки — в пути это неправда`
+    );
+    assert(
+      !quickMessageAllowedAtStage(key, "IN_PROGRESS"),
+      `${key} говорят до посадки — в пути это неправда`
+    );
+  }
+  // «Подождите, пожалуйста» в пути осмысленно: просьба на остановке.
+  assert(
+    quickMessageAllowedAtStage("PLEASE_WAIT", "TRIP_STARTED"),
+    "просьба подождать остаётся доступной и в пути"
+  );
+}
+
 console.log("Quick in-trip messages checks ok");

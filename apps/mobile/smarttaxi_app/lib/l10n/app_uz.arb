@@ -1937,7 +1937,7 @@
   "apiErrorOrderNotPaid": "Avval safar to'lovini tasdiqlang",
   "apiErrorPayoutRequestNotFound": "Bu yechish arizasi yopilgan",
   "apiErrorPayoutRequestNotPending": "Faqat ko'rib chiqilmagan arizani bekor qilish mumkin",
-  "apiErrorQuickMessageNotAllowed": "Bu xabar sizning rolingizda mavjud emas",
+  "apiErrorQuickMessageNotAllowed": "Bu xabar hozir mavjud emas",
   "apiErrorRecurringBookingNotFound": "Bu doimiy safar o'chirilgan",
   "apiErrorRecurringBookingAlreadyResponded": "Bu safarga allaqachon javob berilgan",
   "apiErrorRecurringBookingCancelled": "Bu doimiy safar bekor qilingan",

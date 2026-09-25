@@ -14300,10 +14300,17 @@ class _ChatEntry {
 // let a rider send the driver "Уже еду к вам" and "Пожалуйста, выходите" —
 // sentences only the driver can act on. The server refuses the other side's
 // codes; this is the same list it allows for a rider.
-Map<String, String> _quickMessages(AppLocalizations l10n) => {
-      'COMING_OUT': l10n.quickMessageComingOut,
-      'WAITING_AT_ENTRANCE': l10n.quickMessageWaitingAtEntrance,
-      'RUNNING_LATE_2MIN': l10n.quickMessageRunningLate2Min,
+// Три из четырёх говорят до посадки. Пассажиру, который уже едет в машине,
+// предлагать «Уже выхожу» и «Жду у входа» незачем: водитель получил бы это
+// как есть и должен был бы сам сообразить, что это неправда. Сервер такие
+// теперь и не принимает.
+//
+// «Подождите, пожалуйста» остаётся: в пути это осмысленная просьба на
+// остановке, а не остаток от подачи.
+Map<String, String> _quickMessages(AppLocalizations l10n, {bool rideUnderWay = false}) => {
+      if (!rideUnderWay) 'COMING_OUT': l10n.quickMessageComingOut,
+      if (!rideUnderWay) 'WAITING_AT_ENTRANCE': l10n.quickMessageWaitingAtEntrance,
+      if (!rideUnderWay) 'RUNNING_LATE_2MIN': l10n.quickMessageRunningLate2Min,
       'PLEASE_WAIT': l10n.quickMessagePleaseWait,
     };
 
@@ -14312,11 +14319,13 @@ class _ChatSheet extends StatefulWidget {
     required this.api,
     required this.orderId,
     required this.peerName,
+    this.rideUnderWay = false,
   });
 
   final ApiClient api;
   final String orderId;
   final String peerName;
+  final bool rideUnderWay;
 
   @override
   State<_ChatSheet> createState() => _ChatSheetState();
@@ -14382,7 +14391,7 @@ class _ChatSheetState extends State<_ChatSheet> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final l10n = AppLocalizations.of(context);
-    final quickMessages = _quickMessages(l10n);
+    final quickMessages = _quickMessages(l10n, rideUnderWay: widget.rideUnderWay);
     final thread = [..._sent, ..._received]
       ..sort((a, b) => a.at.compareTo(b.at));
     return SafeArea(
@@ -14585,7 +14594,13 @@ class _DriverContactCard extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ChatSheet(api: api, orderId: orderId, peerName: name),
+      builder: (_) => _ChatSheet(
+        api: api,
+        orderId: orderId,
+        peerName: name,
+        // compact -- это карточка идущей поездки: человек уже в машине.
+        rideUnderWay: compact,
+      ),
     );
   }
 

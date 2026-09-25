@@ -1167,6 +1167,29 @@ export function quickMessagesForRole(role) {
   return role === "DRIVER" ? DRIVER_QUICK_MESSAGES : CLIENT_QUICK_MESSAGES;
 }
 
+// Всё это говорят до посадки. «Уже выхожу» и «Жду у входа» от человека,
+// который сидит в машине, водитель получал как есть — и должен был сам
+// сообразить, что это неправда. «Я приехал» и «Пожалуйста, выходите» от
+// водителя в середине поездки — то же самое с другой стороны.
+//
+// «Подождите, пожалуйста» остаётся: в пути это осмысленная просьба на
+// остановке, а не остаток от подачи.
+const PRE_PICKUP_ONLY_MESSAGES = new Set([
+  "COMING_OUT",
+  "WAITING_AT_ENTRANCE",
+  "RUNNING_LATE_2MIN",
+  "I_ARRIVED",
+  "ON_MY_WAY",
+  "PLEASE_COME_OUT"
+]);
+
+const RIDE_UNDER_WAY_STATUSES = new Set(["TRIP_STARTED", "IN_PROGRESS"]);
+
+export function quickMessageAllowedAtStage(messageKey, orderStatus) {
+  if (!RIDE_UNDER_WAY_STATUSES.has(orderStatus)) return true;
+  return !PRE_PICKUP_ONLY_MESSAGES.has(messageKey);
+}
+
 const QuickMessageBody = z.object({
   messageKey: z.enum(Object.keys(QUICK_MESSAGES))
 });
@@ -1199,6 +1222,13 @@ router.post("/:id/quick-message", requireAuth, requireRole("CLIENT", "DRIVER"), 
       const driver = (await query("SELECT id FROM drivers WHERE user_id=$1", [req.user.id])).rows[0];
       if (!driver || driver.id !== order.driver_id) throw new AppError("Forbidden order", 403, "FORBIDDEN_ORDER");
       notifyDriver = false;
+    }
+
+    if (!quickMessageAllowedAtStage(body.messageKey, order.status)) {
+      throw new AppError("Message does not fit this stage of the ride", 400, "QUICK_MESSAGE_NOT_ALLOWED", {
+        messageKey: body.messageKey,
+        orderStatus: order.status
+      });
     }
 
     const allowed = quickMessagesForRole(req.user.role);

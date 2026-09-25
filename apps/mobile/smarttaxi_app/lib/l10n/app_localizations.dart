@@ -8428,7 +8428,7 @@ abstract class AppLocalizations {
   /// No description provided for @apiErrorQuickMessageNotAllowed.
   ///
   /// In ru, this message translates to:
-  /// **'Это сообщение недоступно в вашей роли'**
+  /// **'Это сообщение сейчас недоступно'**
   String get apiErrorQuickMessageNotAllowed;
 
   /// No description provided for @apiErrorRecurringBookingNotFound.

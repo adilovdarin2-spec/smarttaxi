@@ -52,7 +52,7 @@ const API_ERROR_MESSAGES = {
   PROMO_MIN_ORDER_NOT_MET: "Сумма заказа меньше минимальной для этого промокода.",
   PROMO_NOT_FOUND: "Такой промокод не найден. Проверьте код.",
   PROMO_NOT_STARTED: "Этот промокод ещё не начал действовать.",
-  QUICK_MESSAGE_NOT_ALLOWED: "Это сообщение недоступно в вашей роли",
+  QUICK_MESSAGE_NOT_ALLOWED: "Это сообщение сейчас недоступно",
   RECURRING_BOOKING_ALREADY_RESPONDED: "На эту поездку уже ответили",
   RECURRING_BOOKING_CANCELLED: "Эта постоянная поездка отменена",
   RECURRING_BOOKING_NOT_FOUND: "Эта постоянная поездка уже удалена",

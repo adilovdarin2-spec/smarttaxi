@@ -4414,7 +4414,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get apiErrorPayoutRequestNotPending => '只能取消尚未处理的申请';
 
   @override
-  String get apiErrorQuickMessageNotAllowed => '您的身份无法发送此消息';
+  String get apiErrorQuickMessageNotAllowed => '该消息当前不可用';
 
   @override
   String get apiErrorRecurringBookingNotFound => '该固定行程已被删除';

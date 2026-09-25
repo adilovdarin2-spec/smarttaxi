@@ -4725,7 +4725,7 @@ class AppLocalizationsKk extends AppLocalizations {
 
   @override
   String get apiErrorQuickMessageNotAllowed =>
-      'Бұл хабарлама сіздің рөліңізде қолжетімсіз';
+      'Бұл хабарлама қазір қолжетімді емес';
 
   @override
   String get apiErrorRecurringBookingNotFound => 'Бұл тұрақты сапар жойылған';

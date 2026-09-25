@@ -1937,7 +1937,7 @@
   "apiErrorOrderNotPaid": "请先确认行程付款",
   "apiErrorPayoutRequestNotFound": "该提现申请已关闭",
   "apiErrorPayoutRequestNotPending": "只能取消尚未处理的申请",
-  "apiErrorQuickMessageNotAllowed": "您的身份无法发送此消息",
+  "apiErrorQuickMessageNotAllowed": "该消息当前不可用",
   "apiErrorRecurringBookingNotFound": "该固定行程已被删除",
   "apiErrorRecurringBookingAlreadyResponded": "该行程已有回复",
   "apiErrorRecurringBookingCancelled": "该固定行程已取消",

@@ -1934,7 +1934,7 @@
   "apiErrorOrderNotPaid": "Алдымен сапар төлемін растаңыз",
   "apiErrorPayoutRequestNotFound": "Бұл шығару өтінімі жабылған",
   "apiErrorPayoutRequestNotPending": "Тек қаралмаған өтінімді ғана болдырмауға болады",
-  "apiErrorQuickMessageNotAllowed": "Бұл хабарлама сіздің рөліңізде қолжетімсіз",
+  "apiErrorQuickMessageNotAllowed": "Бұл хабарлама қазір қолжетімді емес",
   "apiErrorRecurringBookingNotFound": "Бұл тұрақты сапар жойылған",
   "apiErrorRecurringBookingAlreadyResponded": "Бұл сапарға жауап берілген",
   "apiErrorRecurringBookingCancelled": "Бұл тұрақты сапар тоқтатылған",
