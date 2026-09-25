@@ -381,7 +381,9 @@ function createExecutor(overrides = {}) {
           speed: params[5],
           accuracy: params[6],
           source: params[7],
-          updated_at: "2026-05-21T00:00:00.000Z"
+          // Только что записанная точка: по возрасту решается, можно ли по
+          // ней строить дорогу (см. stale-fix-check.js).
+          updated_at: new Date()
         };
         state.locations = state.locations.filter(location => location.driver_id !== row.driver_id).concat(row);
         return { rows: [row] };
@@ -715,6 +717,22 @@ await assert.rejects(
   () => buildDriverToPickupRoute({ orderId: "order-accepted", user: { id: "client-user", role: "CLIENT" }, executor: createExecutor({ locations: [] }), fetchImpl: mockFetch() }),
   { code: "DRIVER_LOCATION_UNAVAILABLE" },
   "driver-to-pickup route requires real driver location"
+);
+
+// Точка пятидневной давности — это не точка. Маршрут по ней строится
+// совершенно настоящий, поэтому ловить её надо по возрасту, а не по признаку
+// fallback: провайдер отвечает нормально, просто не про то место.
+await assert.rejects(
+  () => buildDriverToPickupRoute({
+    orderId: "order-accepted",
+    user: { id: "client-user", role: "CLIENT" },
+    executor: createExecutor({
+      locations: [{ driver_id: "driver-1", lat: 42.1, lng: 69.1, updated_at: new Date(Date.now() - 5 * 24 * 3600 * 1000) }]
+    }),
+    fetchImpl: mockFetch()
+  }),
+  { code: "DRIVER_LOCATION_UNAVAILABLE" },
+  "по устаревшей точке дорогу не считают: обеим сторонам называли бы неправду"
 );
 
 const driverRoute = await buildDriverToPickupRoute({

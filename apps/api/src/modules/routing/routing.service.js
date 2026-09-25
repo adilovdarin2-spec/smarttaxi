@@ -2497,6 +2497,18 @@ export async function assertCanAccessOrderLocation({ user, order, executor = def
 // both driver and passenger always tracks the real next stop. Kept the name
 // buildDriverToPickupRoute (and the /driver-to-pickup route) for backward
 // compatibility with existing tests/tools that reference them by name.
+// Сколько живёт координата водителя, прежде чем по ней перестают считать
+// дорогу. Приложение шлёт её раз в четыре секунды, так что две минуты — это
+// уже «связи нет», а не «чуть запоздало». За это время машина успевает
+// уехать настолько, что и водителю, и пассажиру называли бы неправду.
+export const MAX_ROUTE_FIX_AGE_MS = 2 * 60 * 1000;
+
+export function isDriverFixFreshEnoughForRoute(updatedAt, now = Date.now()) {
+  const at = updatedAt instanceof Date ? updatedAt.getTime() : new Date(updatedAt).getTime();
+  if (!Number.isFinite(at)) return false;
+  return now - at <= MAX_ROUTE_FIX_AGE_MS;
+}
+
 export async function buildDriverToPickupRoute({ orderId, user, executor = defaultQuery, fetchImpl = fetch }) {
   const order = (await run(executor, "SELECT * FROM orders WHERE id=$1", [orderId])).rows[0];
   if (!order) throw new AppError("Order not found", 404, "ORDER_NOT_FOUND");
@@ -2507,6 +2519,24 @@ export async function buildDriverToPickupRoute({ orderId, user, executor = defau
 
   const location = (await run(executor, "SELECT * FROM driver_locations WHERE driver_id=$1 ORDER BY updated_at DESC LIMIT 1", [order.driver_id])).rows[0];
   if (!location) throw new AppError("Driver location is unavailable", 409, "DRIVER_LOCATION_UNAVAILABLE");
+  // Старая точка — это не точка.
+  //
+  // Приложение водителя шлёт координаты раз в четыре секунды, пока он
+  // работает. Но если геолокацию не дали или связь пропала, в таблице
+  // остаётся последняя известная — хоть пятидневной давности, — и маршрут по
+  // ней строится совершенно настоящий. Проверки на fallback её не ловят:
+  // провайдер отвечает нормально, просто не про то место.
+  //
+  // Видят это оба. Водителю пишут «до точки подачи 24 км, 29 минут» за
+  // клиентом в шестистах метрах — половина от такого заказа откажется.
+  // Пассажиру тот же расчёт показывают как «приедет через 29 минут».
+  // Честнее сказать «ждём геолокацию»: этот отказ оба приложения уже
+  // объясняют словами.
+  if (!isDriverFixFreshEnoughForRoute(location.updated_at)) {
+    throw new AppError("Driver location is stale", 409, "DRIVER_LOCATION_UNAVAILABLE", {
+      fixAgeSeconds: Math.round((Date.now() - new Date(location.updated_at).getTime()) / 1000)
+    });
+  }
   const route = await buildActiveLegRoute({
     order,
     driverLocation: location,

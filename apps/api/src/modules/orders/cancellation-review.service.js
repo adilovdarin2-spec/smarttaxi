@@ -1,5 +1,6 @@
 import { query as defaultQuery } from "../../db/pool.js";
 import { haversineMeters } from "../stands/stands.service.js";
+import { isDriverFixFreshEnoughForRoute } from "../routing/routing.service.js";
 
 // The problem this exists for: a driver accepts an order through the app,
 // drives to the rider, and then the trip is cancelled — by the driver, or by
@@ -281,7 +282,12 @@ export async function runFollowUpObservation({ audit, executor = defaultQuery })
   let fromPickupM = null;
   let toDropoffM = null;
 
-  if (order && location && location.lat != null && location.lng != null) {
+  // По этой цифре решают, был ли водитель у подачи, и из неё вырастает разбор
+  // отмены. Считать её от точки, которой пять дней, — значит судить человека
+  // по тому, где он был на прошлой неделе. Старая точка тут не «примерно», а
+  // «неизвестно».
+  const fixIsUsable = location && isDriverFixFreshEnoughForRoute(location.updated_at);
+  if (order && fixIsUsable && location.lat != null && location.lng != null) {
     if (order.pickup_lat != null && order.pickup_lng != null) {
       fromPickupM = Math.round(haversineMeters(
         Number(order.pickup_lat), Number(order.pickup_lng),
