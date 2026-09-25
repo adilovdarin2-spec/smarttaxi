@@ -49,6 +49,19 @@ export const CLIENT_ACTIVE_ORDER_STATUSES = [
   "TRIP_COMPLETED",
   "PAYMENT_PENDING"
 ];
+// Состояния, в которых заказ висит, пассажир из-за него не может заказать
+// машину, и само ничего не сдвинется.
+//
+// Это CLIENT_ACTIVE_ORDER_STATUSES без поиска: поиск закрывает сама система
+// через пятнадцать минут, а всё остальное ждёт живого человека. Сюда входит и
+// TRIP_COMPLETED без отметки об оплате -- для водителя поездка кончилась,
+// деньги у него в руках, и последнее касание проще всего не сделать.
+export const STALLABLE_ORDER_STATUSES = [
+  ...ACTIVE_ORDER_STATUSES,
+  "TRIP_COMPLETED",
+  "PAYMENT_PENDING"
+];
+
 // A trip that finished the ride itself, at any stage of post-trip settlement
 // (still awaiting payment, paid, or rated) — as opposed to still open/active,
 // or cancelled/no-show. Used for admin-facing "completed" counts.

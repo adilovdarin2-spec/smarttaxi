@@ -51,7 +51,8 @@ import { announceStandRelease } from "../stands/stands.notify.js";
 import {
   ACTIVE_ORDER_STATUSES,
   OPEN_ORDER_STATUSES,
-  SETTLED_ORDER_STATUSES
+  SETTLED_ORDER_STATUSES,
+  STALLABLE_ORDER_STATUSES
 } from "../orders/order-dispatch.service.js";
 import { createReadStream, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -434,17 +435,26 @@ router.get("/dashboard", requireAuth, requireRole("OWNER", "FINANCE"), async (re
                COUNT(*) FILTER (WHERE status = ANY($1::text[]))::int searching,
                COUNT(*) FILTER (WHERE status = ANY($1::text[]) AND created_at < NOW() - INTERVAL '3 minutes')::int stuck,
                COUNT(*) FILTER (WHERE status = ANY($2::text[]))::int active,
-               -- Поездка, по которой давно ничего не происходит. Водитель мог
+               -- Заказ, по которому давно ничего не происходит. Водитель мог
                -- уехать с севшим телефоном, снести приложение или просто
                -- больше его не открыть: закрыть такой заказ может только
                -- владелец, а до этого пассажир не может заказать машину.
+               --
+               -- Считаем по всем состояниям, в которых пассажир заблокирован и
+               -- само ничего не сдвинется. Раньше сюда входили только семь
+               -- состояний самой поездки, и заказ, доехавший до
+               -- TRIP_COMPLETED без отметки об оплате, не попадал в счёт
+               -- вовсе. А это самый вероятный случай: для водителя поездка
+               -- кончилась, деньги у него в руках, и последнее касание -- то,
+               -- которое проще всего не сделать. Поиск сюда не входит: его
+               -- закрывает сама система через пятнадцать минут.
                COUNT(*) FILTER (
-                 WHERE status = ANY($2::text[])
+                 WHERE status = ANY($4::text[])
                    AND COALESCE(accepted_at, created_at) < NOW() - INTERVAL '3 hours'
                )::int stalled,
                COUNT(*) FILTER (WHERE status = ANY($3::text[]))::int completed
         FROM orders
-      `, [OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, SETTLED_ORDER_STATUSES]),
+      `, [OPEN_ORDER_STATUSES, ACTIVE_ORDER_STATUSES, SETTLED_ORDER_STATUSES, STALLABLE_ORDER_STATUSES]),
       query("SELECT COUNT(*)::int total, COUNT(*) FILTER (WHERE status='PENDING')::int pending FROM driver_applications"),
       query("SELECT * FROM service_settings WHERE id=1"),
       // An early warning well before the ceiling that stops a driver being

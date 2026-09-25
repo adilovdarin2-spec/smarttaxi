@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { TRANSITION_RULES, ACTIVE_ORDER_STATUSES, CLIENT_ACTIVE_ORDER_STATUSES } from "../modules/orders/order-dispatch.service.js";
+import { TRANSITION_RULES, ACTIVE_ORDER_STATUSES, CLIENT_ACTIVE_ORDER_STATUSES, OPEN_ORDER_STATUSES, STALLABLE_ORDER_STATUSES } from "../modules/orders/order-dispatch.service.js";
 
 // У начатой поездки должен быть выход.
 //
@@ -44,8 +44,32 @@ assert(
   assert.match(admin, /stalledTrips: orders\.rows\[0\]\.stalled/, "дашборд не считает зависшие поездки");
   assert.match(
     admin,
-    /status = ANY\(\$2::text\[\]\)\s+AND COALESCE\(accepted_at, created_at\) < NOW\(\) - INTERVAL '3 hours'/,
+    /status = ANY\(\$4::text\[\]\)\s+AND COALESCE\(accepted_at, created_at\) < NOW\(\) - INTERVAL '3 hours'/,
     "счёт зависших поездок должен идти по времени без изменений, а не по чему-то ещё"
+  );
+  // Считать надо по всем состояниям, где пассажир заблокирован и само ничего
+  // не сдвинется. Раньше считались только семь состояний самой поездки, и
+  // заказ, доехавший до TRIP_COMPLETED без отметки об оплате, не попадал в
+  // счёт вовсе -- а это самый вероятный случай: для водителя поездка
+  // кончилась, деньги у него в руках, и последнее касание проще всего не
+  // сделать.
+  assert(
+    admin.includes("STALLABLE_ORDER_STATUSES"),
+    "зависшим считается всё, из-за чего пассажир не может заказать машину, а не только сама поездка"
+  );
+  for (const status of ["TRIP_COMPLETED", "PAYMENT_PENDING"]) {
+    assert(
+      STALLABLE_ORDER_STATUSES.includes(status),
+      `${status} блокирует пассажира и сам не закроется — он должен попадать в счёт зависших`
+    );
+    assert(
+      CLIENT_ACTIVE_ORDER_STATUSES.includes(status),
+      `${status} перестал блокировать пассажира — смысл этой проверки изменился, перечитайте её`
+    );
+  }
+  assert(
+    !STALLABLE_ORDER_STATUSES.some(status => OPEN_ORDER_STATUSES.includes(status)),
+    "поиск сюда не входит: его закрывает сама система через пятнадцать минут"
   );
 
   const adminApp = `${root}../../web/src/features/admin/AdminApp.jsx`;
