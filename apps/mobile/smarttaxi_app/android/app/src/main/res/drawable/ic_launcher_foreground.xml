@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- OneDriver OD monogram. Drawn smaller than the legacy square icon on purpose:
+     only the middle 66% of an adaptive icon is guaranteed to survive the
+     launcher's mask, and at full width a round mask ate the road marks. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1024"
+    android:viewportHeight="1024">
+  <path android:pathData="M396.61 609.59Q432.39 609.59 461.3 593.99Q490.21 578.39 507.22 548.17Q515.28 533.84 519.52 516.49V605.36H622.1Q662.71 605.36 692.46 589.15Q722.22 572.93 738.61 543.49Q755 514.06 755 474.22Q755 434.21 738.43 404.69Q721.86 375.17 691.72 358.95Q661.58 342.73 621.04 342.73H519.52V431.79Q515.28 414.38 507.22 400.02Q490.21 369.7 461.3 354.1Q432.39 338.5 396.61 338.5Q360.83 338.5 331.84 354.1Q302.84 369.7 285.92 400.02Q269 430.33 269 474.22Q269 517.76 285.92 547.99Q302.84 578.22 331.84 593.9Q360.83 609.59 396.61 609.59ZM396.61 546.14Q379.52 546.14 367.53 537.59Q355.54 529.04 349.29 512.91Q343.03 496.79 343.03 474.22Q343.03 451.49 349.29 435.27Q355.54 419.05 367.53 410.51Q379.52 401.96 396.61 401.96Q413.89 401.96 425.87 410.51Q437.86 419.05 444.03 435.27Q450.2 451.49 450.2 474.22Q450.2 496.79 444.03 512.91Q437.86 529.04 425.87 537.59Q413.89 546.14 396.61 546.14ZM592.84 403.37H616.46Q638.69 403.37 652.96 411.03Q667.22 418.7 674.1 434.39Q680.97 450.08 680.97 474.22Q680.97 498.02 674.27 513.71Q667.57 529.39 653.79 537.06Q640.01 544.73 618.57 544.73H592.84ZM269 685.5H550.88V648.9H269ZM599.48 685.5H755V648.9H599.48Z">
+    <aapt:attr name="android:fillColor">
+      <gradient
+          android:type="linear"
+          android:startX="300" android:startY="230"
+          android:endX="760" android:endY="800">
+        <item android:offset="0" android:color="#FFFFFF"/>
+        <item android:offset="1" android:color="#FFFFFF"/>
+      </gradient>
+    </aapt:attr>
+  </path>
+</vector>

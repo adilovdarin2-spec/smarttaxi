@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Branded fallback for Android 11 and older. Android 12+ uses the matching
+     platform splash attributes from values-v31/styles.xml. Keeping the
+     background and monogram identical avoids a white flash between the
+     operating-system window and Flutter's first frame. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/onedriver_blue" />
+    <item
+        android:drawable="@drawable/ic_launcher_foreground"
+        android:gravity="center"
+        android:width="168dp"
+        android:height="168dp" />
+</layer-list>

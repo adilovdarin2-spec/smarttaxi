@@ -1,0 +1,13 @@
+{
+  "environment": "Local Docker development, built web, 360x800",
+  "screen": "Passenger drawer",
+  "checks": {
+    "openFocus": "Закрыть меню",
+    "shiftTabWrap": "Выйти из аккаунта Завершить сессию",
+    "tabWrap": "Закрыть меню",
+    "escapeCloses": true,
+    "restoredFocus": "Открыть меню",
+    "modeReturnVisible": true,
+    "alreadyDriverApplicationHidden": true
+  }
+}

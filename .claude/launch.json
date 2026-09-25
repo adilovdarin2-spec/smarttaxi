@@ -1,0 +1,41 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "web-stands-qa",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "apps/web",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5199",
+        "--strictPort"
+      ],
+      "port": 5199,
+      "env": {
+        "VITE_API_URL": "http://127.0.0.1:4011"
+      }
+    },
+    {
+      "name": "web-admin-qa",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "apps/web",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173,
+      "env": {
+        "VITE_API_URL": "http://127.0.0.1:4001"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1112 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../../../core/api/api_client.dart';
+import '../../../../core/config/app_config.dart';
+import '../../../../core/map/map_style.dart';
+import '../../../../core/sockets/socket_service.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../l10n/app_localizations.dart';
+import '../../../shared/models.dart';
+import '../../../shared/stand_sync.dart';
+import '../../../shared/stand_outcome.dart';
+
+/// The rider's side of a stand. A stand is a place people already know: the
+/// cars by the bazaar that leave for Шымкент when they fill up. This shows
+/// where those places are, which cars are loading right now, where they are
+/// going and for how much — and gives the two ways a seat is actually taken:
+/// call the driver, or claim a seat in the app and let them confirm it.
+class PassengerStandsScreen extends StatefulWidget {
+  const PassengerStandsScreen({
+    super.key,
+    required this.api,
+    required this.socket,
+    required this.regionId,
+    required this.mapStyle,
+    this.regionCenter,
+    this.initialStandId,
+  });
+
+  final ApiClient api;
+  final SocketService socket;
+  final String? regionId;
+  final MapStyleChoice mapStyle;
+  final Coordinate? regionCenter;
+  final String? initialStandId;
+
+  @override
+  State<PassengerStandsScreen> createState() => _PassengerStandsScreenState();
+}
+
+class _PassengerStandsScreenState extends State<PassengerStandsScreen> {
+  static const _refreshInterval = Duration(seconds: 20);
+
+  final _mapController = MapController();
+  List<TaxiStand> _stands = const [];
+  StandQueueView? _open;
+  StandSeatReservation? _reservation;
+  bool _loading = true;
+  bool _busy = false;
+  String? _error;
+  String? _actionError;
+  StandOutcomeNotice? _notice;
+  Timer? _refreshTimer;
+  String? _joinedRoom;
+  final _sync = StandSync();
+  final _sheetRevision = ValueNotifier<int>(0);
+  BuildContext? _sheetContext;
+  BuildContext? _seatCountContext;
+  int _openSequence = 0;
+
+  final _unsubscribe = <VoidCallback>[];
+
+  void _change(VoidCallback change) {
+    if (!mounted) return;
+    setState(change);
+    _sheetRevision.value++;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+    _refreshTimer =
+        Timer.periodic(_refreshInterval, (_) => _load(silent: true));
+    _unsubscribe
+        .add(widget.socket.onStandQueueUpdate((_) => _load(silent: true)));
+    _unsubscribe.add(
+        widget.socket.onStandPersonalEvent((_, __) => _load(silent: true)));
+  }
+
+  @override
+  void dispose() {
+    _sync.dispose();
+    for (final unsubscribe in _unsubscribe) {
+      unsubscribe();
+    }
+    _sheetRevision.dispose();
+    _refreshTimer?.cancel();
+    final room = _joinedRoom;
+    if (room != null) widget.socket.leaveStand(room);
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false, bool reconcile = false}) async {
+    if (!mounted) return;
+    final ticket = _sync.beginRead(reconcile: reconcile);
+    if (ticket == null) return;
+    if (!silent) setState(() => _loading = true);
+    try {
+      final stands = await widget.api.getStands(regionId: widget.regionId);
+      if (!_sync.currentRead(ticket)) return;
+      final reservation = await widget.api.getMyStandReservation();
+      StandQueueView? open;
+      final openId = _open?.stand.id ?? widget.initialStandId;
+      final openSequence = _openSequence;
+      if (!_sync.currentRead(ticket)) return;
+      if (openId != null && stands.any((stand) => stand.id == openId)) {
+        open = await widget.api.getStandQueue(openId);
+      }
+      if (!_sync.currentRead(ticket)) return;
+      final previousId = _reservation?.id;
+      StandOutcome? outcome;
+      if (previousId != null && reservation == null) {
+        try {
+          outcome = await widget.api.getStandOutcome(previousId);
+        } catch (_) {/* Do not invent a reason when history is unavailable. */}
+      }
+      if (!_sync.settleRead(ticket, true)) return;
+      final closed = openId != null &&
+          openSequence == _openSequence &&
+          !stands.any((stand) => stand.id == openId);
+      _change(() {
+        if (reservation != null) {
+          _notice = null;
+        } else if (previousId != null) {
+          _notice = standOutcomeNotice(outcome, previousId);
+        }
+        _stands = stands;
+        _reservation = reservation;
+        if (open != null && openSequence == _openSequence) _open = open;
+        if (closed) {
+          _open = null;
+          _openSequence++;
+        }
+        _loading = false;
+        _error = null;
+      });
+      if (closed) _dismissStandSheets();
+      _syncRoom(_open?.stand.id);
+    } catch (error) {
+      if (!_sync.settleRead(ticket, false)) return;
+      _change(() {
+        _loading = false;
+        _error = _readError(error);
+      });
+    }
+  }
+
+  void _syncRoom(String? standId) {
+    if (_joinedRoom == standId) return;
+    final previous = _joinedRoom;
+    if (previous != null) widget.socket.leaveStand(previous);
+    _joinedRoom = standId;
+    if (standId != null) widget.socket.joinStand(standId);
+  }
+
+  void _dismissStandSheets() {
+    // Remove only the routes owned by this screen, never the navigator's
+    // current unrelated route. The seat picker may be above the stand sheet.
+    for (final sheet in [_seatCountContext, _sheetContext]) {
+      if (sheet == null || !sheet.mounted) continue;
+      final route = ModalRoute.of(sheet);
+      if (route != null && route.isActive) {
+        Navigator.of(sheet).removeRoute(route);
+      }
+    }
+    _seatCountContext = null;
+    _sheetContext = null;
+  }
+
+  String _readError(Object error) {
+    final text = error.toString();
+    final match = RegExp(r'"message"\s*:\s*"([^"]+)"').firstMatch(text);
+    if (match != null) return match.group(1)!;
+    return AppLocalizations.of(context).standActionFailed;
+  }
+
+  Future<void> _openStand(TaxiStand stand) async {
+    final sequence = ++_openSequence;
+    _change(() => _actionError = null);
+    try {
+      final view = await widget.api.getStandQueue(stand.id);
+      if (!mounted || sequence != _openSequence) return;
+      _change(() => _open = view);
+      _syncRoom(stand.id);
+      _mapController.move(stand.toLatLng(), 15);
+      await _showStandSheet();
+    } catch (error) {
+      if (mounted && sequence == _openSequence) {
+        _change(() => _actionError = _readError(error));
+      }
+    }
+  }
+
+  Future<void> _showStandSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        _sheetContext = context;
+        return ValueListenableBuilder<int>(
+          valueListenable: _sheetRevision,
+          builder: (context, value, child) => PassengerStandSheet(
+            view: _open,
+            reservation: _reservation,
+            busy: _busy || _sync.blocked,
+            onCall: _call,
+            onReserve: _reserve,
+            onCancelReservation: _cancelReservation,
+            error: _sync.blocked && !_busy
+                ? AppLocalizations.of(context).standRefreshRequired
+                : _actionError ?? _error,
+            onRefresh: _busy ? null : () => _load(),
+          ),
+        );
+      },
+    );
+    _sheetContext = null;
+  }
+
+  Future<void> _call(String phone) async {
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _reserve(StandQueueEntry entry) async {
+    if (_busy || _sync.blocked) return;
+    final seats = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        _seatCountContext = context;
+        return _SeatCountSheet(maxSeats: entry.freeSeats);
+      },
+    );
+    _seatCountContext = null;
+    if (seats == null || !mounted || _open?.stand.id != entry.standId) return;
+    await _run(() async {
+      await widget.api.reserveStandSeat(entry.id, seats: seats);
+    });
+    // Close only this sheet, never the passenger route after the user has
+    // already dismissed it while the network request was in flight.
+    final sheet = _sheetContext;
+    if (mounted &&
+        sheet != null &&
+        sheet.mounted &&
+        _reservation?.entryId == entry.id &&
+        !_sync.blocked) {
+      _change(() => _actionError = null);
+      Navigator.of(sheet).pop();
+    }
+  }
+
+  Future<void> _cancelReservation() async {
+    final reservation = _reservation;
+    if (reservation == null) return;
+    await _run(() => widget.api.cancelStandReservation(reservation.id));
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (!mounted) return;
+    final ticket = _sync.beginWrite();
+    if (ticket == null) return;
+    _change(() {
+      _busy = true;
+      _actionError = null;
+    });
+    try {
+      await action();
+    } catch (error) {
+      if (mounted) _change(() => _actionError = _readError(error));
+    } finally {
+      if (_sync.currentWrite(ticket)) {
+        await _load(silent: true, reconcile: true);
+        if (_sync.finishWrite(ticket)) _change(() => _busy = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final center = widget.regionCenter ??
+        (_stands.isNotEmpty
+            ? Coordinate(lat: _stands.first.lat, lng: _stands.first.lng)
+            : const Coordinate(lat: 40.8444, lng: 68.509));
+    return Scaffold(
+      backgroundColor: palette.appBackground,
+      appBar: AppBar(
+        backgroundColor: palette.appBackground,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        title: Text(l10n.standsPassengerTitle),
+        actions: [
+          IconButton(
+            onPressed: _busy ? null : () => _load(),
+            icon: const Icon(Icons.refresh),
+            tooltip: l10n.retry,
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: Stack(
+                children: [
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: LatLng(center.lat, center.lng),
+                      initialZoom: 13,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                      ),
+                    ),
+                    children: [
+                      // The rider chose how their map is drawn; a screen that
+                      // ignores it is worse than not offering the choice.
+                      // Flat by construction, so only the imagery choice
+                      // reaches here.
+                      TileLayer(
+                        urlTemplate: widget.mapStyle.rasterTileUrl,
+                        subdomains: const ['a', 'b', 'c', 'd'],
+                        retinaMode: true,
+                        maxNativeZoom: widget.mapStyle.allowsTileTinting
+                            ? 19
+                            : AppConfig.satelliteMaxZoom,
+                        userAgentPackageName: 'kz.onedriver.app',
+                      ),
+                      MarkerLayer(
+                        markers: [
+                          for (final stand in _stands)
+                            Marker(
+                              point: stand.toLatLng(),
+                              width: 44,
+                              height: 52,
+                              alignment: Alignment.topCenter,
+                              child: _StandPin(
+                                stand: stand,
+                                selected: _open?.stand.id == stand.id,
+                                onTap: () => unawaited(_openStand(stand)),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  if (_loading)
+                    const Positioned(
+                      top: 12,
+                      right: 12,
+                      child: SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.4),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: _StandList(
+                stands: _stands,
+                reservation: _reservation,
+                notice: _notice?.text(l10n),
+                error: _sync.blocked && !_busy && !_loading
+                    ? l10n.standRefreshRequired
+                    : _actionError ?? _error,
+                busy: _busy || _sync.blocked,
+                onOpen: _openStand,
+                onCancelReservation: _cancelReservation,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StandPin extends StatelessWidget {
+  const _StandPin({
+    required this.stand,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final TaxiStand stand;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    // The number on the pin is the thing a rider is actually looking for:
+    // whether there is a car here that can take them right now.
+    final free = stand.freeSeats;
+    final colour = free > 0 ? palette.brand : palette.textMuted;
+    return Semantics(
+      button: true,
+      label: '${stand.name}, ${stand.driversCount}',
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: colour,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: selected ? palette.brandDeep : Colors.white,
+                  width: selected ? 3 : 2.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.22),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: free > 0
+                  ? Text(
+                      '$free',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    )
+                  : const Icon(Icons.local_taxi_rounded,
+                      color: Colors.white, size: 20),
+            ),
+            Container(
+              width: 3,
+              height: 10,
+              color: colour,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _StandList extends StatelessWidget {
+  const _StandList({
+    required this.stands,
+    required this.reservation,
+    this.notice,
+    required this.error,
+    required this.busy,
+    required this.onOpen,
+    required this.onCancelReservation,
+  });
+
+  final List<TaxiStand> stands;
+  final StandSeatReservation? reservation;
+  final String? notice;
+  final String? error;
+  final bool busy;
+  final Future<void> Function(TaxiStand stand) onOpen;
+  final Future<void> Function() onCancelReservation;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        border: Border(top: BorderSide(color: palette.border)),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+      child: ListView(
+        children: [
+          if (notice != null) ...[
+            Semantics(liveRegion: true, child: _Notice(text: notice!)),
+            const SizedBox(height: 12),
+          ],
+          if (error != null) ...[
+            _Notice(text: error!, danger: true),
+            const SizedBox(height: 12),
+          ],
+          if (reservation != null) ...[
+            PassengerStandReservationBanner(
+              reservation: reservation!,
+              busy: busy,
+              onCancel: onCancelReservation,
+            ),
+            const SizedBox(height: 14),
+          ],
+          if (stands.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  Icon(Icons.local_taxi_outlined,
+                      size: 36, color: palette.textMuted),
+                  const SizedBox(height: 10),
+                  Text(
+                    l10n.standNoneTitle,
+                    style: TextStyle(
+                      color: palette.text,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.standNoneText,
+                    textAlign: TextAlign.center,
+                    style:
+                        TextStyle(color: palette.textSecondary, fontSize: 13),
+                  ),
+                ],
+              ),
+            )
+          else
+            for (final stand in stands)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: InkWell(
+                  onTap: () => onOpen(stand),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: palette.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                stand.name,
+                                style: TextStyle(
+                                  color: palette.text,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                '${stand.isIntercity ? l10n.standKindIntercity : l10n.standKindCity} · '
+                                '${l10n.standCarsInLine(stand.driversCount)}',
+                                style: TextStyle(
+                                  color: palette.textSecondary,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              if (stand.freeSeats > 0)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    color: palette.successSoft,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    l10n.standSeatsFreeCount(stand.freeSeats),
+                                    style: TextStyle(
+                                      color: palette.success,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(Icons.chevron_right, color: palette.textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+}
+
+class PassengerStandReservationBanner extends StatelessWidget {
+  const PassengerStandReservationBanner({
+    super.key,
+    required this.reservation,
+    required this.busy,
+    required this.onCancel,
+  });
+
+  final StandSeatReservation reservation;
+  final bool busy;
+  final Future<void> Function() onCancel;
+
+  // A held seat is not held forever: the server expires it after
+  // RESERVATION_TTL_MINUTES and the sweeper gives the seat back. The rider is
+  // standing at the stand deciding whether to keep waiting or walk over to
+  // the car, and "waiting for the driver" alone does not tell them whether
+  // that is two minutes or twenty.
+  //
+  // Recomputed on each build, which this screen already does every twenty
+  // seconds as it polls — accurate enough for a number in minutes, and no
+  // ticker to leak.
+  String _pendingText(AppLocalizations l10n) {
+    final expiresAt = reservation.expiresAt;
+    if (expiresAt == null) return l10n.standReservationPending;
+    final left = expiresAt.difference(DateTime.now());
+    if (left.isNegative) return l10n.standReservationPending;
+    if (left.inSeconds < 60) return l10n.standReservationPendingLastMinute;
+    // Rounded up, so it never reads "0 min" while the seat is still held.
+    return l10n.standReservationPendingMinutes((left.inSeconds / 60).ceil());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final confirmed = reservation.isConfirmed;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: confirmed ? palette.successSoft : palette.brandSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: confirmed ? palette.success : palette.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.standYourReservationTitle,
+            style: TextStyle(
+              color: palette.text,
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '${reservation.standName} · ${l10n.standRequestSeats(reservation.seats)}',
+            style: TextStyle(color: palette.textSecondary, fontSize: 13),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            confirmed
+                ? l10n.standReservationConfirmed
+                : _pendingText(l10n),
+            style: TextStyle(
+              color: confirmed ? palette.success : palette.brand,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
+          ),
+          if (reservation.carLabel.isNotEmpty ||
+              reservation.plate.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              [reservation.carLabel, reservation.plate]
+                  .where((part) => part.isNotEmpty)
+                  .join(' · '),
+              style: TextStyle(color: palette.text, fontSize: 13.5),
+            ),
+          ],
+          const SizedBox(height: 10),
+          _StandActions(
+            children: [
+              if (reservation.driverPhone.isNotEmpty)
+                OutlinedButton.icon(
+                  onPressed: busy
+                      ? null
+                      : () => launchUrl(
+                          Uri(scheme: 'tel', path: reservation.driverPhone)),
+                  icon: const Icon(Icons.phone_rounded, size: 18),
+                  label: Text(l10n.callButton),
+                ),
+              TextButton(
+                onPressed: busy ? null : onCancel,
+                child: Text(l10n.standReservationCancel),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class PassengerStandSheet extends StatelessWidget {
+  const PassengerStandSheet({
+    super.key,
+    required this.view,
+    required this.reservation,
+    required this.busy,
+    required this.onCall,
+    required this.onReserve,
+    required this.onCancelReservation,
+    required this.error,
+    this.onRefresh,
+  });
+
+  final StandQueueView? view;
+  final StandSeatReservation? reservation;
+  final bool busy;
+  final Future<void> Function(String phone) onCall;
+  final Future<void> Function(StandQueueEntry entry) onReserve;
+  final Future<void> Function() onCancelReservation;
+  final String? error;
+  final VoidCallback? onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final current = view;
+    if (current == null) return const SizedBox.shrink();
+    // Only cars that are actually loading can take a passenger — the rest of
+    // the line is waiting its turn, and offering a seat in one would promise
+    // something the driver cannot deliver.
+    final boarding = current.boarding;
+    final compactEmptyState = boarding.isEmpty && error == null;
+    return DraggableScrollableSheet(
+      initialChildSize: compactEmptyState ? 0.35 : 0.6,
+      minChildSize: 0.35,
+      maxChildSize: 0.92,
+      expand: false,
+      builder: (context, controller) => Container(
+        decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+        child: ListView(
+          controller: controller,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: palette.border,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              current.stand.name,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              current.stand.isIntercity
+                  ? l10n.standKindIntercity
+                  : l10n.standKindCity,
+              style: TextStyle(color: palette.textSecondary, fontSize: 13.5),
+            ),
+            if (current.stand.note.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                current.stand.note,
+                style: TextStyle(color: palette.textMuted, fontSize: 12.5),
+              ),
+            ],
+            if (error != null) ...[
+              const SizedBox(height: 12),
+              _Notice(text: error!, danger: true),
+              if (onRefresh != null)
+                OutlinedButton.icon(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh),
+                  label: Text(l10n.retry),
+                ),
+            ],
+            const SizedBox(height: 18),
+            Text(
+              l10n.standSheetCars,
+              style: TextStyle(
+                color: palette.text,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 10),
+            if (boarding.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Text(
+                  l10n.standSheetEmpty,
+                  style:
+                      TextStyle(color: palette.textSecondary, fontSize: 13.5),
+                ),
+              )
+            else
+              for (final entry in boarding)
+                PassengerStandCarCard(
+                  entry: entry,
+                  busy: busy,
+                  alreadyReserved: reservation != null,
+                  onCall: onCall,
+                  onReserve: onReserve,
+                ),
+            if (boarding.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text(
+                l10n.standCallToConfirm,
+                key: const ValueKey('stand_call_hint'),
+                style: TextStyle(color: palette.textMuted, fontSize: 12.5),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class PassengerStandCarCard extends StatelessWidget {
+  const PassengerStandCarCard({
+    super.key,
+    required this.entry,
+    required this.busy,
+    required this.alreadyReserved,
+    required this.onCall,
+    required this.onReserve,
+  });
+
+  final StandQueueEntry entry;
+  final bool busy;
+  final bool alreadyReserved;
+  final Future<void> Function(String phone) onCall;
+  final Future<void> Function(StandQueueEntry entry) onReserve;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final canReserve = !busy && !alreadyReserved && entry.freeSeats > 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: palette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Destination, price and free seats sit on one line when they fit
+          // and stack when they do not: at 1.6 text scale on a 320px phone the
+          // seat count alone is wider than half the card.
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 10,
+            runSpacing: 8,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 140),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.destinationLabel.isEmpty
+                          ? l10n.standDestinationUnknown
+                          : entry.destinationLabel,
+                      style: TextStyle(
+                        color: palette.text,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      entry.pricePerSeat == null
+                          ? l10n.standNoPriceYet
+                          : l10n
+                              .standPricePerSeatValue('${entry.pricePerSeat}'),
+                      style: TextStyle(
+                        color: palette.brand,
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: entry.freeSeats > 0
+                      ? palette.successSoft
+                      : palette.cardWarm,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  l10n.standSeatsFreeCount(entry.freeSeats),
+                  style: TextStyle(
+                    color: entry.freeSeats > 0
+                        ? palette.success
+                        : palette.textMuted,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Text(
+            [entry.driverName, entry.carLabel, entry.plate]
+                .where((part) => part.isNotEmpty)
+                .join(' · '),
+            style: TextStyle(color: palette.textSecondary, fontSize: 13.5),
+          ),
+          if (entry.comment.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              entry.comment,
+              style: TextStyle(color: palette.textMuted, fontSize: 12.5),
+            ),
+          ],
+          const SizedBox(height: 12),
+          _StandActions(
+            children: [
+              OutlinedButton.icon(
+                onPressed: entry.driverPhone.isEmpty || busy
+                    ? null
+                    : () => onCall(entry.driverPhone),
+                icon: const Icon(Icons.phone_rounded, size: 18),
+                label: Text(l10n.callButton),
+              ),
+              FilledButton(
+                onPressed: canReserve ? () => onReserve(entry) : null,
+                child: Text(l10n.standReserveSeat),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SeatCountSheet extends StatelessWidget {
+  const _SeatCountSheet({required this.maxSeats});
+
+  final int maxSeats;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final palette = context.palette;
+    final options =
+        List<int>.generate(maxSeats.clamp(1, 8), (index) => index + 1);
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.card,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      // The gesture bar sits over the bottom of a bottom sheet, and these
+      // chips are the only thing on this one — without the safe area the
+      // rider taps the system navigation instead of a seat.
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: palette.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                l10n.standReserveSeatsTitle,
+                style: TextStyle(
+                  color: palette.text,
+                  fontSize: 19,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  for (final value in options)
+                    SizedBox(
+                      width: 56,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(value),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          textStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        child: Text('$value'),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Notice extends StatelessWidget {
+  const _Notice({required this.text, this.danger = false});
+
+  final String text;
+  final bool danger;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: danger ? palette.dangerSoft : palette.brandSurface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color:
+              danger ? palette.danger.withValues(alpha: 0.3) : palette.border,
+        ),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: danger ? palette.danger : palette.textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
+/// Keep actions readable without shrinking the user's chosen text size.
+class _StandActions extends StatelessWidget {
+  const _StandActions({required this.children});
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, constraints) {
+          final stacked = constraints.maxWidth < 300 ||
+              MediaQuery.textScalerOf(context).scale(14) > 18;
+          if (stacked) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  children[i],
+                ],
+              ],
+            );
+          }
+          return Row(children: [
+            for (var i = 0; i < children.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(child: children[i]),
+            ],
+          ]);
+        },
+      );
+}

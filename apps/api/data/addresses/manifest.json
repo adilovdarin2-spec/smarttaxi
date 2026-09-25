@@ -1,0 +1,34 @@
+{
+  "source": "OpenStreetMap via public Overpass API",
+  "license": "ODbL-1.0",
+  "counts": {
+    "ASYKATA.jsonl.gz": 205,
+    "ATAKENT.jsonl.gz": 3165,
+    "ATAMEKEN.jsonl.gz": 23,
+    "BIRLIK.jsonl.gz": 78,
+    "DOSTYK.jsonl.gz": 55,
+    "FIRDOUSI.jsonl.gz": 113,
+    "KIROV.jsonl.gz": 29,
+    "MAKTAARAL.jsonl.gz": 274,
+    "MYRZAKENT.jsonl.gz": 4052,
+    "SHYMKENT.jsonl.gz": 106647,
+    "YNTYMAK.jsonl.gz": 12,
+    "ZHANA_ZHOL.jsonl.gz": 9,
+    "ZHETYSAY.jsonl.gz": 7451
+  },
+  "sha256": {
+    "ASYKATA.jsonl.gz": "6c2ad3f7bc936f7cd672688f841ad65910cf37d53405adb9e1c97d4283fe563b",
+    "ATAKENT.jsonl.gz": "472acb1dbffd08b5d61870e3d2826c5a5542acbebf42d61eed82c171f79c0942",
+    "ATAMEKEN.jsonl.gz": "3ac90beda3f54c48b7f9dce3fbf3f4a236e1990d3e20386d6a6e6d728ffd566a",
+    "BIRLIK.jsonl.gz": "918fb6d5351d62b0e0fe9d8f10eac3e2772ca5abb97ee9f1b3c74efc62227df5",
+    "DOSTYK.jsonl.gz": "a879c192278cff1a71790acd912cfed524907ad48e0b661fc01e6cd3adbf4575",
+    "FIRDOUSI.jsonl.gz": "f8c5285788a7f3aaad90eeee2e29dfddae8b3ca82ee3fdf118e13e9f42e8147b",
+    "KIROV.jsonl.gz": "db59ad6987fc6261caebd64eac4b8ff7a92adfaff432a9641dbf9fc9a9679fd6",
+    "MAKTAARAL.jsonl.gz": "1f9d1fb0d160babf052ed0e2ac35e09f986fd1e43123c8654318c3c1f882a5e8",
+    "MYRZAKENT.jsonl.gz": "1603e7c446c04a1d0532cf3e9af247e016c678c0fe7b29f211485b83d24d35ad",
+    "SHYMKENT.jsonl.gz": "9dabfca1a608750048b20f7f0a71ab2def4db8a798fcbf3d89047c971d34ebae",
+    "YNTYMAK.jsonl.gz": "9547da597fcb0652a99094b7b67e5e3fb204a115de669a68918fcf454c5b3119",
+    "ZHANA_ZHOL.jsonl.gz": "7203024eb60003cf6f7d99ca8b11ed9056db8f714c49c1d411c65422f507ae82",
+    "ZHETYSAY.jsonl.gz": "b1006d756f4f5ffcc58991eec8f10e4931436813fdd6565d50722fbe5e4f61ab"
+  }
+}
