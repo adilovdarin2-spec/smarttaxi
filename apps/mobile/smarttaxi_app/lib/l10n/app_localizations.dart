@@ -7909,6 +7909,12 @@ abstract class AppLocalizations {
   /// **'Вышла новая версия OneDriver. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.'**
   String get updateRequiredText;
 
+  /// No description provided for @updateNoLinkText.
+  ///
+  /// In ru, this message translates to:
+  /// **'Установите новую версию оттуда же, откуда ставили приложение, или обратитесь в поддержку.'**
+  String get updateNoLinkText;
+
   /// No description provided for @updateButton.
   ///
   /// In ru, this message translates to:

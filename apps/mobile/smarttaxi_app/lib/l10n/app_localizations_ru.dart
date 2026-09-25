@@ -4439,6 +4439,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Вышла новая версия OneDriver. Эта версия больше не поддерживается — обновите приложение, чтобы продолжить пользоваться.';
 
   @override
+  String get updateNoLinkText =>
+      'Установите новую версию оттуда же, откуда ставили приложение, или обратитесь в поддержку.';
+
+  @override
   String get updateButton => 'Обновить';
 
   @override

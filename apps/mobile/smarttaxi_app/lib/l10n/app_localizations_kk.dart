@@ -4417,6 +4417,10 @@ class AppLocalizationsKk extends AppLocalizations {
       'OneDriver-дың жаңа нұсқасы шықты. Бұл нұсқа енді қолдау көрмейді — пайдалануды жалғастыру үшін қолданбаны жаңартыңыз.';
 
   @override
+  String get updateNoLinkText =>
+      'Қолданбаны орнатқан жеріңізден жаңа нұсқасын орнатыңыз немесе қолдау қызметіне хабарласыңыз.';
+
+  @override
   String get updateButton => 'Жаңарту';
 
   @override

@@ -4460,6 +4460,10 @@ class AppLocalizationsUz extends AppLocalizations {
       'OneDriver\'ning yangi versiyasi chiqdi. Bu versiya endi qo\'llab-quvvatlanmaydi — foydalanishni davom ettirish uchun ilovani yangilang.';
 
   @override
+  String get updateNoLinkText =>
+      'Ilovani o\'rnatgan joyingizdan yangi versiyasini o\'rnating yoki qo\'llab-quvvatlash xizmatiga murojaat qiling.';
+
+  @override
   String get updateButton => 'Yangilash';
 
   @override

@@ -1844,6 +1844,7 @@
   "clientCancelReasonNotice": "如果司机要求您取消订单，请在此标注。此类情况将由调度员审核。",
   "updateRequiredTitle": "需要更新应用",
   "updateRequiredText": "OneDriver 已发布新版本。此版本不再受支持，请更新应用以继续使用。",
+  "updateNoLinkText": "请从您安装本应用的地方安装新版本，或联系客服。",
   "updateButton": "更新",
   "updateAvailableTitle": "有可用更新",
   "updateAvailableText": "新版本 {version} 已经可用。",

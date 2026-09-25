@@ -1844,6 +1844,7 @@
   "clientCancelReasonNotice": "Agar haydovchi buyurtmani bekor qilishni so‘rasa — shu yerda belgilang. Bunday holatlarni dispetcher tekshiradi.",
   "updateRequiredTitle": "Ilovani yangilash kerak",
   "updateRequiredText": "OneDriver'ning yangi versiyasi chiqdi. Bu versiya endi qo'llab-quvvatlanmaydi — foydalanishni davom ettirish uchun ilovani yangilang.",
+  "updateNoLinkText": "Ilovani o'rnatgan joyingizdan yangi versiyasini o'rnating yoki qo'llab-quvvatlash xizmatiga murojaat qiling.",
   "updateButton": "Yangilash",
   "updateAvailableTitle": "Yangilanish mavjud",
   "updateAvailableText": "Yangi {version} versiyasi allaqachon mavjud.",

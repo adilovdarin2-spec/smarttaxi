@@ -4144,6 +4144,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get updateRequiredText => 'OneDriver 已发布新版本。此版本不再受支持，请更新应用以继续使用。';
 
   @override
+  String get updateNoLinkText => '请从您安装本应用的地方安装新版本，或联系客服。';
+
+  @override
   String get updateButton => '更新';
 
   @override

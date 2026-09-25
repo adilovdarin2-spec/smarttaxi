@@ -25,16 +25,40 @@ export function isOlderVersion(a, b) {
   return false;
 }
 
+// Запрет без выхода -- это не запрет, это стена.
+//
+// updateRequired закрывает приложение целиком: экран во весь экран, назад не
+// уйти, одна кнопка «Обновить». Кнопка ведёт по APP_UPDATE_URL. Если этой
+// переменной нет -- а на проде её сейчас нет, -- кнопка не делает ничего, и
+// человек остаётся в приложении, из которого нельзя выйти и в которое нельзя
+// войти.
+//
+// А поднять APP_MIN_SUPPORTED_VERSION владелец рано или поздно поднимет: это
+// ровно то, что делают при первом настоящем релизе, чтобы увести всех с
+// пилотной сборки. Поэтому отказываемся закрывать вход, пока некуда вести:
+// пусть лучше старая версия поработает лишний день, чем человек упрётся в
+// стену.
+let warnedAboutMissingUpdateUrl = false;
+
 router.get("/", (req, res) => {
   const clientVersion = String(req.query.version || "").trim();
   const latest = env.APP_LATEST_VERSION;
   const minSupported = env.APP_MIN_SUPPORTED_VERSION;
+  const updateUrl = env.APP_UPDATE_URL || null;
+  const belowMinimum = clientVersion ? isOlderVersion(clientVersion, minSupported) : false;
+  if (belowMinimum && !updateUrl && !warnedAboutMissingUpdateUrl) {
+    warnedAboutMissingUpdateUrl = true;
+    console.warn(
+      "[app-version] APP_MIN_SUPPORTED_VERSION отсекает старые сборки, но APP_UPDATE_URL пуст — " +
+      "принудительное обновление не включается, иначе людям некуда идти. Задайте APP_UPDATE_URL."
+    );
+  }
   res.json({
     latestVersion: latest,
     minSupportedVersion: minSupported,
-    updateUrl: env.APP_UPDATE_URL || null,
+    updateUrl,
     updateNotes: env.APP_UPDATE_NOTES || null,
-    updateRequired: clientVersion ? isOlderVersion(clientVersion, minSupported) : false,
+    updateRequired: belowMinimum && Boolean(updateUrl),
     updateAvailable: clientVersion ? isOlderVersion(clientVersion, latest) : false
   });
 });

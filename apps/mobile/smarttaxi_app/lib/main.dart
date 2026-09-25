@@ -1646,14 +1646,30 @@ class _UpdateRequiredScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 22),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: onUpdate,
-                      icon: const Icon(Icons.system_update_rounded),
-                      label: Text(l10n.updateButton),
+                  // Кнопка ведёт по ссылке из настроек сервера. Если ссылки
+                  // нет, кнопка молча не делает ничего — а уйти с этого
+                  // экрана нельзя. Тогда лучше не обещать действия, которого
+                  // не будет, и сказать словами, что делать.
+                  if (info.updateUrl != null && info.updateUrl!.trim().isNotEmpty)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: onUpdate,
+                        icon: const Icon(Icons.system_update_rounded),
+                        label: Text(l10n.updateButton),
+                      ),
+                    )
+                  else
+                    Text(
+                      l10n.updateNoLinkText,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: SmartTaxiColors.authInk,
+                        fontSize: 14,
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
