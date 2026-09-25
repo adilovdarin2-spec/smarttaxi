@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { query, tx } from "../../db/pool.js";
 import { requireAuth, requireRole } from "../../common/auth.js";
+import { rateLimit } from "../../common/rateLimit.js";
 import { AppError } from "../../common/errors.js";
 import { writeAudit } from "../../common/audit.js";
 import { normalizePoint, pointInPolygon } from "../regions/regions.service.js";
@@ -166,7 +167,16 @@ router.get("/osm-navigation", requireAuth, requireRole("DRIVER"), async (req, re
   }
 });
 
-router.post("/", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
+// Один водитель -- одно сообщение об одном и том же.
+//
+// У /confirm и /expire правило "один водитель -- один голос" есть, а само
+// создание не ограничивал никто. Двойное нажатие рисовало две одинаковые
+// метки на карте у всех водителей района, а один человек мог засыпать ленту
+// целиком -- её читают за рулём.
+const DUPLICATE_ALERT_METERS = 120;
+const DUPLICATE_ALERT_MINUTES = 15;
+
+router.post("/", requireAuth, requireRole("DRIVER"), rateLimit({ prefix: "road-alert-create", windowMs: 60_000, max: 6 }), async (req, res, next) => {
   try {
     const body = CreateAlertBody.parse(req.body);
     assertSafetyComment(body.comment);
@@ -175,6 +185,23 @@ router.post("/", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
     const point = normalizePoint({ lat: body.lat, lng: body.lng });
     if (!pointInPolygon(point, region.boundary)) {
       throw new AppError("Road alert point is outside selected region", 403, "ROAD_ALERT_OUTSIDE_REGION");
+    }
+    // То же самое, там же, только что -- это второе нажатие, а не второе
+    // событие. Отдаём уже созданную метку вместо новой строки: на карте у
+    // всех остальных ничего не двоится, и человеку не в чем разбираться.
+    const existing = (await query(`
+      SELECT * FROM road_alerts
+      WHERE driver_id=$1 AND type=$2 AND status='ACTIVE'
+        AND created_at > NOW() - ($3 || ' minutes')::interval
+        AND 111320 * sqrt(
+              power(lat - $4, 2) +
+              power((lng - $5) * cos(radians($4)), 2)
+            ) <= $6
+      ORDER BY created_at DESC
+      LIMIT 1
+    `, [driver.id, body.type, String(DUPLICATE_ALERT_MINUTES), point.lat, point.lng, DUPLICATE_ALERT_METERS])).rows[0];
+    if (existing) {
+      return res.status(200).json({ alert: publicAlert(existing), duplicateOf: existing.id });
     }
     const result = await query(`
       INSERT INTO road_alerts(region_id, driver_id, type, comment, lat, lng, speed_limit, heading)

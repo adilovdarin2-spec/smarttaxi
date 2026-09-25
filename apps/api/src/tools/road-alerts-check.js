@@ -106,4 +106,34 @@ assert(
   "the vote and the count it causes belong in one transaction"
 );
 
+
+// Один водитель -- одно сообщение об одном и том же.
+//
+// У /confirm и /expire правило "один водитель -- один голос" было с самого
+// начала, а само создание не ограничивал никто. Двойное нажатие рисовало две
+// одинаковые метки на карте у всех водителей района, а один человек мог
+// засыпать ленту целиком -- её читают за рулём.
+{
+  const at = routes.indexOf('router.post("/"');
+  assert(at >= 0, "пропал маршрут создания сообщения о дороге");
+  const head = routes.slice(at, at + 220);
+  assert(
+    head.includes("rateLimit("),
+    "создание сообщения о дороге должно быть ограничено по частоте, как остальные записи"
+  );
+  const body = routes.slice(at, routes.indexOf("router.patch", at));
+  assert(
+    body.includes("DUPLICATE_ALERT_METERS") && body.includes("DUPLICATE_ALERT_MINUTES"),
+    "то же самое, там же, только что -- это второе нажатие, а не второе событие"
+  );
+  assert(
+    body.indexOf("FROM road_alerts") < body.indexOf("INSERT INTO road_alerts"),
+    "проверка повтора должна идти до вставки"
+  );
+  assert(
+    body.includes("duplicateOf"),
+    "на повтор надо вернуть уже созданную метку, а не молча создать вторую"
+  );
+}
+
 console.log("Road-safety alert checks ok");
