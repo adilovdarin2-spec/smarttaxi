@@ -2538,6 +2538,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось создать заявку. Попробуйте ещё раз';
 
   @override
+  String get driverTopupErrorAmount => 'Проверьте сумму пополнения';
+
+  @override
   String get driverTopupErrorAlreadyPending =>
       'Заявка уже отправлена — дождитесь подтверждения';
 

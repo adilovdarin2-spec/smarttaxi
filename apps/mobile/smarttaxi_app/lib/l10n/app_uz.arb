@@ -1051,6 +1051,7 @@
     }
   },
   "driverTopupErrorGeneric": "So'rov yaratilmadi. Qayta urinib ko'ring",
+  "driverTopupErrorAmount": "To'ldirish summasini tekshiring",
   "driverTopupErrorAlreadyPending": "Ariza allaqachon yuborilgan — tasdiqlanishini kuting",
   "driverTopupSubmitButton": "So'rovni yuborish",
   "driverWalletTransactionsTitle": "Operatsiyalar",

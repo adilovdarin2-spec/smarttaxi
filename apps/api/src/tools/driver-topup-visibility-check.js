@@ -65,6 +65,25 @@ assert(
   "накопившиеся заявки надо схлопнуть до создания уникального индекса, иначе миграция упадёт и API не поднимется"
 );
 
+// --- Заплатить свой долг можно всегда ---------------------------------------
+//
+// Минимум пополнения существует, чтобы не гонять переводы на мелочь. Но
+// зачесть больше долга нельзя, и водитель, задолжавший меньше минимума,
+// оказывался заперт между двумя отказами: меньше 500 не принимают, 500 не
+// зачитывают. Кнопка для него мертва, а два отказа противоречат друг другу.
+{
+  const at = walletService.indexOf("export async function createDriverTopupRequest");
+  const body = walletService.slice(at, walletService.indexOf(String.fromCharCode(10) + "export ", at + 1));
+  assert(
+    body.includes("Math.min(MIN_TOPUP_KZT"),
+    "нижняя граница пополнения должна опускаться до размера долга, иначе мелкий долг погасить нечем"
+  );
+  assert(
+    body.indexOf("SELECT debt FROM drivers") < body.indexOf("TOPUP_BELOW_MINIMUM"),
+    "долг надо прочитать до отказа по минимуму: именно он задаёт границу"
+  );
+}
+
 // --- Подтверждение и долг — одно действие -----------------------------------
 const reviewAt = walletService.indexOf("export async function reviewDriverTopupRequest");
 assert(reviewAt >= 0, "пропало подтверждение заявки");

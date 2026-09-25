@@ -196,8 +196,10 @@ router.get("/topup-requests", requireAuth, requireRole("DRIVER"), async (req, re
 
 router.post("/topup-requests", requireAuth, requireRole("DRIVER"), async (req, res, next) => {
   try {
+    // Нижнюю границу задаёт сервис: она зависит от долга водителя, а долг
+    // виден только там. Здесь достаточно «положительное целое».
     const body = z.object({
-      amountKzt: z.coerce.number().int().min(MIN_TOPUP_KZT)
+      amountKzt: z.coerce.number().int().positive().max(10_000_000)
     }).parse(req.body);
     const driver = await getDriverOrThrow(req.user.id);
     const topupRequest = await createDriverTopupRequest({ driverId: driver.id, amountKzt: body.amountKzt }, query);

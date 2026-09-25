@@ -280,8 +280,25 @@ export function publicTopupRequest(row) {
 // и ту же сумму и мог списать долг дважды. Уникальный частичный индекс в
 // базе держит то же правило на случай двух одновременных нажатий.
 export async function createDriverTopupRequest({ driverId, amountKzt }, executor = defaultQuery) {
-  if (!Number.isInteger(amountKzt) || amountKzt < MIN_TOPUP_KZT) {
-    throw new AppError(`Minimum top-up is ${MIN_TOPUP_KZT} KZT`, 400, "TOPUP_BELOW_MINIMUM");
+  if (!Number.isInteger(amountKzt) || amountKzt <= 0) {
+    throw new AppError("Top-up amount must be positive", 400, "INVALID_TOPUP_AMOUNT");
+  }
+  // Заплатить свой долг можно всегда, даже если он меньше минимального
+  // пополнения.
+  //
+  // Минимум существует, чтобы не гонять переводы на мелочь. Но зачесть больше
+  // долга нельзя, и водитель, задолжавший 109 ₸, оказывался заперт между
+  // двумя отказами: меньше 500 не принимают, 500 не зачитывают. Кнопка для
+  // него мертва, а два отказа противоречат друг другу.
+  const owed = Math.round(Number(
+    (await run(executor, "SELECT debt FROM drivers WHERE id=$1", [driverId])).rows[0]?.debt || 0
+  ));
+  const floor = Math.min(MIN_TOPUP_KZT, Math.max(1, owed));
+  if (amountKzt < floor) {
+    throw new AppError(`Minimum top-up is ${floor} KZT`, 400, "TOPUP_BELOW_MINIMUM", {
+      minimumKzt: floor,
+      outstandingDebtKzt: owed
+    });
   }
   const open = (await run(
     executor,

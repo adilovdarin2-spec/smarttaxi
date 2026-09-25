@@ -2561,6 +2561,9 @@ class AppLocalizationsUz extends AppLocalizations {
       'So\'rov yaratilmadi. Qayta urinib ko\'ring';
 
   @override
+  String get driverTopupErrorAmount => 'To\'ldirish summasini tekshiring';
+
+  @override
   String get driverTopupErrorAlreadyPending =>
       'Ariza allaqachon yuborilgan — tasdiqlanishini kuting';
 

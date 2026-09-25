@@ -4609,6 +4609,12 @@ abstract class AppLocalizations {
   /// **'Не удалось создать заявку. Попробуйте ещё раз'**
   String get driverTopupErrorGeneric;
 
+  /// No description provided for @driverTopupErrorAmount.
+  ///
+  /// In ru, this message translates to:
+  /// **'Проверьте сумму пополнения'**
+  String get driverTopupErrorAmount;
+
   /// No description provided for @driverTopupErrorAlreadyPending.
   ///
   /// In ru, this message translates to:

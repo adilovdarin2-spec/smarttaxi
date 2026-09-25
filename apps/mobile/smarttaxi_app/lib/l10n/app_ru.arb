@@ -1051,6 +1051,7 @@
     }
   },
   "driverTopupErrorGeneric": "Не удалось создать заявку. Попробуйте ещё раз",
+  "driverTopupErrorAmount": "Проверьте сумму пополнения",
   "driverTopupErrorAlreadyPending": "Заявка уже отправлена — дождитесь подтверждения",
   "driverTopupSubmitButton": "Отправить заявку",
   "driverWalletTransactionsTitle": "Операции",

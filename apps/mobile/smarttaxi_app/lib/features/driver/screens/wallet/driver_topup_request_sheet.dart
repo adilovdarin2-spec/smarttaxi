@@ -65,6 +65,7 @@ class _DriverTopupRequestSheetState extends State<DriverTopupRequestSheet> {
         _error = switch (code) {
           'TOPUP_BELOW_MINIMUM' =>
             l10n.driverTopupErrorBelowMin('${widget.minTopupKzt} ₸'),
+          'INVALID_TOPUP_AMOUNT' => l10n.driverTopupErrorAmount,
           'TOPUP_REQUEST_ALREADY_PENDING' =>
             l10n.driverTopupErrorAlreadyPending,
           _ => l10n.driverTopupErrorGeneric,

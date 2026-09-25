@@ -31,6 +31,7 @@
     "smoke:regional-reverse": "node src/tools/smoke-regional-reverse-addresses.js",
     "smoke:auth": "node src/tools/stage2-smoke.js",
     "smoke:order": "node src/tools/stage3-client-flow-smoke.js",
+    "smoke:money": "node src/tools/money-flows-smoke.js",
     "smoke:full": "node src/tools/smoke-full.js",
     "smoke:qa-docker": "node src/tools/smoke-qa-docker.js",
     "smoke:capacity-local": "node src/tools/local-capacity-smoke.js",

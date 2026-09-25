@@ -9,7 +9,8 @@ const scripts = [
   "stage3-client-flow-smoke.js",
   "stage9-payment-rating-smoke.js",
   "stage11-driver-core-smoke.js",
-  "driver-documents-smoke.js"
+  "driver-documents-smoke.js",
+  "money-flows-smoke.js"
 ];
 
 for (const script of scripts) {

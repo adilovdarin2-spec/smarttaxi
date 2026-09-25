@@ -86,6 +86,7 @@ const API_ERROR_MESSAGES = {
   STAND_RIDER_IS_THE_DRIVER: "В своей же машине место не забронировать",
   STAND_SEATS_BELOW_TAKEN: "Мест не может быть меньше, чем уже занято",
   SUPPORT_MESSAGE_NOT_FOUND: "Это обращение уже закрыто",
+  INVALID_TOPUP_AMOUNT: "Проверьте сумму пополнения",
   TOPUP_EXCEEDS_DEBT: "Сумма больше текущего долга водителя. Впишите не больше долга",
   TOPUP_REQUEST_ALREADY_PENDING: "Заявка уже отправлена — дождитесь подтверждения",
   TOPUP_REQUEST_NOT_PENDING: "Эта заявка уже закрыта. Обновите список",
