@@ -143,6 +143,33 @@ assert(STALE_SHIFT_MINUTES > 0 && STALE_SHIFT_MINUTES <= 120, `окно зави
   }
 }
 
+
+// «Своя цена против названной» должна сравниваться с оценкой, а не с ценой
+// заказа.
+//
+// Когда пассажир называет свою цену, она и становится ценой заказа. Деление
+// одного на другое давало ровно 100 у каждого такого заказа, и панель
+// уверенно отвечала «никто не торгуется» на вопрос, ради которого написана.
+// На живых данных против оценки вышло 91, 93 и 97 — торговались все трое.
+{
+  const source = readFileSync(new URL("../modules/admin/pricing-demand.service.js", import.meta.url), "utf8");
+  const at = source.indexOf("const offeredVsFixed");
+  assert(at > 0, "пропал расчёт «своя цена против названной»");
+  const q = source.slice(at, at + 900);
+  assert(
+    q.includes("pricing_snapshot->>'estimatedPrice'"),
+    "сравнивать надо с оценкой: цена заказа и есть предложенная цена, деление даст сотню"
+  );
+  assert(
+    !q.includes("NULLIF(o.price, 0)"),
+    "деление на цену заказа вернулось — это тавтология, а не измерение"
+  );
+  assert(
+    q.includes("(o.pricing_snapshot->>'estimatedPrice') IS NOT NULL"),
+    "заказы без сохранённой оценки не должны попадать в среднее: они вернут ту же сотню"
+  );
+}
+
 console.log(
   `Pricing demand checks ok: fill rate ignores live orders, unmeasured stays null, shifts open once, stale window ${STALE_SHIFT_MINUTES} min`
 );

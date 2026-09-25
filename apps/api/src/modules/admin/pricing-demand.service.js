@@ -107,11 +107,26 @@ export async function getPricingDemand({ regionId = null, dateFrom, dateTo } = {
 
   // Насколько предложенная цена отличается от названной сервисом. Ниже ста
   // процентов — люди торгуются вниз, и фиксированная цена им велика.
+  //
+  // Сравнивать надо с оценкой, а не с ценой заказа. Когда пассажир называет
+  // свою цену, она и становится ценой заказа — деление давало ровно 100 у
+  // каждого такого заказа, и панель уверенно отвечала «никто не торгуется»
+  // на вопрос, ради которого она написана. На тех же трёх заказах против
+  // оценки выходит 91, 93 и 97: торговались все трое.
+  //
+  // Заказы без сохранённой оценки в счёт не идут вовсе: подставить туда
+  // цену — значит вернуть ту же сотню и развести среднее обратно к неправде.
   const offeredVsFixed = (await run(executor, `
-    SELECT COALESCE(AVG(o.offered_price_kzt::numeric / NULLIF(o.price, 0)) * 100, 0)::int AS percent,
+    SELECT COALESCE(AVG(
+             o.offered_price_kzt::numeric
+             / NULLIF((o.pricing_snapshot->>'estimatedPrice')::numeric, 0)
+           ) * 100, 0)::int AS percent,
            COUNT(*)::int AS orders
     FROM orders o
-    WHERE ${scope} AND o.offered_price_kzt IS NOT NULL AND o.offered_price_kzt > 0
+    WHERE ${scope}
+      AND o.offered_price_kzt IS NOT NULL AND o.offered_price_kzt > 0
+      AND (o.pricing_snapshot->>'estimatedPrice') IS NOT NULL
+      AND (o.pricing_snapshot->>'estimatedPrice')::numeric > 0
   `, params)).rows[0];
 
   // --- Почему отменяли ---
